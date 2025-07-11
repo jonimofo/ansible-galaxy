@@ -1,0 +1,24 @@
+---
+- name: Configure allowed SSH users in sshd_config
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^AllowUsers.*'
+    # Extracts just the 'name' from each item in the list
+    line: "AllowUsers {{ ssh_users | map(attribute='name') | join(' ') }}"
+    state: present
+    create: true
+    validate: '/usr/sbin/sshd -t -f %s'
+  when: ssh_users is defined and ssh_users | length > 0
+  notify: Restart sshd
+
+- name: Copy authorized keys for SSH users
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    # The key is now taken directly from the 'pubkey' attribute
+    key: "{{ item.pubkey }}"
+    path: "/home/{{ item.name }}/.ssh/authorized_keys"
+    # exclusive: Determines if unlisted keys should be removed from authorized_keys
+    exclusive: "{{ ssh_exclusive_keys }}"
+    manage_dir: true
+  with_items: "{{ ssh_users }}"
+  when: ssh_users is defined and ssh_users | length > 0

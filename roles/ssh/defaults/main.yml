@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/ssh
+# Defines the list of users with their name and public key
+
+ssh_exclusive_keys: false
+ssh_strict_host_key_checking: ask
+ssh_max_auth_tries: 3
+ssh_allow_users: []
+# Example of ssh_allow_users structure:
+# ssh_allow_users:
+#   - name: "alice"
+ssh_users: []
+# Example of ssh_users structure:
+# ssh_users:
+#   - name: "alice"
+#     pubkey: "ssh-ed25519 AAAA... alice@example.com"
