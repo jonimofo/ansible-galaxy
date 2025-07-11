@@ -14,7 +14,6 @@
 - name: Copy authorized keys for SSH users
   ansible.posix.authorized_key:
     user: "{{ item.name }}"
-    # The key is now taken directly from the 'pubkey' attribute
     key: "{{ item.pubkey }}"
     path: "/home/{{ item.name }}/.ssh/authorized_keys"
     # exclusive: Determines if unlisted keys should be removed from authorized_keys

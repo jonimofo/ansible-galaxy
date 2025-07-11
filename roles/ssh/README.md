@@ -1,38 +1,53 @@
-Role Name
-=========
+# SSH Role
 
-A brief description of the role goes here.
+## Description
+This role hardens the OpenSSH server configuration and manages SSH user access by setting secure defaults and deploying user-specific authorized keys.
 
-Requirements
-------------
+## Requirements
+- Ansible 2.10 or higher
+- Target hosts must have OpenSSH installed (`openssh-server`)
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+## Role Variables
+| Variable                       | Default    | Description                                                                                              |
+|--------------------------------|------------|----------------------------------------------------------------------------------------------------------|
+| `ssh_exclusive_keys`           | `false`    | When `true`, remove all existing `authorized_keys` entries before adding the ones defined in `ssh_users`. |
+| `ssh_max_auth_tries`           | `3`        | Maximum number of authentication attempts permitted per connection.                                       |
+| `ssh_strict_host_key_checking` | `ask`      | Value for SSH’s `StrictHostKeyChecking` setting (`yes`, `no`, `ask`, or `accept-new`).                   |
+| `ssh_users`                    | `[]`       | List of user definitions to configure. Each item is a dict with `name`, `pubkey`, and optional `home`.   |
 
-Role Variables
---------------
+## Dependencies
+None.
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+## Example Playbook
+```yaml
+- hosts: all
+  become: true
 
-Dependencies
-------------
+  collections:
+    - jonimofo.infrastructure
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+  vars:
+    ssh_strict_host_key_checking: "no"
+    ssh_exclusive_keys: true
+    ssh_max_auth_tries: 3
+    ssh_users:
+      - name: alice
+        pubkey: "{{ lookup('file', 'files/alice.pub') }}"
+      - name: bob
+        pubkey: "{{ lookup('file', 'files/bob.pub') }}"
+        home: /home/bob
 
-Example Playbook
-----------------
+  roles:
+    - ssh
+````
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## License
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+MIT
 
-License
--------
+## Author Information
 
-BSD
+* **Name**: Jonimofo
+* **GitHub**: [https://github.com/jonimofo](https://github.com/jonimofo)
+* **Galaxy**: [https://galaxy.ansible.com/jonimofo/infrastructure](https://galaxy.ansible.com/jonimofo/infrastructure)
 
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
