@@ -1,3 +1,7 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # handlers file for roles/ufw
+- name: Restart ufw
+  community.general.ufw:
+    name: ufw
+    state: reloaded
