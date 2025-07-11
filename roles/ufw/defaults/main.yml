@@ -21,9 +21,10 @@ ufw_rules: []  # UFW rules list (rule, port, proto, name, comment)
 # Examples
 # ufw_rules:
 #   - rule: allow
-#     name: OpenSSH
+#     proto: tcp
+#     port: "{{ ssh_port | default(22) }}"
 #     comment: "Allow SSH"
 #   - rule: allow
-#     port: 80
 #     proto: tcp
+#     port: 80
 #     comment: "Allow HTTP"
