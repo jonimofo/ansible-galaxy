@@ -1,0 +1,48 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/ufw
+- name: Ensure UFW is installed
+  ansible.builtin.apt:
+    name: "{{ ufw_pkg_name }}"
+    state: present
+    update_cache: "{{ ufw_update_cache }}"
+
+- name: Configure IPv6 support
+  ansible.builtin.lineinfile:
+    path: "{{ ufw_config_path }}"
+    regexp: '^IPV6='
+    line: "IPV6={{ ufw_enable_ipv6 | ternary('yes','no') }}"
+    state: present
+  notify: Restart ufw
+
+- name: Reset UFW to default settings
+  community.general.ufw:
+    state: reset
+
+- name: Set UFW default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop: "{{ ufw_default_policies | default([]) }}"
+  when: ufw_default_policies | length > 0
+
+- name: Configure UFW rules
+  community.general.ufw:
+    rule:    "{{ item.rule }}"
+    name:    "{{ item.name    | default(omit) }}"
+    port:    "{{ item.port    | default(omit) }}"
+    proto:   "{{ item.proto   | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ ufw_rules | default([]) }}"
+  when: ufw_rules | length > 0
+  loop_control:
+    label: "{{ item.rule }} {{ (item.name|default(item.port~'/'~item.proto)) }}"
+
+- name: Enable UFW logging
+  community.general.ufw:
+    logging: "{{ ufw_logging }}"
+
+- name: Ensure UFW is {{ ufw_state }}
+  community.general.ufw:
+    state: "{{ ufw_state }}"
+  notify: Restart ufw

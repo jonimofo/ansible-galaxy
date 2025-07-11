@@ -1,0 +1,29 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/ufw
+# roles/ufw/defaults/main.yml
+ufw_pkg_name: ufw  # apt package to install
+ufw_update_cache: true  # update apt cache before install
+ufw_config_path: /etc/default/ufw  # path to UFW config file
+ufw_enable_ipv6: false  # enable IPv6 in UFW (yes/no)
+ufw_logging: on  # UFW logging state ('on' or 'off')
+ufw_state: enabled  # final UFW state ('enabled', 'disabled', 'reset')
+
+ufw_default_policies: []  # default policy list (incoming/outgoing)
+# Examples
+# ufw_default_policies:
+#   - direction: incoming
+#     policy: deny
+#   - direction: outgoing
+#     policy: allow
+
+ufw_rules: []  # UFW rules list (rule, port, proto, name, comment)
+# Examples
+# ufw_rules:
+#   - rule: allow
+#     name: OpenSSH
+#     comment: "Allow SSH"
+#   - rule: allow
+#     port: 80
+#     proto: tcp
+#     comment: "Allow HTTP"
