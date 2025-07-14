@@ -1,0 +1,23 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/fail2ban
+- name: install fail2ban package
+  ansible.builtin.package:
+    name: "{{ fail2ban_package }}"
+    state: present
+    update_cache: "{{ fail2ban_update_cache }}"
+
+- name: ensure fail2ban is enabled and running
+  ansible.builtin.service:
+    name: "{{ fail2ban_service_name }}"
+    state: started
+    enabled: true
+
+- name: deploy jail.local from template
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: "{{ fail2ban_jail_local_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart fail2ban

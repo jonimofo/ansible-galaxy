@@ -1,0 +1,13 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/dotfiles
+dotfiles_user_configs: []
+# dotfiles_user_configs:
+#   repo: 'git@github.com:example/dotfiles.git'
+#   version: 'main'
+#   clone_dir: '.dotfiles'
+#   users:
+#     - user: user
+#       files:
+#         - src: 'bashrc'
+#           dest: '.bashrc'

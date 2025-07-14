@@ -1,0 +1,13 @@
+# Setup fzf
+# ---------
+if [[ ! "$PATH" == *{{ fzf_install_path }}/bin* ]]; then
+  export PATH="${PATH:+${PATH}:}{{ fzf_install_path }}/bin"
+fi
+
+# Auto-completion
+# ---------------
+[[ $- == *i* ]] && source "{{ fzf_install_path }}/shell/completion.bash" 2> /dev/null
+
+# Key bindings
+# ------------
+source "{{ fzf_install_path }}/shell/key-bindings.bash"

@@ -1,0 +1,14 @@
+---
+# Default variables for locale role
+# List of packages to ensure installed
+locale_packages:
+  - locales
+# Locale to generate and set as default
+locale_name: "en_US.UTF-8"
+# Environment variables to write
+locale_env:
+  LANG: "en_US.UTF-8"
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+# Whether to reboot if locale changed
+locale_reboot: true

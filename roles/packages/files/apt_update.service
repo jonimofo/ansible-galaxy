@@ -1,0 +1,11 @@
+[Unit]
+Description=Run apt update, upgrade, autoremove, and autoclean
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# autoremove: Removes unneeded dependencies.
+# autoclean: Clears old package files from the cache.
+ExecStart=/bin/sh -c "/usr/bin/apt update && /usr/bin/apt upgrade -y && /usr/bin/apt autoremove -y && /usr/bin/apt autoclean"
+User=root

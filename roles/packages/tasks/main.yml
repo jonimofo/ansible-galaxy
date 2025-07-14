@@ -1,0 +1,53 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/packages
+- name: Update APT cache if older than cache_valid_time
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: "{{ apt_update_cache_valid_time }}"
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ apt_update_packages_to_install }}"
+    state: present
+
+- name: Remove unused dependencies
+  ansible.builtin.apt:
+    autoremove: true
+
+- name: Clean package cache
+  ansible.builtin.apt:
+    autoclean: true
+
+- name: Deploy APT update systemd service
+  ansible.builtin.copy:
+    src: files/apt_update.service
+    dest: "{{ apt_update_service_dest }}"
+    owner: root
+    group: root
+    mode: "{{ apt_update_service_mode }}"
+  notify: Reload systemd
+
+- name: Deploy APT update systemd timer
+  ansible.builtin.template:
+    src: templates/apt_update.timer.j2
+    dest: "{{ apt_update_timer_dest }}"
+    owner: root
+    group: root
+    mode: "{{ apt_update_timer_mode }}"
+  notify: Reload systemd
+
+- name: Enable and start APT update timer
+  ansible.builtin.systemd:
+    name: "{{ apt_update_timer_unit }}"
+    enabled: true
+    state: started
+
+- name: Disable and mask default APT timers/services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+    masked: true
+  loop: "{{ apt_update_disable_units }}"
+  notify: Reload systemd

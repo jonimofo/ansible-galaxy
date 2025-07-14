@@ -1,0 +1,48 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for ansible-role-fasd
+
+- name: "Ensure dependencies are installed"
+  ansible.builtin.package:
+    name: "{{ fasd_dependencies }}"
+    state: present
+  become: true
+
+- name: "Check if fasd is already installed"
+  ansible.builtin.stat:
+    path: "{{ fasd_install_path }}/fasd"
+  register: fasd_binary_stat
+
+- name: "Clone fasd repository"
+  ansible.builtin.git:
+    repo: "{{ fasd_git_repo_url }}"
+    dest: "{{ fasd_clone_dir }}"
+    version: "{{ fasd_git_version }}"
+  when: not fasd_binary_stat.stat.exists
+
+- name: "Build and install fasd"
+  ansible.builtin.command:
+    cmd: "make install"
+    chdir: "{{ fasd_clone_dir }}"
+    creates: "{{ fasd_install_path }}/fasd"
+  become: true
+  when: not fasd_binary_stat.stat.exists
+
+- name: "Ensure fasd is sourced in user shell config"
+  ansible.builtin.lineinfile:
+    path: "/home/{{ item.name }}/.bashrc"
+    regexp: '^eval "\$\(fasd --init auto\)"'
+    line: 'eval "$(fasd --init auto)"'
+    state: present
+    create: true
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: '0644'
+  loop: "{{ fasd_users }}"
+  when: fasd_configure_shell
+
+- name: "Remove fasd installation directory"
+  ansible.builtin.file:
+    path: "{{ fasd_clone_dir }}"
+    state: absent
+  when: fasd_cleanup_build_dir

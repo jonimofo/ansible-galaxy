@@ -1,45 +1,57 @@
-# SSH Role
+# Ansible Role: ssh
 
-## Description
-This role hardens the OpenSSH server configuration and manages SSH user access by setting secure defaults and deploying user-specific authorized keys.
+This role secures an OpenSSH server on **Debian-based systems**. It applies common security hardening practices such as disabling password and root login, and it configures user access exclusively through a managed list of public keys.
 
 ## Requirements
-- Ansible 2.10 or higher
-- Target hosts must have OpenSSH installed (`openssh-server`)
+
+* This role is designed **exclusively for Debian-based distributions** and will fail to run on other OS families.
+* The `ansible.posix` collection must be installed: `ansible-galaxy collection install ansible.posix`.
 
 ## Role Variables
-| Variable                       | Default    | Description                                                                                              |
-|--------------------------------|------------|----------------------------------------------------------------------------------------------------------|
-| `ssh_exclusive_keys`           | `false`    | When `true`, remove all existing `authorized_keys` entries before adding the ones defined in `ssh_users`. |
-| `ssh_max_auth_tries`           | `3`        | Maximum number of authentication attempts permitted per connection.                                       |
-| `ssh_strict_host_key_checking` | `ask`      | Value for SSH’s `StrictHostKeyChecking` setting (`yes`, `no`, `ask`, or `accept-new`).                   |
-| `ssh_users`                    | `[]`       | List of user definitions to configure. Each item is a dict with `name`, `pubkey`, and optional `home`.   |
+
+Default values are located in `defaults/main.yml`.
+
+| Variable | Default Value | Description |
+|---|---|---|
+| `ssh_exclusive_keys` | `false` | If `true`, removes any unmanaged public keys from a user's `authorized_keys` file. |
+| `ssh_strict_host_key_checking` | `ask` | Sets the `StrictHostKeyChecking` option in the client configuration `/etc/ssh/ssh_config`. |
+| `ssh_max_auth_tries` | `3` | Sets the maximum number of authentication attempts allowed per connection. |
+
+**`ssh_users`**: This is the primary variable for defining who can access the server. It is a list of dictionaries, where each dictionary represents a user.
+
+* `name`: The username. (Required)
+* `pubkey`: The user's full public SSH key. (Required)
+
+**Example `ssh_users` structure:**
+```yaml
+ssh_users:
+  - name: "alice"
+    pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... alice@example.com"
+  - name: "bob"
+    pubkey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ... bob@workstation"
+```
 
 ## Dependencies
-None.
+
+This role has no dependencies on other Ansible Galaxy roles.
 
 ## Example Playbook
+
+Here is an example of how to use this role to configure a server for two users.
+
 ```yaml
-- hosts: all
+- name: Harden SSH and configure user access
+  hosts: all
   become: true
-
-  collections:
-    - jonimofo.infrastructure
-
   vars:
-    ssh_strict_host_key_checking: "no"
-    ssh_exclusive_keys: true
-    ssh_max_auth_tries: 3
     ssh_users:
-      - name: alice
-        pubkey: "{{ lookup('file', 'files/alice.pub') }}"
-      - name: bob
-        pubkey: "{{ lookup('file', 'files/bob.pub') }}"
-        home: /home/bob
-
+      - name: "jdoe"
+        pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGoT... jdoe@laptop"
+      - name: "service_account"
+        pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIX8T... ansible@controller"
   roles:
-    - ssh
-````
+    - jonimofo.ssh
+```
 
 ## License
 
@@ -47,7 +59,4 @@ MIT
 
 ## Author Information
 
-* **Name**: Jonimofo
-* **GitHub**: [https://github.com/jonimofo](https://github.com/jonimofo)
-* **Galaxy**: [https://galaxy.ansible.com/jonimofo/infrastructure](https://galaxy.ansible.com/jonimofo/infrastructure)
-
+This role was created by jonimofo.

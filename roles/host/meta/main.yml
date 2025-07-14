@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT-0
+---
+galaxy_info:
+  author: jonimofo
+  description: A role to set the system hostname and update /etc/hosts accordingly.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  galaxy_tags:
+    - system
+    - hostname
+    - network
+    - configuration
+dependencies: []

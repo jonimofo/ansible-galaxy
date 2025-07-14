@@ -1,0 +1,32 @@
+---
+# defaults file for ansible-role-fasd
+
+# The Git repository URL for fasd
+fasd_git_repo_url: "https://github.com/clvv/fasd.git"
+
+# The branch or tag to checkout
+fasd_git_version: "master"
+
+# The temporary directory to clone the repository into
+fasd_clone_dir: "/tmp/fasd"
+
+# The installation path for the fasd binary
+fasd_install_path: "/usr/local/bin"
+
+# A list of package dependencies required to build fasd
+fasd_dependencies:
+  - git
+
+# A list of users to configure fasd for.
+# Each item in the list should be a dictionary with a 'name' key.
+# Example:
+# fasd_users:
+#   - name: "jdoe"
+#   - name: "asmith"
+fasd_users: []
+
+# Boolean to control whether to add the fasd initialization to user shell configs.
+fasd_configure_shell: true
+
+# Boolean to control whether to clean up the temporary build directory
+fasd_cleanup_build_dir: true

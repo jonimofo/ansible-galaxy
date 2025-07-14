@@ -1,0 +1,16 @@
+[DEFAULT]
+ignoreip = {% for ip in fail2ban_ignoreip %}{{ ip }} {% endfor %}
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+allowipv6 = {{ fail2ban_allowipv6 }}
+
+{% for name, cfg in fail2ban_jails.items() %}
+[{{ name }}]
+enabled  = {{ cfg.enabled | default(false) }}
+port     = {{ cfg.port | default(name) }}
+filter   = {{ cfg.filter | default(name) }}
+backend  = {{ fail2ban_backend }}
+logtarget= {{ cfg.logtarget | default('SYSLOG') }}
+maxretry = {{ fail2ban_maxretry }}
+{% endfor %}

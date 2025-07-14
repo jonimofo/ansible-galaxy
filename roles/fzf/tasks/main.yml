@@ -1,0 +1,45 @@
+---
+# Tasks file for fzf role
+- name: Ensure git is installed
+  ansible.builtin.package:
+    name: git
+    state: present
+
+- name: Check if fzf is installed
+  ansible.builtin.stat:
+    path: "{{ fzf_install_path }}/bin/fzf"
+  register: fzf_installed
+
+- name: Clone fzf repository
+  ansible.builtin.git:
+    repo: "{{ fzf_repo_url }}"
+    dest: "{{ fzf_install_path }}"
+    update: false
+  when: not fzf_installed.stat.exists
+
+- name: Install fzf
+  ansible.builtin.command:
+    cmd: "{{ fzf_install_path }}/install --bin"
+    creates: "{{ fzf_install_path }}/bin/fzf"
+  when: not fzf_installed.stat.exists
+
+- name: Render fzf.bash template for each user
+  ansible.builtin.template:
+    src: fzf.bash.j2
+    dest: "/home/{{ item.name }}/.fzf.bash"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: '0644'
+  loop: "{{ fzf_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Ensure .bashrc sources fzf.bash for users opting in
+  ansible.builtin.lineinfile:
+    path: "/home/{{ item.name }}/.bashrc"
+    line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
+    create: true
+  loop: "{{ fzf_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.update_bashrc

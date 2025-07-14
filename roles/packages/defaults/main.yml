@@ -1,0 +1,34 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/packages
+apt_update_cache_valid_time: 3600  # seconds before apt cache is considered stale
+apt_update_disable_units:
+  - apt-daily.timer
+  - apt-daily-upgrade.timer
+  - apt-daily.service
+  - apt-daily-upgrade.service  # list of systemd units to disable and mask
+apt_update_service_dest: /etc/systemd/system/apt_update.service  # destination path for service unit
+apt_update_service_mode: '0644'  # file mode for service unit
+apt_update_timer_dest: /etc/systemd/system/apt_update.timer  # destination path for timer unit
+apt_update_timer_mode: '0644'  # file mode for timer unit
+apt_update_timer_on_calendar: '*-*-* 03:00:00'  # systemd OnCalendar schedule spec
+apt_update_timer_persistent: true  # whether the timer is persistent
+apt_update_timer_unit: apt_update.timer  # name of the timer unit to enable/start
+
+apt_update_packages_to_install: []  # list of packages to install via apt
+  # - git
+  # - vim
+  # - curl
+  # - ufw
+  # - fail2ban
+  # - colordiff
+  # - tty-clock
+  # - bat
+  # - lnav
+  # - fd-find
+  # - silversearcher-ag
+  # - tmux
+  # - zsh
+  # - neovim
+  # - bpytop
+  # - jq

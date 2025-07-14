@@ -1,0 +1,67 @@
+---
+# Tasks file for lazydocker role
+
+- name: Debug ansible architecture and mapping keys
+  ansible.builtin.debug:
+    msg:
+      - "Ansible architecture: {{ ansible_architecture }}"
+      - "Available mapping keys: {{ lazydocker_arch_map.keys() | list }}"
+
+- name: Assert architecture mapping exists
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in lazydocker_arch_map
+    fail_msg: "Unsupported architecture: {{ ansible_architecture }}"
+
+- name: Set architecture suffix for lazydocker
+  ansible.builtin.set_fact:
+    lazydocker_arch: "{{ lazydocker_arch_map[ansible_architecture] }}"
+
+- name: Debug detected lazydocker_arch
+  ansible.builtin.debug:
+    var: lazydocker_arch
+
+- name: Set lazydocker archive filename
+  ansible.builtin.set_fact:
+    lazydocker_archive_filename: "lazydocker_{{ lazydocker_version }}_{{ lazydocker_arch }}.tar.gz"
+
+- name: Set download path and URL for lazydocker
+  ansible.builtin.set_fact:
+    lazydocker_archive_path: "{{ lazydocker_download_dir }}/{{ lazydocker_archive_filename }}"
+    lazydocker_download_url: "https://github.com/jesseduffield/lazydocker/releases/download/v{{ lazydocker_version }}/{{ lazydocker_archive_filename }}"
+
+- name: Debug constructed download URL
+  ansible.builtin.debug:
+    var: lazydocker_download_url
+
+- name: Ensure download directory exists
+  ansible.builtin.file:
+    path: "{{ lazydocker_download_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Check if lazydocker binary exists
+  ansible.builtin.stat:
+    path: "{{ lazydocker_install_path }}/lazydocker"
+  register: lazydocker_binary
+
+- name: Download lazydocker archive
+  ansible.builtin.get_url:
+    url: "{{ lazydocker_download_url }}"
+    dest: "{{ lazydocker_archive_path }}"
+    mode: '0644'
+    force: false
+  when: not lazydocker_binary.stat.exists
+
+- name: Extract lazydocker binary
+  ansible.builtin.unarchive:
+    src: "{{ lazydocker_archive_path }}"
+    dest: "{{ lazydocker_install_path }}"
+    remote_src: true
+    creates: "{{ lazydocker_install_path }}/lazydocker"
+  when: not lazydocker_binary.stat.exists
+
+- name: Ensure lazydocker binary is executable
+  ansible.builtin.file:
+    path: "{{ lazydocker_install_path }}/lazydocker"
+    mode: '0755'

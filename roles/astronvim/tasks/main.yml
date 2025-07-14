@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# STAGE 1: INSTALL NEOVIM
+# This section ensures a compatible Neovim binary is installed.
+# It auto-detects the CPU architecture (x86_64 vs ARM).
+# ---------------------------------------------------------------------------
+- name: "Determine Neovim archive name based on architecture"
+  ansible.builtin.set_fact:
+    neovim_archive_name: "{{ 'nvim-linux-arm64.tar.gz' if ansible_architecture == 'aarch64' else 'nvim-linux64.tar.gz' }}"
+
+- name: "Display detected architecture and selected archive"
+  ansible.builtin.debug:
+    msg: "Detected architecture '{{ ansible_architecture }}', using archive '{{ neovim_archive_name }}'."
+
+- name: "Check if Neovim is already installed"
+  ansible.builtin.stat:
+    path: "{{ neovim_binary_path }}"
+  register: nvim_binary_stat
+
+- name: "Install Neovim {{ neovim_version }}"
+  when: not nvim_binary_stat.stat.exists
+  block:
+    - name: "Download Neovim {{ neovim_version }} tarball"
+      ansible.builtin.get_url:
+        url: "{{ neovim_download_url }}/{{ neovim_version }}/{{ neovim_archive_name }}"
+        dest: "/tmp/{{ neovim_archive_name }}"
+        mode: '0644'
+
+    - name: "Extract Neovim archive directly into /usr/local/"
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ neovim_archive_name }}"
+        dest: "/usr/local/"
+        extra_opts: [--strip-components=1]
+        remote_src: true
+
+    - name: "Clean up downloaded tarball"
+      ansible.builtin.file:
+        path: "/tmp/{{ neovim_archive_name }}"
+        state: absent
+
+# ---------------------------------------------------------------------------
+# STAGE 2: CONFIGURE ASTRONVIM
+# ---------------------------------------------------------------------------
+- name: "Configure AstroNvim for each user"
+  ansible.builtin.include_tasks: setup_user.yml
+  loop: "{{ astronvim_users }}"
+  loop_control:
+    loop_var: user
+    label: "{{ user.name }}"
+  when: astronvim_users | length > 0

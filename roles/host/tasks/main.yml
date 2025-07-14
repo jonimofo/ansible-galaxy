@@ -1,0 +1,28 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Tasks for setting the system hostname
+
+- name: Fail if desired_hostname is not set
+  ansible.builtin.assert:
+    that:
+      - desired_hostname | length > 0
+    fail_msg: "desired_hostname must be defined and not empty"
+
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: "{{ desired_hostname }}"
+
+# Per Debian convention, this maps the machine's specific hostname to 127.0.1.1,
+# leaving the standard 127.0.0.1 address reserved for 'localhost'.
+- name: Add the new hostname to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    # This regex finds the line that starts with 127.0.1.1, which is
+    # conventionally used for the machine's own hostname.
+    regexp: '^127\.0\.1\.1.*'
+    # This is the line we want to ensure exists.
+    line: "127.0.1.1 {{ desired_hostname }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true

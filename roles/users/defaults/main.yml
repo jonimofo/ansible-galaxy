@@ -1,0 +1,19 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Default shell for users if not overridden
+users_default_shell: /bin/bash
+
+# Whether to create a home directory if not overridden
+users_default_create_home: true
+
+# List of users to create.
+# Each entry must include 'name', and may include:
+#   groups:       comma-separated group(s)
+#   shell:        login shell
+#   create_home:  true/false
+users: []
+# users:
+#   - name: "bgi"
+#     groups: "sudo"
+#     shell: "/bin/bash"
+#     create_home: true

@@ -1,0 +1,21 @@
+#SPDX-License-Identifier: MIT-0
+---
+# default variables for fail2ban role
+fail2ban_backend: systemd
+fail2ban_bantime: 600
+fail2ban_findtime: 600
+fail2ban_allowipv6: false
+fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - 192.168.1.0/24
+fail2ban_jails:
+  sshd:
+    enabled: true
+    port: ssh
+    filter: sshd
+    logtarget: SYSLOG
+fail2ban_jail_local_path: /etc/fail2ban/jail.local
+fail2ban_maxretry: 3
+fail2ban_package: fail2ban
+fail2ban_service_name: fail2ban
+fail2ban_update_cache: true

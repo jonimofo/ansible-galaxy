@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT-0
+---
+galaxy_info:
+  author: jonimofo
+  description: Installs fasd (fast access to directories and files) from source and configures it for specified users.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - system
+    - utility
+    - tools
+    - shell
+    - fasd
+dependencies: []

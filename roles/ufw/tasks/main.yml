@@ -1,11 +1,19 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/ufw
+- name: Update apt cache (with retries)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600  # skip update if cache is newer than 1 hour
+  register: cache_update
+  until: cache_update is succeeded
+  retries: 3
+  delay: 5
+
 - name: Ensure UFW is installed
   ansible.builtin.apt:
     name: "{{ ufw_pkg_name }}"
     state: present
-    update_cache: "{{ ufw_update_cache }}"
 
 - name: Configure IPv6 support
   ansible.builtin.lineinfile:

@@ -1,0 +1,15 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Default variables for lazydocker role
+# Version of lazydocker to install
+lazydocker_version: "0.24.1"
+# Path where the binary will be installed
+lazydocker_install_path: "/usr/local/bin"
+# Directory to download the archive
+lazydocker_download_dir: "/tmp"
+# Supported architecture mappings (ansible_architecture -> lazydocker release suffix)
+# x86_64: Linux_x86_64, aarch64: Linux_arm64, armv7l: Linux_armv7
+lazydocker_arch_map:
+  x86_64: Linux_x86_64
+  aarch64: Linux_arm64
+  armv7l: Linux_armv7

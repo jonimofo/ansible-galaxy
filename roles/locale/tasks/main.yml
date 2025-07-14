@@ -1,0 +1,51 @@
+---
+# Tasks file for locale role
+- name: Update apt cache (with retries)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600  # skip update if cache is newer than 1 hour
+  register: cache_update
+  until: cache_update is succeeded
+  retries: 3
+  delay: 5
+
+- name: Install locale packages
+  ansible.builtin.apt:
+    name: "{{ locale_packages }}"
+    state: present
+    update_cache: true
+
+- name: Generate locale {{ locale_name }}
+  community.general.locale_gen:
+    name: "{{ locale_name }}"
+    state: present
+
+- name: Set default locale file
+  ansible.builtin.copy:
+    dest: /etc/default/locale
+    content: |
+      {% for key, val in locale_env.items() %}{{ key }}={{ val }}
+      {% endfor %}
+  register: locale_file
+  changed_when: locale_file.changed
+
+- name: Reconfigure locales if file changed
+  ansible.builtin.command:
+    cmd: dpkg-reconfigure -f noninteractive locales
+  when: locale_file.changed
+  register: locale_reconfigure
+  changed_when: "'Generating locales' in locale_reconfigure.stdout"
+
+- name: Ensure LANG in /etc/environment
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    line: "LANG={{ locale_name }}"
+    state: present
+
+- name: Reboot if locale updated
+  ansible.builtin.reboot:
+    msg: "Rebooting to apply locale settings"
+    pre_reboot_delay: 60
+    post_reboot_delay: 60
+    test_command: locale | grep '{{ locale_name }}'
+  when: locale_reboot and (locale_file.changed or locale_reconfigure.changed)

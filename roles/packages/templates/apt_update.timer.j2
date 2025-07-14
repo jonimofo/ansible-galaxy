@@ -1,0 +1,9 @@
+[Unit]
+Description=Run apt update & upgrade daily
+
+[Timer]
+OnCalendar={{ apt_update_timer_on_calendar }}
+Persistent={{ apt_update_timer_persistent | ternary('true','false') }}
+
+[Install]
+WantedBy=timers.target

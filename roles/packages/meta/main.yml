@@ -1,0 +1,23 @@
+#SPDX-License-Identifier: MIT-0
+---
+galaxy_info:
+  author: jonimofo
+  description: Installs packages and manages APT updates via a custom systemd timer on Debian-based systems.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - system
+    - package
+    - apt
+    - update
+    - automation
+dependencies: []

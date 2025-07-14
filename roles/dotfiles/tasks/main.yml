@@ -1,0 +1,47 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Clone or update dotfiles repo for {{ item.user }}
+  ansible.builtin.git:
+    repo: "{{ dotfiles_user_configs.repo }}"
+    dest: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}"
+    version: "{{ dotfiles_user_configs.version }}"
+    update: true
+    accept_hostkey: true
+  become: true
+  become_user: "{{ item.user }}"
+  loop: "{{ dotfiles_user_configs.users }}"
+  loop_control:
+    label: "{{ item.user }}"
+  vars:
+    user_home: "{{ item.home | default('/home/' + item.user) }}"
+
+- name: Ensure parent directory exists for {{ file.dest }} of {{ user.user }}
+  ansible.builtin.file:
+    path: "{{ (user_home + '/' + file.dest) | dirname }}"
+    state: directory
+    owner: "{{ user.user }}"
+    group: "{{ user.user }}"
+    mode: '0755'
+  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
+  loop_control:
+    label: "{{ user.user }}:{{ file.dest }}"
+  vars:
+    user: "{{ item.0 }}"
+    file: "{{ item.1 }}"
+    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
+
+- name: Create symlink {{ file.src }} -> {{ file.dest }} for {{ user.user }}
+  ansible.builtin.file:
+    src: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
+    dest: "{{ user_home }}/{{ file.dest }}"
+    state: link
+    force: true
+    owner: "{{ user.user }}"
+    group: "{{ user.user }}"
+  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
+  loop_control:
+    label: "{{ user.user }}:{{ file.src }}"
+  vars:
+    user: "{{ item.0 }}"
+    file: "{{ item.1 }}"
+    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
