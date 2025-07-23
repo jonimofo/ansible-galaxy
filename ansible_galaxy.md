@@ -100,3 +100,5 @@ Publish to Galaxy
 ```bash
 ansible-galaxy collection publish jonimofo-infrastructure-1.0.1.tar.gz --api-key $ANSIBLE_GALAXY_API_KEY
 ```
+
+ansible-galaxy collection publish jonimofo-infrastructure-1.0.1.tar.gz --api-key 
