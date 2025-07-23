@@ -1,0 +1,22 @@
+- name: "Ensure Flatpak is installed via apt"
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+    update_cache: yes
+
+- name: "Add the Flathub repository"
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+  # This task will report a change only if the remote is actually added.
+
+- name: "Install Flatpak applications"
+  community.general.flatpak:
+    name: "{{ item.name }}"
+    state: present
+  loop: "{{ flatpak_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  # This task is idempotent. It will only install applications
+  # that are not already present.

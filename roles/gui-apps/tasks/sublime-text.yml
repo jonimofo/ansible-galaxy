@@ -1,0 +1,35 @@
+---
+- name: "Fix 'configured multiple times'"
+  ansible.builtin.file:
+    path: "/etc/apt/sources.list.d/download_sublimetext_com.list"
+    state: absent
+
+- name: "Refresh apt sources list"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: "Ensure dependencies are installed"
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - "gpgv"
+      - "gnupg"
+      - "dirmngr"
+
+- name: "Add GPG key"
+  ansible.builtin.apt_key:
+    url: "{{ sublime_gpg_key_url }}"
+
+- name: "Add repository"
+  ansible.builtin.apt_repository:
+    repo: "{{ sublime_deb_source }}"
+    filename: "sublime-text"
+    state: present
+
+- name: "Install Sublime Text"
+  ansible.builtin.apt:
+    name: "{{ sublime_package }}"
+    state: present

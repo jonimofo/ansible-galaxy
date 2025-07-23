@@ -1,0 +1,38 @@
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  tags: [always]
+
+- name: Ensure zstd is installed for modern .deb packages
+  ansible.builtin.apt:
+    name: zstd
+    state: present
+  tags: [always]
+
+- name: "Download .deb package for {{ item.name }}"
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "/tmp/{{ item.name | replace(' ', '_') }}.deb"
+    mode: '0644'
+  loop: "{{ deb_packages_to_install }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: ansible_facts.packages is not defined or item.package_name not in ansible_facts.packages
+
+- name: "Install downloaded .deb package for {{ item.name }}"
+  ansible.builtin.apt:
+    deb: "/tmp/{{ item.name | replace(' ', '_') }}.deb"
+  loop: "{{ deb_packages_to_install }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: ansible_facts.packages is not defined or item.package_name not in ansible_facts.packages
+
+- name: "Clean up downloaded .deb package for {{ item.name }}"
+  ansible.builtin.file:
+    path: "/tmp/{{ item.name | replace(' ', '_') }}.deb"
+    state: absent
+  loop: "{{ deb_packages_to_install }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: ansible_facts.packages is not defined or item.package_name not in ansible_facts.packages
+

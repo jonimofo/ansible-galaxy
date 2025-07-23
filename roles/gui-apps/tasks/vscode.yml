@@ -1,0 +1,49 @@
+# PRE-TASK
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  tags: [always]
+
+#==================================================================
+# TASKS: INSTALL VISUAL STUDIO CODE
+#==================================================================
+- name: "Download Visual Studio Code .deb package"
+  ansible.builtin.get_url:
+    url: "{{ vscode_deb_url }}"
+    dest: "/tmp/vscode.deb"
+    mode: '0644'
+  when: ansible_facts.packages is not defined or vscode_package_name not in ansible_facts.packages
+
+- name: "Install Visual Studio Code from .deb"
+  ansible.builtin.apt:
+    deb: "/tmp/vscode.deb"
+  when: ansible_facts.packages is not defined or vscode_package_name not in ansible_facts.packages
+
+- name: "Clean up downloaded VS Code .deb"
+  ansible.builtin.file:
+    path: "/tmp/vscode.deb"
+    state: absent
+  when: ansible_facts.packages is not defined or vscode_package_name not in ansible_facts.packages
+
+#==================================================================
+# TASKS: INSTALL VS CODE EXTENSIONS
+#==================================================================
+- name: Get list of already installed VS Code extensions
+  ansible.builtin.shell: "code --list-extensions"
+  register: installed_extensions
+  changed_when: false
+  check_mode: false # Always run this task, even in check mode
+  become: false  # Run this command as the normal user, not root
+  when: vscode_package_name in ansible_facts.packages
+
+- name: "Install VS Code extensions"
+  ansible.builtin.shell: "code --install-extension {{ item }}"
+  loop: "{{ vscode_extensions }}"
+  loop_control:
+    label: "{{ item }}"
+  become: false   # Run this command as the normal user, not root
+  # This condition checks if the extension ID is already in the output
+  # of the '--list-extensions' command before trying to install.
+  when:
+    - vscode_package_name in ansible_facts.packages
+    - item not in installed_extensions.stdout_lines

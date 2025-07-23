@@ -1,7 +1,8 @@
 ---
 galaxy_info:
-  author: jonimofo
-  description: A role to clone a dotfiles repository and symlink configurations for specified users.
+  author: Your Name
+  description: A role to clone a dotfiles repository and symlink files for specified users.
+  company: Your Company
   license: MIT
   min_ansible_version: "2.12"
   platforms:
@@ -18,8 +19,7 @@ galaxy_info:
         - focal
         - jammy
   galaxy_tags:
-    - system
-    - configuration
     - dotfiles
-    - user
+    - configuration
+
 dependencies: []

@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 - name: "Determine Neovim archive name based on architecture"
   ansible.builtin.set_fact:
-    neovim_archive_name: "{{ 'nvim-linux-arm64.tar.gz' if ansible_architecture == 'aarch64' else 'nvim-linux64.tar.gz' }}"
+    neovim_archive_name: "{{ 'nvim-linux-arm64.tar.gz' if ansible_architecture == 'aarch64' else 'nvim-linux-x86_64.tar.gz' }}"
 
 - name: "Display detected architecture and selected archive"
   ansible.builtin.debug:

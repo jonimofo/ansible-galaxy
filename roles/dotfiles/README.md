@@ -1,10 +1,10 @@
 # Ansible Role: dotfiles
 
-An Ansible role that clones a dotfiles Git repository and creates symbolic links to the specified configuration files for one or more users on the system.
+This role clones a specified dotfiles Git repository and creates symlinks to user home directories based on a defined configuration. It is designed to manage dotfiles for multiple users on a system in an idempotent way.
 
 ## Requirements
 
-The `git` package must be installed on the managed node for the `ansible.builtin.git` module to function correctly.
+The `git` package must be installed on the target hosts for the `ansible.builtin.git` module to function correctly. This role does not install `git`.
 
 ## Role Variables
 
@@ -23,19 +23,36 @@ The primary variable for this role is `dotfiles_user_configs`. It is a dictionar
 Here is an example of the data structure defined in `defaults/main.yml`:
 
 ```yaml
+# A list containing the dotfiles configuration.
 dotfiles_user_configs:
-  repo: '[https://github.com/example/dotfiles.git](https://github.com/example/dotfiles.git)'
+  # The SSH or HTTPS URL of the git repository.
+  repo: 'git@github.com:example/dotfiles.git'
+
+  # The branch, tag, or commit hash to check out.
   version: 'main'
+
+  # The directory name within the user's home where the repo will be cloned.
   clone_dir: '.dotfiles'
+
+  # A list of users to apply the dotfiles to.
   users:
-    - user: alice
+    # A user object.
+    - user: 'bobjones'
+      # Optional: specify a non-standard home directory.
+      # Defaults to '/home/{{ user.user }}' if not set.
+      home: '/home/bobjones'
+      # A list of files to symlink.
       files:
+        # The source file path, relative to the root of the cloned git repo.
         - src: 'bash/bashrc'
+          # The destination for the symlink, relative to the user's home directory.
           dest: '.bashrc'
         - src: 'vim/vimrc'
           dest: '.vimrc'
-    - user: bob
-      home: '/var/lib/bob'
+        - src: 'config/htop/htoprc'
+          dest: '.config/htop/htoprc'
+
+    - user: 'alice'
       files:
         - src: 'zsh/zshrc'
           dest: '.zshrc'
@@ -55,7 +72,7 @@ Here is an example of how to use this role in a playbook:
   become: true
   vars:
     dotfiles_user_configs:
-      repo: '[https://github.com/my-org/dotfiles.git](https://github.com/my-org/dotfiles.git)'
+      repo: 'git@github.com:jonimofo/dotfiles.git'
       version: 'production'
       clone_dir: '.config/dotfiles'
       users:
@@ -66,7 +83,7 @@ Here is an example of how to use this role in a playbook:
             - src: 'profile'
               dest: '.profile'
   roles:
-    - your_galaxy_username.dotfiles
+    - jonimofo.infrastructure.dotfiles
 ```
 
 ## License

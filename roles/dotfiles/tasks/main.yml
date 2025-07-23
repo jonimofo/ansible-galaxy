@@ -7,6 +7,7 @@
     version: "{{ dotfiles_user_configs.version }}"
     update: true
     accept_hostkey: true
+    force: true
   become: true
   become_user: "{{ item.user }}"
   loop: "{{ dotfiles_user_configs.users }}"
@@ -38,6 +39,7 @@
     force: true
     owner: "{{ user.user }}"
     group: "{{ user.user }}"
+    follow: false
   loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
   loop_control:
     label: "{{ user.user }}:{{ file.src }}"

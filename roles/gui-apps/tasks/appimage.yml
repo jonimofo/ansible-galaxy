@@ -1,0 +1,19 @@
+- name: "Download AppImage for {{ item.name }}"
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}/{{ item.name }}.AppImage"
+    mode: '0755'  # Set executable permissions immediately
+    force: false  # Do not re-download if the file already exists
+  loop: "{{ appimages_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Create symlink for {{ item.name }} in /usr/local/bin"
+  ansible.builtin.file:
+    src: "{{ item.dest }}/{{ item.name }}.AppImage"
+    dest: "/usr/local/bin/{{ item.name }}"
+    state: link
+    force: true # Recreate link if the source file changes
+  loop: "{{ appimages_apps }}"
+  loop_control:
+    label: "{{ item.name }}"

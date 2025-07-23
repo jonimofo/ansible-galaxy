@@ -1,0 +1,6 @@
+---
+- name: Install Brave browser
+  ansible.builtin.shell: curl -fsS  {{ brave_browser_download_url }} | sh
+  # Prevents tasks from running if found
+  args:
+    creates: /usr/bin/brave-browser
