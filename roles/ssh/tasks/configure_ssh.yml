@@ -21,4 +21,5 @@
     - { regexp: '^#?\s*X11Forwarding', line: 'X11Forwarding no' }
     - { regexp: '^#?\s*PrintMotd', line: 'PrintMotd no' }
     - { regexp: '^#?\s*MaxAuthTries', line: "MaxAuthTries {{ ssh_max_auth_tries }}" }
+    - { regexp: '^#?\s*AllowAgentForwarding', line: "AllowAgentForwarding {{ ssh_allow_agent_forwarding | bool | ternary('yes', 'no') }}" }
   notify: Restart sshd

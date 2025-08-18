@@ -1,7 +1,7 @@
 - name: "Download AppImage for {{ item.name }}"
   ansible.builtin.get_url:
     url: "{{ item.url }}"
-    dest: "{{ item.dest }}/{{ item.name }}.AppImage"
+    dest: "{{ appimages_install_dir.dest }}/{{ item.name }}.AppImage"
     mode: '0755'  # Set executable permissions immediately
     force: false  # Do not re-download if the file already exists
   loop: "{{ appimages_apps }}"

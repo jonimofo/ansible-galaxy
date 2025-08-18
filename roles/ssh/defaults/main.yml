@@ -3,6 +3,7 @@
 # defaults file for roles/ssh
 # Defines the list of users with their name and public key
 
+ssh_allow_agent_forwarding: false
 ssh_exclusive_keys: false
 ssh_strict_host_key_checking: ask
 ssh_max_auth_tries: 3

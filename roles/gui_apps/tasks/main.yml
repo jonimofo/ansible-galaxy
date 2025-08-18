@@ -6,17 +6,21 @@
     msg: "This role is only compatible with Debian-based systems."
   when: ansible_os_family != 'Debian'
 
+# TODO ??
+# - name: Ensure /tmp directory has correct permissions
+#   become: true
+#   ansible.builtin.file:
+#     path: /tmp
+#     state: directory
+#     mode: '1777'
+
 # - name: Include brave-browser task
 #   ansible.builtin.include_tasks: brave-browser.yml
 #   tags: "brave"
 
-- name: Include appimage task
-  ansible.builtin.include_tasks: appimage.yml
-  tags: "appimage"
-
-# - name: Include flatpak task
-#   ansible.builtin.include_tasks: flatpak.yml
-#   tags: "flatpak"
+- name: Include flatpak task
+  ansible.builtin.include_tasks: flatpak.yml
+  tags: "flatpak"
 
 # - name: Include deb-packages task
 #   ansible.builtin.include_tasks: deb-packages.yml
@@ -32,3 +36,4 @@
 
 # - name: Include appimages tasks
 #   ansible.builtin.include_tasks: appimages.yml
+#   tags: "appimages"

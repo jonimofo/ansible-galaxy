@@ -1,8 +1,17 @@
+---
+# TODO ??
+- name: Ensure /tmp directory has correct permissions
+  become: true
+  ansible.builtin.file:
+    path: /tmp
+    state: directory
+    mode: '1777'
+
 - name: "Ensure Flatpak is installed via apt"
   ansible.builtin.apt:
     name: flatpak
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: "Add the Flathub repository"
   community.general.flatpak_remote:

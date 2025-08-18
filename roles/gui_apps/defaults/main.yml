@@ -1,7 +1,9 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for roles/gui-apps
-brave_browser_download_url: "https://dl.brave.com/install.sh"
+# brave_browser_download_url: "https://dl.brave.com/install.sh"
+
+apt_update_cache_valid_time: 7200  # seconds before apt cache is considered stale
 
 deb_packages_to_install: []
 # Example structure
@@ -27,9 +29,10 @@ flatpak_apps: []
 #   - name: "com.dropbox.Client"
 #   - name: "org.telegram.desktop
 
+appimages_install_dir: "/opt"
 appimages_apps: []
 # Example structure
 # appimages_apps:
 #   - name: Kdrive
 #     url: "https://download.storage.infomaniak.com/drive/desktopclient/kDrive-3.7.2.20250703-amd64.AppImage"
-#     dest: "/opt"
+#     dest: "{{ appimages_install_dir }}"
