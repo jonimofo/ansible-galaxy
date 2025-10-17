@@ -6,34 +6,33 @@
     msg: "This role is only compatible with Debian-based systems."
   when: ansible_os_family != 'Debian'
 
-# TODO ??
-# - name: Ensure /tmp directory has correct permissions
-#   become: true
-#   ansible.builtin.file:
-#     path: /tmp
-#     state: directory
-#     mode: '1777'
+- name: Ensure /tmp directory has correct permissions
+  become: true
+  ansible.builtin.file:
+    path: /tmp
+    state: directory
+    mode: '1777'
 
-# - name: Include brave-browser task
-#   ansible.builtin.include_tasks: brave-browser.yml
-#   tags: "brave"
+- name: Include brave-browser task
+  ansible.builtin.include_tasks: brave-browser.yml
+  tags: "brave"
 
 - name: Include flatpak task
   ansible.builtin.include_tasks: flatpak.yml
   tags: "flatpak"
 
-# - name: Include deb-packages task
-#   ansible.builtin.include_tasks: deb-packages.yml
-#   tags: "deb_packages"
+- name: Include deb-packages task
+  ansible.builtin.include_tasks: deb-packages.yml
+  tags: "deb_packages"
   
-# - name: Include sublime-text task
-#   ansible.builtin.include_tasks: sublime-text.yml
-#   tags: "sublime_text"
+- name: Include sublime-text task
+  ansible.builtin.include_tasks: sublime-text.yml
+  tags: "sublime_text"
 
-# - name: Include vscode task
-#   ansible.builtin.include_tasks: vscode.yml
-#   tags: "vscode"
+- name: Include vscode task
+  ansible.builtin.include_tasks: vscode.yml
+  tags: "vscode"
 
-# - name: Include appimages tasks
-#   ansible.builtin.include_tasks: appimages.yml
-#   tags: "appimages"
+- name: Include appimages tasks
+  ansible.builtin.include_tasks: appimages.yml
+  tags: "appimages"
