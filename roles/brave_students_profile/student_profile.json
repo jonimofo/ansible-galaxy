@@ -1,0 +1,36 @@
+{
+  "BrowserThemeColor": "#202124",
+
+  "DefaultSearchProviderEnabled": true,
+  "DefaultSearchProviderName": "Google",
+  "DefaultSearchProviderKeyword": "google.com",
+  "DefaultSearchProviderSearchURL": "https://www.google.com/search?q={searchTerms}",
+  "DefaultSearchProviderSuggestURL": "https://www.google.com/complete/search?output=chrome&q={searchTerms}",
+
+  "HomepageLocation": "https://sudouest.fr",
+  "NewTabPageLocation": "file:///usr/share/brave/ntp-dark.html",
+
+  "BookmarkBarEnabled": true,
+  "ManagedBookmarks": [
+    { "toplevel_name": "School Links" },
+    { "name": "Portal",       "url": "https://portal.example.edu" },
+    { "name": "Dictionary",   "url": "https://dictionary.cambridge.org" },
+    { "name": "W3Schools",    "url": "https://www.w3schools.com" }
+  ],
+
+  "URLBlocklist": [
+    "tiktok.com",
+    "instagram.com",
+    "facebook.com",
+
+    "brave://settings",
+    "brave://extensions",
+    "brave://bookmarks",
+    "brave://wallet",
+    "brave://password-manager",
+
+    "chrome://settings",
+    "chromewebstore.google.com"
+  ]
+
+}
