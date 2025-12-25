@@ -1,9 +1,12 @@
+#SPDX-License-Identifier: MIT-0
 ---
+# SSH server configuration and hardening
+
 - name: Update ssh_config for strict host key checking
   ansible.builtin.lineinfile:
     dest: /etc/ssh/ssh_config
     regexp: '^#?\s*StrictHostKeyChecking'
-    line: "StrictHostKeyChecking {{ ssh_strict_host_key_checking }}"
+    line: "    StrictHostKeyChecking {{ ssh_strict_host_key_checking }}"
     state: present
   notify: Restart sshd
 
@@ -14,12 +17,29 @@
     line: "{{ item.line }}"
     state: present
     validate: '/usr/sbin/sshd -t -f %s'
-  with_items:
-    - { regexp: '^#?\s*PasswordAuthentication', line: 'PasswordAuthentication no' }
-    - { regexp: '^#?\s*PermitRootLogin', line: 'PermitRootLogin no' }
-    - { regexp: '^#?\s*PermitEmptyPasswords', line: 'PermitEmptyPasswords no' }
-    - { regexp: '^#?\s*X11Forwarding', line: 'X11Forwarding no' }
-    - { regexp: '^#?\s*PrintMotd', line: 'PrintMotd no' }
+  loop:
+    # Port and protocol
+    - { regexp: '^#?\s*Port\s', line: "Port {{ ssh_port }}" }
+    # Authentication
+    - { regexp: '^#?\s*PermitRootLogin', line: "PermitRootLogin {{ ssh_permit_root_login }}" }
+    - { regexp: '^#?\s*PasswordAuthentication', line: "PasswordAuthentication {{ ssh_password_authentication | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*PermitEmptyPasswords', line: "PermitEmptyPasswords {{ ssh_permit_empty_passwords | ternary('yes', 'no') }}" }
     - { regexp: '^#?\s*MaxAuthTries', line: "MaxAuthTries {{ ssh_max_auth_tries }}" }
-    - { regexp: '^#?\s*AllowAgentForwarding', line: "AllowAgentForwarding {{ ssh_allow_agent_forwarding | bool | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*LoginGraceTime', line: "LoginGraceTime {{ ssh_login_grace_time }}" }
+    - { regexp: '^#?\s*MaxSessions', line: "MaxSessions {{ ssh_max_sessions }}" }
+    # Forwarding
+    - { regexp: '^#?\s*AllowAgentForwarding', line: "AllowAgentForwarding {{ ssh_allow_agent_forwarding | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*AllowTcpForwarding', line: "AllowTcpForwarding {{ ssh_allow_tcp_forwarding | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*X11Forwarding', line: "X11Forwarding {{ ssh_x11_forwarding | ternary('yes', 'no') }}" }
+    # Keep-alive
+    - { regexp: '^#?\s*ClientAliveInterval', line: "ClientAliveInterval {{ ssh_client_alive_interval }}" }
+    - { regexp: '^#?\s*ClientAliveCountMax', line: "ClientAliveCountMax {{ ssh_client_alive_count_max }}" }
+    # Display
+    - { regexp: '^#?\s*PrintMotd', line: "PrintMotd {{ ssh_print_motd | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*PrintLastLog', line: "PrintLastLog {{ ssh_print_last_log | ternary('yes', 'no') }}" }
+    # Misc hardening
+    - { regexp: '^#?\s*UseDNS', line: "UseDNS {{ ssh_use_dns | ternary('yes', 'no') }}" }
+    - { regexp: '^#?\s*AcceptEnv', line: "AcceptEnv {{ ssh_accept_env }}" }
+  loop_control:
+    label: "{{ item.line }}"
   notify: Restart sshd

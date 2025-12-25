@@ -1,14 +1,84 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for roles/ssh
-# Defines the list of users with their name and public key
 
-ssh_allow_agent_forwarding: false
-ssh_exclusive_keys: false
-ssh_strict_host_key_checking: ask
+# --- SSH Daemon Settings ---
+
+# ssh_port: SSH daemon listening port
+ssh_port: 22
+
+# ssh_permit_root_login: Allow root login via SSH
+# Values: "yes", "no", "prohibit-password", "forced-commands-only"
+ssh_permit_root_login: "no"
+
+# ssh_password_authentication: Allow password-based authentication
+ssh_password_authentication: false
+
+# ssh_permit_empty_passwords: Allow empty passwords
+ssh_permit_empty_passwords: false
+
+# ssh_max_auth_tries: Maximum authentication attempts per connection
 ssh_max_auth_tries: 3
+
+# ssh_login_grace_time: Time in seconds to authenticate before disconnect
+ssh_login_grace_time: 60
+
+# ssh_max_sessions: Maximum sessions per network connection
+ssh_max_sessions: 2
+
+# --- Forwarding Settings ---
+
+# ssh_allow_agent_forwarding: Allow SSH agent forwarding
+ssh_allow_agent_forwarding: false
+
+# ssh_allow_tcp_forwarding: Allow TCP port forwarding
+ssh_allow_tcp_forwarding: false
+
+# ssh_x11_forwarding: Allow X11 forwarding
+ssh_x11_forwarding: false
+
+# --- Client Keep-Alive ---
+
+# ssh_client_alive_interval: Seconds before sending keep-alive to client
+ssh_client_alive_interval: 300
+
+# ssh_client_alive_count_max: Keep-alive messages before disconnect
+ssh_client_alive_count_max: 2
+
+# --- Client Configuration ---
+
+# ssh_strict_host_key_checking: StrictHostKeyChecking for ssh_config
+# Values: "yes", "no", "ask"
+ssh_strict_host_key_checking: "ask"
+
+# --- User Access ---
+
+# ssh_users: List of users allowed to SSH with their public keys
+# Each user requires: name, pubkey
 ssh_users: []
-# Example of ssh_users structure:
+# Example:
 # ssh_users:
 #   - name: "alice"
 #     pubkey: "ssh-ed25519 AAAA... alice@example.com"
+#   - name: "bob"
+#     pubkey: "ssh-rsa AAAA... bob@workstation"
+
+# ssh_exclusive_keys: Remove unmanaged keys from authorized_keys
+# When true: authorized_keys will contain ONLY keys defined in ssh_users
+# When false: keys from ssh_users are added, existing keys are kept
+# WARNING: With true, any key not in ssh_users will be removed on next run
+ssh_exclusive_keys: true
+
+# --- Additional Hardening ---
+
+# ssh_print_motd: Display /etc/motd on login
+ssh_print_motd: false
+
+# ssh_print_last_log: Display last login info
+ssh_print_last_log: true
+
+# ssh_use_dns: DNS lookup for connecting hosts (disable for speed)
+ssh_use_dns: false
+
+# ssh_accept_env: Environment variables to accept from client
+ssh_accept_env: "LANG LC_*"

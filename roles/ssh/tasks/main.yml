@@ -1,10 +1,13 @@
 #SPDX-License-Identifier: MIT-0
-# tasks file for roles/ssh
 ---
-- name: Fail if not a Debian-based system
-  ansible.builtin.fail:
-    msg: "This role is only compatible with Debian-based systems."
-  when: ansible_os_family != 'Debian'
+# tasks file for roles/ssh
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
 
 - name: Include SSH configuration tasks
   ansible.builtin.include_tasks: configure_ssh.yml
