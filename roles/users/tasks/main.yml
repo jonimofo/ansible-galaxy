@@ -45,3 +45,9 @@
     - /etc/sudoers.d/90-cloud-init-users
   # Ignore errors if files don't exist
   failed_when: false
+
+- name: Lock root account
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+  when: users_lock_root

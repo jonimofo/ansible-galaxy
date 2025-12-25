@@ -20,6 +20,11 @@ users_passwordless_sudo: true
 # Recommended: true - forces use of sudo for audit trail
 users_disable_su: true
 
+# users_lock_root: Lock the root account (no password login)
+# Recommended: true - prevents direct root login and password changes
+# Root shell still accessible via: sudo -i
+users_lock_root: true
+
 # --- User List ---
 
 # users_list: List of users to create

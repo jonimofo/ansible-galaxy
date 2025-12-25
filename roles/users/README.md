@@ -37,6 +37,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `users_passwordless_sudo` | `true` | Enable passwordless sudo for sudo group |
 | `users_disable_su` | `true` | Disable `su` for sudo group members |
+| `users_lock_root` | `true` | Lock root account (no password login) |
 
 ### User List
 
@@ -170,6 +171,14 @@ By default, `users_disable_su: true` prevents sudo group members from using `su`
 - Maintains audit trail in logs
 - Prevents direct root shell access
 
+### Lock Root Account
+
+By default, `users_lock_root: true` locks the root account. This:
+
+- Prevents `sudo passwd root` from being useful (account stays locked)
+- Blocks direct root login via console or SSH
+- Root shell still accessible via `sudo -i` (maintains audit trail)
+
 ### Sudoers Result
 
 With defaults (`users_passwordless_sudo: true`, `users_disable_su: true`):
@@ -186,8 +195,9 @@ With `users_passwordless_sudo: false`:
 
 1. **Production servers:** Set `users_passwordless_sudo: false`
 2. **Keep `users_disable_su: true`** - Maintains audit trail
-3. **Use service accounts** for applications (nologin shell)
-4. **Limit sudo group** - Only add users who need it
+3. **Keep `users_lock_root: true`** - Prevents root password attacks
+4. **Use service accounts** for applications (nologin shell)
+5. **Limit sudo group** - Only add users who need it
 
 ## What This Role Does
 
@@ -198,6 +208,7 @@ With `users_passwordless_sudo: false`:
    - Disable `su` command (optional)
 4. Validates sudoers before applying
 5. Removes sudoers.d override files (Pi OS, cloud-init)
+6. Locks root account (optional, enabled by default)
 
 ## License
 
