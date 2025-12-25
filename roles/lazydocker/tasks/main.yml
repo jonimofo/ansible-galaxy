@@ -1,25 +1,24 @@
+#SPDX-License-Identifier: MIT-0
 ---
-# Tasks file for lazydocker role
+# tasks file for roles/lazydocker
 
-- name: Debug ansible architecture and mapping keys
-  ansible.builtin.debug:
-    msg:
-      - "Ansible architecture: {{ ansible_architecture }}"
-      - "Available mapping keys: {{ lazydocker_arch_map.keys() | list }}"
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
 
-- name: Assert architecture mapping exists
+- name: Verify supported architecture
   ansible.builtin.assert:
     that:
       - ansible_architecture in lazydocker_arch_map
-    fail_msg: "Unsupported architecture: {{ ansible_architecture }}"
+    fail_msg: "Unsupported architecture: {{ ansible_architecture }}. Supported: {{ lazydocker_arch_map.keys() | list }}"
+    quiet: true
 
 - name: Set architecture suffix for lazydocker
   ansible.builtin.set_fact:
     lazydocker_arch: "{{ lazydocker_arch_map[ansible_architecture] }}"
-
-- name: Debug detected lazydocker_arch
-  ansible.builtin.debug:
-    var: lazydocker_arch
 
 - name: Set lazydocker archive filename
   ansible.builtin.set_fact:
@@ -29,10 +28,6 @@
   ansible.builtin.set_fact:
     lazydocker_archive_path: "{{ lazydocker_download_dir }}/{{ lazydocker_archive_filename }}"
     lazydocker_download_url: "https://github.com/jesseduffield/lazydocker/releases/download/v{{ lazydocker_version }}/{{ lazydocker_archive_filename }}"
-
-- name: Debug constructed download URL
-  ansible.builtin.debug:
-    var: lazydocker_download_url
 
 - name: Ensure download directory exists
   ansible.builtin.file:
@@ -65,3 +60,9 @@
   ansible.builtin.file:
     path: "{{ lazydocker_install_path }}/lazydocker"
     mode: '0755'
+
+- name: Clean up downloaded archive
+  ansible.builtin.file:
+    path: "{{ lazydocker_archive_path }}"
+    state: absent
+  when: lazydocker_download_dir == '/tmp'

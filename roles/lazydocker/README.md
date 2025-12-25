@@ -1,44 +1,105 @@
 # Ansible Role: lazydocker
 
-This role installs **lazydocker**, a free and open-source terminal UI for Docker and Docker-compose that allows you to manage your containers and services with ease. It downloads a specific version of the pre-compiled binary from the official GitHub releases, extracts it, and places it in the specified installation path.
+Installs lazydocker, a terminal UI for Docker and Docker Compose.
+
+## Features
+
+- Downloads pre-compiled binary from GitHub releases
+- Auto-detects CPU architecture (x86_64, aarch64, armv7l)
+- Idempotent - skips download if binary exists
+- Cleans up downloaded archive after installation
 
 ## Requirements
 
-For `lazydocker` to be useful, **Docker** and/or **Docker-compose** must be installed and running on the target machine. This role does not install them.
+- **Ansible version:** 2.12+
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64, armv7l
+- **Privileges:** Requires `become: true`
+- **Docker:** Must be installed separately (lazydocker requires Docker to be useful)
 
 ## Role Variables
 
-The following variables can be configured, with default values located in `defaults/main.yml`.
+All variables are defined in `defaults/main.yml`:
 
-| Variable | Default Value | Description |
-|---|---|---|
-| `lazydocker_version` | `"0.24.1"` | The specific version of lazydocker to install. |
-| `lazydocker_install_path` | `"/usr/local/bin"` | The directory where the `lazydocker` binary will be placed. |
-| `lazydocker_download_dir` | `"/tmp"` | A temporary directory for downloading the release archive. |
-| `lazydocker_arch_map` | `{ x86_64: ..., aarch64: ..., armv7l: ... }` | A dictionary mapping the system architecture (`ansible_architecture`) to the string used in the release filename. |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `lazydocker_version` | `0.24.1` | Version to install |
+| `lazydocker_install_path` | `/usr/local/bin` | Binary installation path |
+| `lazydocker_download_dir` | `/tmp` | Temp directory for download |
+| `lazydocker_arch_map` | `{x86_64, aarch64, armv7l}` | Architecture mappings |
 
 ## Dependencies
 
-This role has no dependencies on other Ansible Galaxy roles.
+None. However, Docker should be installed for lazydocker to be useful.
 
 ## Example Playbook
 
-Here is a simple example of how to use this role to install the latest version of `lazydocker`.
+### Basic Usage
 
 ```yaml
-- name: Install lazydocker on servers
+- name: Install lazydocker
+  hosts: all
+  become: true
+  roles:
+    - role: jonimofo.infrastructure.lazydocker
+```
+
+### Specific Version
+
+```yaml
+- name: Install specific lazydocker version
   hosts: docker_hosts
   become: true
   vars:
-    lazydocker_version: "0.24.1"
+    lazydocker_version: "0.23.0"
   roles:
-    - jonimofo.lazydocker
+    - role: jonimofo.infrastructure.lazydocker
 ```
+
+### With Docker Role
+
+```yaml
+- name: Install Docker and lazydocker
+  hosts: all
+  become: true
+  roles:
+    - role: geerlingguy.docker
+    - role: jonimofo.infrastructure.lazydocker
+```
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Verifies supported architecture
+3. Constructs download URL based on version and architecture
+4. Downloads lazydocker tarball from GitHub releases
+5. Extracts binary to installation path
+6. Sets executable permissions
+7. Cleans up downloaded archive
+
+## Usage
+
+After installation, run:
+
+```bash
+lazydocker
+```
+
+Key bindings:
+- `?` - Show help
+- `q` - Quit
+- `↑/↓` - Navigate
+- `Enter` - Select
+- `d` - Remove container
+- `s` - Stop container
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author Information
 
-This role was created by jonimofo.
+jonimofo
