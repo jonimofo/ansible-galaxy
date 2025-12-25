@@ -1,9 +1,23 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# Default variables for fzf role
+# defaults file for roles/fzf
+
+# --- Repository Settings ---
+
+# fzf_repo_url: Git repository URL for fzf
 fzf_repo_url: "https://github.com/junegunn/fzf.git"
-fzf_install_path: "/usr/local/bin/fzf"
+
+# fzf_install_path: Directory where fzf repository is cloned
+# Binary will be at {{ fzf_install_path }}/bin/fzf
+fzf_install_path: "/opt/fzf"
+
+# --- User Configuration ---
+
+# fzf_users: List of users to configure fzf shell integration for
+# Each user can have:
+#   - name: username (required)
+#   - update_bashrc: add source line to .bashrc (default: fzf_update_bashrc)
 fzf_users: []
-# Example:
-#   - name: "bgi"
-#     update_bashrc: true
+
+# fzf_update_bashrc: Default value for update_bashrc when not specified per-user
+fzf_update_bashrc: true

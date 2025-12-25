@@ -1,60 +1,115 @@
 # Ansible Role: fzf
 
-Installs `fzf`, a general-purpose command-line fuzzy finder, from its source repository. This role also handles the configuration of shell key-bindings and auto-completion for specified users.
+Installs fzf (fuzzy finder) from source and configures shell integration for specified users.
+
+## Features
+
+- Installs fzf from official Git repository
+- Configures per-user shell integration (.fzf.bash)
+- Adds key bindings (Ctrl+R, Ctrl+T, Alt+C)
+- Enables command-line auto-completion
 
 ## Requirements
 
-There are no special requirements for this role. It will ensure `git` is installed on the target machine.
+- **Ansible version:** 2.12+
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64, armv7l
+- **Privileges:** Requires `become: true`
 
 ## Role Variables
 
-Default values are located in `defaults/main.yml`.
+All variables are defined in `defaults/main.yml`:
 
-| Variable | Default Value | Description |
-|---|---|---|
-| `fzf_repo_url` | `https://github.com/junegunn/fzf.git` | The source Git repository for `fzf`. |
-| `fzf_install_path` | `/usr/local/bin/fzf` | The destination path where the `fzf` repository will be cloned. The binary will be inside `.../bin/`. |
-| `fzf_users` | `[]` | A list of users to configure `fzf` for. See example below. |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `fzf_repo_url` | `https://github.com/junegunn/fzf.git` | Git repository URL |
+| `fzf_install_path` | `/opt/fzf` | Directory where fzf is cloned |
+| `fzf_users` | `[]` | List of users to configure |
+| `fzf_update_bashrc` | `true` | Default for adding source line to .bashrc |
 
-**`fzf_users` structure:**
+### User Configuration
 
-This variable should be a list of dictionaries. Each dictionary represents a user and must contain a `name`. It can also contain `update_bashrc` to control shell modification.
+Each user in `fzf_users` can have:
 
-* `name`: The username to configure. (Required)
-* `update_bashrc`: A boolean. If `true`, a line will be added to the user's `.bashrc` to source the `fzf` configuration. (Optional)
-
-```yaml
-fzf_users:
-  - name: "alice"
-    update_bashrc: true
-  - name: "bob"
-    update_bashrc: false
-```
+| Option | Required | Description |
+|--------|----------|-------------|
+| `name` | Yes | Username |
+| `update_bashrc` | No | Add source line to .bashrc (default: `fzf_update_bashrc`) |
 
 ## Dependencies
 
-This role has no dependencies on other Ansible Galaxy roles.
+None.
 
 ## Example Playbook
 
-Here is an example of how to use the role to install `fzf` and configure it for the user `jdoe`.
+### Basic Usage
 
 ```yaml
-- name: Install and configure fzf
+- name: Install fzf
+  hosts: all
+  become: true
+  vars:
+    fzf_users:
+      - name: "admin"
+  roles:
+    - role: jonimofo.infrastructure.fzf
+```
+
+### Multiple Users
+
+```yaml
+- name: Install fzf for multiple users
   hosts: workstations
   become: true
   vars:
     fzf_users:
-      - name: "jdoe"
-        update_bashrc: true
+      - name: "alice"
+      - name: "bob"
+        update_bashrc: false  # don't modify bob's .bashrc
   roles:
-    - jonimofo.fzf
+    - role: jonimofo.infrastructure.fzf
 ```
+
+### Custom Install Path
+
+```yaml
+- name: Install fzf to custom location
+  hosts: all
+  become: true
+  vars:
+    fzf_install_path: "/usr/local/share/fzf"
+    fzf_users:
+      - name: "developer"
+  roles:
+    - role: jonimofo.infrastructure.fzf
+```
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Installs git via apt
+3. Clones fzf repository to `fzf_install_path`
+4. Runs fzf install script (binary only)
+5. Creates `.fzf.bash` for each user (sets PATH, sources completions and key bindings)
+6. Optionally adds source line to each user's `.bashrc`
+
+## Key Bindings
+
+After installation, users get these key bindings in bash:
+
+| Binding | Action |
+|---------|--------|
+| `Ctrl+R` | Search command history |
+| `Ctrl+T` | Search files in current directory |
+| `Alt+C` | Change to subdirectory |
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author Information
 
-This role was created by jonimofo.
+jonimofo

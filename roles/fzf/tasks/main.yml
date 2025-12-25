@@ -1,9 +1,20 @@
+#SPDX-License-Identifier: MIT-0
 ---
-# Tasks file for fzf role
+# tasks file for roles/fzf
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
 - name: Ensure git is installed
-  ansible.builtin.package:
+  ansible.builtin.apt:
     name: git
     state: present
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: Check if fzf is installed
   ansible.builtin.stat:
@@ -33,13 +44,17 @@
   loop: "{{ fzf_users }}"
   loop_control:
     label: "{{ item.name }}"
+  when: fzf_users | length > 0
 
-- name: Ensure .bashrc sources fzf.bash for users opting in
+- name: Ensure .bashrc sources fzf.bash
   ansible.builtin.lineinfile:
     path: "/home/{{ item.name }}/.bashrc"
     line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
     create: true
+    mode: '0644'
   loop: "{{ fzf_users }}"
   loop_control:
     label: "{{ item.name }}"
-  when: item.update_bashrc
+  when:
+    - fzf_users | length > 0
+    - item.update_bashrc | default(fzf_update_bashrc)

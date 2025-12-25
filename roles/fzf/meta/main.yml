@@ -1,23 +1,21 @@
-# SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MIT-0
 ---
 galaxy_info:
   author: jonimofo
-  description: Installs fzf, a command-line fuzzy finder, and configures shell integration.
-  license: MIT
+  description: Installs fzf fuzzy finder from source and configures shell integration.
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
-    - name: EL
-      versions:
-        - "8"
-        - "9"
     - name: Debian
       versions:
         - bullseye
         - bookworm
+        - trixie
     - name: Ubuntu
       versions:
         - focal
         - jammy
+        - noble
   galaxy_tags:
     - system
     - utility
