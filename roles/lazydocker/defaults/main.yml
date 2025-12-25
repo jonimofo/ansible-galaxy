@@ -2,7 +2,7 @@
 ---
 # Default variables for lazydocker role
 # Version of lazydocker to install
-lazydocker_version: "0.24.1"
+lazydocker_version: "0.24.3"
 # Path where the binary will be installed
 lazydocker_install_path: "/usr/local/bin"
 # Directory to download the archive

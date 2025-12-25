@@ -26,7 +26,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `lazydocker_version` | `0.24.1` | Version to install |
+| `lazydocker_version` | `0.24.3` | Version to install |
 | `lazydocker_install_path` | `/usr/local/bin` | Binary installation path |
 | `lazydocker_download_dir` | `/tmp` | Temp directory for download |
 | `lazydocker_arch_map` | `{x86_64, aarch64, armv7l}` | Architecture mappings |
