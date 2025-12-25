@@ -1,25 +1,24 @@
+#SPDX-License-Identifier: MIT-0
 ---
 galaxy_info:
-  author: Your Name
-  description: A role to clone a dotfiles repository and symlink files for specified users.
-  company: Your Company
-  license: MIT
+  author: jonimofo
+  description: Clones a dotfiles repository and symlinks files for specified users.
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
-    - name: EL
-      versions:
-        - "8"
-        - "9"
     - name: Debian
       versions:
         - bullseye
         - bookworm
+        - trixie
     - name: Ubuntu
       versions:
         - focal
         - jammy
+        - noble
   galaxy_tags:
     - dotfiles
     - configuration
-
+    - shell
+    - system
 dependencies: []

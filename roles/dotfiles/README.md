@@ -1,95 +1,139 @@
 # Ansible Role: dotfiles
 
-This role clones a specified dotfiles Git repository and creates symlinks to user home directories based on a defined configuration. It is designed to manage dotfiles for multiple users on a system in an idempotent way.
+Clones a dotfiles Git repository and creates symlinks to user home directories.
+
+## Features
+
+- Clones dotfiles repo per-user with configurable branch/version
+- Creates parent directories as needed
+- Symlinks specified files to home directory
+- Supports multiple users with different file mappings
+- Idempotent - safe to run multiple times
 
 ## Requirements
 
-The `git` package must be installed on the target hosts for the `ansible.builtin.git` module to function correctly. This role does not install `git`.
+- **Ansible version:** 2.12+
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64, armv7l
+- **Privileges:** Requires `become: true`
 
 ## Role Variables
 
-The primary variable for this role is `dotfiles_user_configs`. It is a dictionary that defines the repository and the users to configure.
+All variables are defined in `defaults/main.yml`:
 
-- `dotfiles_user_configs.repo`: The URL of the Git repository containing the dotfiles. (Required)
-- `dotfiles_user_configs.version`: The branch, tag, or commit to check out. (Default: `main`)
-- `dotfiles_user_configs.clone_dir`: The directory name within the user's home where the repository will be cloned. (Default: `.dotfiles`)
-- `dotfiles_user_configs.users`: A list of user objects to configure.
-    - `user`: The username. (Required)
-    - `home`: The absolute path to the user's home directory. (Optional, defaults to `/home/<username>`)
-    - `files`: A list of files to symlink.
-        - `src`: The path to the source file within the cloned repository. (Required)
-        - `dest`: The destination path for the symlink within the user's home directory. (Required)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `dotfiles_user_configs` | `[]` | Configuration dict (see below) |
 
-Here is an example of the data structure defined in `defaults/main.yml`:
+### Configuration Structure
 
 ```yaml
-# A list containing the dotfiles configuration.
 dotfiles_user_configs:
-  # The SSH or HTTPS URL of the git repository.
-  repo: 'git@github.com:example/dotfiles.git'
-
-  # The branch, tag, or commit hash to check out.
-  version: 'main'
-
-  # The directory name within the user's home where the repo will be cloned.
-  clone_dir: '.dotfiles'
-
-  # A list of users to apply the dotfiles to.
-  users:
-    # A user object.
-    - user: 'bobjones'
-      # Optional: specify a non-standard home directory.
-      # Defaults to '/home/{{ user.user }}' if not set.
-      home: '/home/bobjones'
-      # A list of files to symlink.
-      files:
-        # The source file path, relative to the root of the cloned git repo.
-        - src: 'bash/bashrc'
-          # The destination for the symlink, relative to the user's home directory.
-          dest: '.bashrc'
-        - src: 'vim/vimrc'
-          dest: '.vimrc'
-        - src: 'config/htop/htoprc'
-          dest: '.config/htop/htoprc'
-
-    - user: 'alice'
-      files:
-        - src: 'zsh/zshrc'
-          dest: '.zshrc'
+  repo: 'git@github.com:user/dotfiles.git'  # Git repository URL (required)
+  version: 'main'                            # Branch, tag, or commit
+  clone_dir: '.dotfiles'                     # Clone destination in home
+  users:                                     # List of users to configure
+    - user: 'username'                       # Username (required)
+      home: '/home/username'                 # Home directory (optional)
+      files:                                 # Files to symlink
+        - src: 'bashrc'                      # Source in repo
+          dest: '.bashrc'                    # Destination in home
 ```
 
 ## Dependencies
 
-This role has no dependencies on other Ansible Galaxy roles.
+None.
 
 ## Example Playbook
 
-Here is an example of how to use this role in a playbook:
+### Basic Usage
 
 ```yaml
-- name: Configure user dotfiles
-  hosts: servers
+- name: Configure dotfiles
+  hosts: all
   become: true
   vars:
     dotfiles_user_configs:
       repo: 'git@github.com:jonimofo/dotfiles.git'
+      version: 'main'
+      clone_dir: '.dotfiles'
+      users:
+        - user: admin
+          files:
+            - src: 'bashrc'
+              dest: '.bashrc'
+            - src: 'vimrc'
+              dest: '.vimrc'
+  roles:
+    - role: jonimofo.infrastructure.dotfiles
+```
+
+### Multiple Users
+
+```yaml
+- name: Configure dotfiles for team
+  hosts: workstations
+  become: true
+  vars:
+    dotfiles_user_configs:
+      repo: 'https://github.com/company/dotfiles.git'
       version: 'production'
       clone_dir: '.config/dotfiles'
       users:
-        - user: ansible
+        - user: developer
           files:
-            - src: 'tmux.conf'
+            - src: 'bash/bashrc'
+              dest: '.bashrc'
+            - src: 'git/gitconfig'
+              dest: '.gitconfig'
+            - src: 'config/htop/htoprc'
+              dest: '.config/htop/htoprc'
+        - user: admin
+          files:
+            - src: 'bash/bashrc'
+              dest: '.bashrc'
+            - src: 'tmux/tmux.conf'
               dest: '.tmux.conf'
+  roles:
+    - role: jonimofo.infrastructure.dotfiles
+```
+
+### Custom Home Directory
+
+```yaml
+- name: Configure dotfiles with custom home
+  hosts: all
+  become: true
+  vars:
+    dotfiles_user_configs:
+      repo: 'git@github.com:user/dotfiles.git'
+      version: 'main'
+      clone_dir: '.dotfiles'
+      users:
+        - user: app
+          home: '/opt/app'
+          files:
             - src: 'profile'
               dest: '.profile'
   roles:
-    - jonimofo.infrastructure.dotfiles
+    - role: jonimofo.infrastructure.dotfiles
 ```
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Installs git via apt
+3. Clones dotfiles repository to each user's home
+4. Creates parent directories for symlink destinations
+5. Creates symlinks from repo files to home directory
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author Information
 
-This role was created by bgi.
+jonimofo

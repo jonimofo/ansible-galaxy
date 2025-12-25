@@ -1,5 +1,21 @@
 #SPDX-License-Identifier: MIT-0
 ---
+# tasks file for roles/dotfiles
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
+- name: Ensure git is installed
+  ansible.builtin.apt:
+    name: git
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
 - name: Clone or update dotfiles repo for {{ item.user }}
   ansible.builtin.git:
     repo: "{{ dotfiles_user_configs.repo }}"
