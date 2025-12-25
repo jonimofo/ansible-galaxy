@@ -93,8 +93,9 @@ None.
 2. Installs git via apt
 3. Clones fzf repository to `fzf_install_path`
 4. Runs fzf install script (binary only)
-5. Creates `.fzf.bash` for each user (sets PATH, sources completions and key bindings)
-6. Optionally adds source line to each user's `.bashrc`
+5. Creates symlink `/usr/local/bin/fzf` for system-wide access
+6. Creates `.fzf.bash` for each user (sources completions and key bindings)
+7. Optionally adds source line to each user's `.bashrc`
 
 ## Key Bindings
 
