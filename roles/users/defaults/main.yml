@@ -1,19 +1,44 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# Default shell for users if not overridden
+# defaults file for roles/users
+
+# --- User Defaults ---
+
+# users_default_shell: Default shell for new users
 users_default_shell: /bin/bash
 
-# Whether to create a home directory if not overridden
+# users_default_create_home: Create home directory by default
 users_default_create_home: true
 
-# List of users to create.
-# Each entry must include 'name', and may include:
-#   groups:       comma-separated group(s)
-#   shell:        login shell
-#   create_home:  true/false
-users: []
-# users:
-#   - name: "bgi"
+# --- Sudo Configuration ---
+
+# users_passwordless_sudo: Enable passwordless sudo for sudo group
+# WARNING: Security risk - consider setting to false for production
+users_passwordless_sudo: true
+
+# users_disable_su: Disable su command for sudo group members
+# Recommended: true - forces use of sudo for audit trail
+users_disable_su: true
+
+# --- User List ---
+
+# users_list: List of users to create
+# Each user can have:
+#   name: (required) username
+#   groups: comma-separated groups (e.g., "sudo,docker")
+#   shell: login shell (defaults to users_default_shell)
+#   create_home: true/false (defaults to users_default_create_home)
+#   comment: user description/GECOS field
+#   uid: specific UID (optional)
+users_list: []
+# Example:
+# users_list:
+#   - name: "admin"
 #     groups: "sudo"
 #     shell: "/bin/bash"
-#     create_home: true
+#   - name: "deploy"
+#     groups: "sudo,docker"
+#     shell: "/bin/bash"
+#   - name: "service_app"
+#     shell: "/usr/sbin/nologin"
+#     create_home: false

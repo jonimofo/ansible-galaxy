@@ -1,69 +1,208 @@
 # Ansible Role: users
 
-This role manages system users based on a provided list. It also includes a task to configure the `/etc/sudoers` file to grant passwordless `sudo` privileges to any user in the `sudo` group.
+Creates system users and configures sudo privileges on Debian-based systems.
 
-## ❗ Security Warning
+## Features
 
-This role modifies the `/etc/sudoers` file to grant **passwordless sudo access** to members of the `sudo` group. This is a significant security consideration. Ensure you understand the implications before applying this role to production systems.
+- Create users with configurable shell, groups, and home directory
+- Configurable passwordless sudo (optional)
+- Disable `su` command for sudo group (audit trail)
+- Support for service accounts (nologin shell, no home)
+- Sudoers validation before applying
 
 ## Requirements
 
-There are no special requirements for this role. It uses standard `ansible.builtin` modules.
+- **Ansible version:** 2.12+
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64, armv7l
+- **Privileges:** Requires `become: true`
 
 ## Role Variables
 
-Default values are located in `defaults/main.yml`.
+All variables are defined in `defaults/main.yml`:
 
-| Variable | Default Value | Description |
-|---|---|---|
-| `users_default_shell` | `/bin/bash` | The default login shell for new users if not specified per-user. |
-| `users_default_create_home` | `true` | The default setting for creating a home directory if not specified per-user. |
+### User Defaults
 
-### `users`
-This is the main variable for defining the users you want to create. It is a list of dictionaries, where each dictionary represents a user.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `users_default_shell` | `/bin/bash` | Default shell for new users |
+| `users_default_create_home` | `true` | Create home directory by default |
 
-* `name`: The username. (Required)
-* `groups`: A comma-separated string of groups to add the user to (e.g., `"sudo,www-data"`). (Optional)
-* `shell`: The user's login shell. (Optional, defaults to `users_default_shell`)
-* `create_home`: A boolean (`true`/`false`) to control home directory creation. (Optional, defaults to `users_default_create_home`)
+### Sudo Configuration
 
-**Example `users` structure:**
-```yaml
-users:
-  - name: "jdoe"
-    groups: "sudo"
-  - name: "app_user"
-    shell: "/bin/false"
-    create_home: false
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `users_passwordless_sudo` | `true` | Enable passwordless sudo for sudo group |
+| `users_disable_su` | `true` | Disable `su` for sudo group members |
+
+### User List
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `users_list` | `[]` | List of users to create |
+
+#### User Options
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `name` | Yes | Username |
+| `groups` | No | Comma-separated groups (e.g., `"sudo,docker"`) |
+| `shell` | No | Login shell (defaults to `users_default_shell`) |
+| `create_home` | No | Create home directory (defaults to `users_default_create_home`) |
+| `comment` | No | User description/GECOS field |
+| `uid` | No | Specific UID |
 
 ## Dependencies
 
-This role has no dependencies on other Ansible Galaxy roles.
+None.
 
 ## Example Playbook
 
-Here is an example of how to use this role to create an admin user and a service account.
+### Basic Usage
 
 ```yaml
-- name: Create system users
+- name: Create users
   hosts: all
   become: true
   vars:
-    users:
-      - name: "sysadmin"
+    users_list:
+      - name: "admin"
         groups: "sudo"
-        shell: "/bin/bash"
-      - name: "web_runner"
-        shell: "/usr/sbin/nologin"
+      - name: "developer"
+        groups: "sudo,docker"
   roles:
-    - jonimofo.users
+    - role: jonimofo.infrastructure.users
 ```
+
+### With Password-Required Sudo (More Secure)
+
+```yaml
+- name: Create users with password-required sudo
+  hosts: production
+  become: true
+  vars:
+    users_passwordless_sudo: false
+    users_list:
+      - name: "admin"
+        groups: "sudo"
+  roles:
+    - role: jonimofo.infrastructure.users
+```
+
+### Service Account
+
+```yaml
+- name: Create service account
+  hosts: all
+  become: true
+  vars:
+    users_list:
+      - name: "app_service"
+        shell: "/usr/sbin/nologin"
+        create_home: false
+        comment: "Application service account"
+  roles:
+    - role: jonimofo.infrastructure.users
+```
+
+### Multiple Users with Different Configs
+
+```yaml
+- name: Create multiple users
+  hosts: all
+  become: true
+  vars:
+    users_list:
+      - name: "sysadmin"
+        groups: "sudo,adm"
+        shell: "/bin/bash"
+        comment: "System Administrator"
+      - name: "developer"
+        groups: "sudo,docker,www-data"
+        shell: "/bin/zsh"
+      - name: "backup"
+        shell: "/usr/sbin/nologin"
+        create_home: false
+        uid: 900
+  roles:
+    - role: jonimofo.infrastructure.users
+```
+
+## Platform Notes
+
+### Raspberry Pi OS
+
+Raspberry Pi OS is fully supported. Considerations:
+
+- **Default user:** The `pi` user is not modified by this role
+- **Groups:** Common groups: `sudo`, `gpio`, `i2c`, `spi`
+- **Cleanup:** Removes override files that bypass sudo configuration:
+  - `/etc/sudoers.d/010_pi-nopasswd`
+  - `/etc/sudoers.d/90-cloud-init-users`
+
+### Debian / Ubuntu
+
+Standard Debian and Ubuntu installations are fully supported. Common groups:
+- `sudo` - Administrative privileges
+- `docker` - Docker access
+- `www-data` - Web server
+- `adm` - Log access
+
+## Security Considerations
+
+### Passwordless Sudo
+
+By default, `users_passwordless_sudo: true` enables passwordless sudo. This is convenient but has security implications:
+
+| Setting | Behavior | Use Case |
+|---------|----------|----------|
+| `true` | No password for sudo | Development, automation |
+| `false` | Password required | Production, shared servers |
+
+### Disable `su`
+
+By default, `users_disable_su: true` prevents sudo group members from using `su`. This:
+
+- Forces use of `sudo` for privilege escalation
+- Maintains audit trail in logs
+- Prevents direct root shell access
+
+### Sudoers Result
+
+With defaults (`users_passwordless_sudo: true`, `users_disable_su: true`):
+```
+%sudo ALL=(ALL) NOPASSWD: ALL, !/bin/su, !/usr/bin/su
+```
+
+With `users_passwordless_sudo: false`:
+```
+%sudo ALL=(ALL) ALL, !/bin/su, !/usr/bin/su
+```
+
+### Recommendations
+
+1. **Production servers:** Set `users_passwordless_sudo: false`
+2. **Keep `users_disable_su: true`** - Maintains audit trail
+3. **Use service accounts** for applications (nologin shell)
+4. **Limit sudo group** - Only add users who need it
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Creates users from `users_list`
+3. Configures sudo group in `/etc/sudoers`:
+   - Passwordless sudo (optional)
+   - Disable `su` command (optional)
+4. Validates sudoers before applying
+5. Removes sudoers.d override files (Pi OS, cloud-init)
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author Information
 
-This role was created by jonimofo.
+jonimofo

@@ -1,21 +1,47 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/users
-- name: Create user {{ item.name }}
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
+- name: Create users
   ansible.builtin.user:
     name: "{{ item.name }}"
     groups: "{{ item.groups | default(omit) }}"
     shell: "{{ item.shell | default(users_default_shell) }}"
     state: present
     create_home: "{{ item.create_home | default(users_default_create_home) }}"
-  loop: "{{ users }}"
+    comment: "{{ item.comment | default(omit) }}"
+    uid: "{{ item.uid | default(omit) }}"
+  loop: "{{ users_list }}"
   loop_control:
     label: "{{ item.name }}"
+  when: users_list | length > 0
 
-- name: Allow sudo group passwordless sudo and disable su
+- name: Configure sudo group privileges
   ansible.builtin.lineinfile:
     dest: /etc/sudoers
     regexp: '^%sudo'
-    line: '%sudo ALL=(ALL) NOPASSWD: ALL, !/bin/su'
+    line: "{{ _sudo_line }}"
     state: present
     validate: 'visudo -cf %s'
+  vars:
+    _sudo_nopasswd: "{{ users_passwordless_sudo | ternary('NOPASSWD: ', '') }}"
+    # Block both /bin/su and /usr/bin/su (location varies by distro)
+    _sudo_deny_su: "{{ users_disable_su | ternary(', !/bin/su, !/usr/bin/su', '') }}"
+    _sudo_line: "%sudo ALL=(ALL) {{ _sudo_nopasswd }}ALL{{ _sudo_deny_su }}"
+
+- name: Remove sudoers.d overrides that bypass our configuration
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/sudoers.d/010_pi-nopasswd
+    - /etc/sudoers.d/90-cloud-init-users
+  # Ignore errors if files don't exist
+  failed_when: false
