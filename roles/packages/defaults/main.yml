@@ -32,3 +32,36 @@ apt_update_packages_to_install: []  # list of packages to install via apt
   # - neovim
   # - bpytop
   # - jq
+
+# --- Security: Unattended Upgrades ---
+# apt_update_unattended_upgrades: Enable automatic security updates
+apt_update_unattended_upgrades: false
+
+# apt_update_unattended_origins: Package origins to auto-upgrade
+# Default: security updates only
+apt_update_unattended_origins:
+  - "origin=Debian,codename=${distro_codename}-security,label=Debian-Security"
+  - "origin=Debian,codename=${distro_codename},label=Debian"
+
+# apt_update_unattended_blacklist: Packages to never auto-upgrade
+apt_update_unattended_blacklist: []
+  # - linux-image
+  # - linux-headers
+
+# apt_update_unattended_autofix: Attempt to fix interrupted dpkg
+apt_update_unattended_autofix: true
+
+# apt_update_unattended_remove_unused: Auto-remove unused dependencies
+apt_update_unattended_remove_unused: true
+
+# apt_update_unattended_reboot: Auto-reboot if required (use with caution)
+apt_update_unattended_reboot: false
+
+# apt_update_unattended_reboot_time: Time to reboot if auto-reboot enabled
+apt_update_unattended_reboot_time: "02:00"
+
+# apt_update_unattended_mail: Email address for upgrade notifications (empty = disabled)
+apt_update_unattended_mail: ""
+
+# apt_update_unattended_mail_on_error: Only send mail on errors
+apt_update_unattended_mail_on_error: true

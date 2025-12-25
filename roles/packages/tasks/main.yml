@@ -1,6 +1,14 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/packages
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
 - name: Update APT cache if older than cache_valid_time
   ansible.builtin.apt:
     update_cache: true
@@ -51,3 +59,56 @@
     masked: true
   loop: "{{ apt_update_disable_units }}"
   notify: Reload systemd
+
+# --- Security: Unattended Upgrades ---
+- name: Configure unattended-upgrades
+  when: apt_update_unattended_upgrades | bool
+  tags:
+    - security
+    - unattended-upgrades
+  block:
+    - name: Install unattended-upgrades package
+      ansible.builtin.apt:
+        name:
+          - unattended-upgrades
+          - apt-listchanges
+        state: present
+
+    - name: Deploy unattended-upgrades configuration
+      ansible.builtin.template:
+        src: templates/50unattended-upgrades.j2
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Deploy auto-upgrades configuration
+      ansible.builtin.template:
+        src: templates/20auto-upgrades.j2
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable unattended-upgrades service
+      ansible.builtin.systemd:
+        name: unattended-upgrades
+        enabled: true
+        state: started
+
+- name: Disable unattended-upgrades when not configured
+  when: not (apt_update_unattended_upgrades | bool)
+  tags:
+    - security
+    - unattended-upgrades
+  block:
+    - name: Check if unattended-upgrades is installed
+      ansible.builtin.package_facts:
+        manager: apt
+
+    - name: Stop and disable unattended-upgrades service
+      ansible.builtin.systemd:
+        name: unattended-upgrades
+        enabled: false
+        state: stopped
+      when: "'unattended-upgrades' in ansible_facts.packages"

@@ -1,0 +1,42 @@
+// Ansible managed - do not edit manually
+// Unattended-Upgrade configuration
+
+Unattended-Upgrade::Allowed-Origins {
+{% for origin in apt_update_unattended_origins %}
+    "{{ origin }}";
+{% endfor %}
+};
+
+// Packages to not update automatically
+Unattended-Upgrade::Package-Blacklist {
+{% for pkg in apt_update_unattended_blacklist %}
+    "{{ pkg }}";
+{% endfor %}
+};
+
+// Automatically fix interrupted dpkg
+Unattended-Upgrade::AutoFixInterruptedDpkg "{{ apt_update_unattended_autofix | ternary('true', 'false') }}";
+
+// Remove unused automatically installed kernel-related packages
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "{{ apt_update_unattended_remove_unused | ternary('true', 'false') }}";
+
+// Remove unused dependencies after upgrade
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ apt_update_unattended_remove_unused | ternary('true', 'false') }}";
+
+// Automatic reboot if required
+Unattended-Upgrade::Automatic-Reboot "{{ apt_update_unattended_reboot | ternary('true', 'false') }}";
+
+// Reboot time if automatic reboot is enabled
+Unattended-Upgrade::Automatic-Reboot-Time "{{ apt_update_unattended_reboot_time }}";
+
+{% if apt_update_unattended_mail %}
+// Email notifications
+Unattended-Upgrade::Mail "{{ apt_update_unattended_mail }}";
+Unattended-Upgrade::MailOnlyOnError "{{ apt_update_unattended_mail_on_error | ternary('true', 'false') }}";
+{% endif %}
+
+// Enable logging to syslog
+Unattended-Upgrade::SyslogEnable "true";
+
+// Verbose logging
+Unattended-Upgrade::Verbose "false";
