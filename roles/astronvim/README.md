@@ -1,63 +1,117 @@
-# Ansible Playbook: Neovim + AstroNvim Setup
+# Ansible Role: astronvim
 
-## Overview
-This Ansible playbook fully automates the installation of Neovim and the configuration of AstroNvim for one or more users on a target system.
+Installs Neovim and configures AstroNvim for specified users.
 
-The process is broken into two main stages and is fully **idempotent**, meaning you can run it multiple times without changing an already-completed setup.
+## Features
 
-1.  **Install Neovim**:
-    * Automatically detects the target CPU architecture (e.g., `aarch64` for Raspberry Pi or `x86_64` for standard PCs) and downloads the correct Neovim binary.
-    * Installs the binary to `/usr/local/bin/`.
-
-2.  **Configure AstroNvim**:
-    * For each specified user, it first checks if AstroNvim is already installed by looking for the `lazy.nvim` directory.
-    * If not installed, it safely backs up any existing Neovim configurations (`~/.config/nvim`, `~/.local/share/nvim`, etc.) by renaming them with a `.bak` extension.
-    * Clones the official AstroNvim template repository.
-    * Removes the `.git` directory to allow for personal customization.
+- Auto-detects CPU architecture (x86_64 vs ARM/aarch64)
+- Downloads and installs Neovim from official releases
+- Configures AstroNvim template for each user
+- Backs up existing Neovim configurations
+- Fully idempotent - safe to run multiple times
 
 ## Requirements
-* **Ansible**: Must be installed on the machine you are running the playbook from.
-* **Git**: Must be installed on the target machine(s).
-* **Python**: Must be installed on the target machine(s) (standard Ansible requirement).
 
-## Configuration
-You can configure the playbook by editing the `vars` section of your `playbook.yml` file.
+- **Ansible version:** 2.12+
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64
+- **Privileges:** Requires `become: true`
 
-| Variable             | Default Value             | Description                                                                 |
-| -------------------- | ------------------------- | --------------------------------------------------------------------------- |
-| `neovim_version`     | `v0.11.3`                 | The Neovim version tag to download from GitHub releases.                    |
-| `neovim_binary_path` | `"/usr/local/bin/nvim"`   | The final path for the Neovim executable. Used for idempotency checks.      |
-| `astronvim_users`    | `[]`                      | A list of user objects for whom AstroNvim should be installed. See example below. |
+## Role Variables
 
+All variables are defined in `defaults/main.yml`:
 
-## Usage
-1.  Create an inventory file (e.g., `inventory.yml`) to define the hosts you want to target.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `neovim_binary_path` | `/usr/local/bin/nvim` | Path for nvim binary |
+| `neovim_download_url` | GitHub releases URL | Base URL for downloads |
+| `neovim_version` | `v0.11.3` | Neovim version to install |
+| `astronvim_users` | `[]` | List of users to configure |
 
-    **inventory.yml**
-    ```yaml
-    all:
-      hosts:
-        pi:
-          ansible_host: 192.168.1.100
-          ansible_user: bgi
-    ```
+### User Configuration
 
-2.  Create your main playbook file (`playbook.yml`) and an associated `setup_user.yml` in the same directory. Populate them with the provided code.
+Each user in `astronvim_users` should have a `name` key:
 
-3.  Modify the `vars` section in `playbook.yml` to define which users should receive the AstroNvim configuration.
+```yaml
+astronvim_users:
+  - name: "alice"
+  - name: "bob"
+```
 
-    **playbook.yml (example `vars` section)**
-    ```yaml
-    vars:
-      neovim_version: "v0.10.0"
-      neovim_binary_path: "/usr/local/bin/nvim"
-      astronvim_users:
-        - name: "bgi"
-        - name: "another_user"
-    ```
+## Dependencies
 
-4.  Run the playbook from your terminal:
+None.
 
-    ```bash
-    ansible-playbook playbook.yml -i inventory.yml
-    ```
+## Example Playbook
+
+### Basic Usage
+
+```yaml
+- name: Install AstroNvim
+  hosts: all
+  become: true
+  vars:
+    astronvim_users:
+      - name: "admin"
+  roles:
+    - role: jonimofo.infrastructure.astronvim
+```
+
+### Multiple Users
+
+```yaml
+- name: Install AstroNvim for team
+  hosts: workstations
+  become: true
+  vars:
+    astronvim_users:
+      - name: "developer"
+      - name: "sysadmin"
+  roles:
+    - role: jonimofo.infrastructure.astronvim
+```
+
+### Specific Neovim Version
+
+```yaml
+- name: Install specific Neovim version
+  hosts: all
+  become: true
+  vars:
+    neovim_version: "v0.10.0"
+    astronvim_users:
+      - name: "admin"
+  roles:
+    - role: jonimofo.infrastructure.astronvim
+```
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Installs git via apt
+3. Detects CPU architecture (x86_64 or aarch64)
+4. Downloads Neovim tarball from GitHub releases
+5. Extracts Neovim to `/usr/local/`
+6. For each user:
+   - Backs up existing nvim configs (`.config/nvim`, `.local/share/nvim`, etc.)
+   - Clones AstroNvim template to `~/.config/nvim`
+   - Removes `.git` directory for personal customization
+
+## Post-Installation
+
+After installation, users should:
+
+1. Open nvim: `nvim`
+2. Wait for lazy.nvim to install plugins
+3. Run `:checkhealth` to verify setup
+
+## License
+
+GPL-2.0-or-later
+
+## Author Information
+
+jonimofo

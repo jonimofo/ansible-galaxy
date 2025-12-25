@@ -1,15 +1,23 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# defaults file for neovim_astronvim
+# defaults file for roles/astronvim
 
-# Neovim installation settings
+# --- Neovim Installation ---
+
+# neovim_binary_path: Path where nvim binary will be installed
 neovim_binary_path: "/usr/local/bin/nvim"
+
+# neovim_download_url: Base URL for Neovim releases
 neovim_download_url: "https://github.com/neovim/neovim/releases/download"
+
+# neovim_version: Neovim version to install
 neovim_version: "v0.11.3"
 
-# A list of user objects for whom AstroNvim should be installed.
-# The role will perform the setup for each user in this list.
+# --- User Configuration ---
+
+# astronvim_users: List of users to configure AstroNvim for
+# Each user should have a 'name' key
 astronvim_users: []
-Example:
-# astronvim_users
-#   - name: "bgi"
+# Example:
+#   - name: "admin"
+#   - name: "developer"
