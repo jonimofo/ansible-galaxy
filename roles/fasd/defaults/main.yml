@@ -1,32 +1,41 @@
+#SPDX-License-Identifier: MIT-0
 ---
-# defaults file for ansible-role-fasd
+# defaults file for roles/fasd
 
-# The Git repository URL for fasd
+# --- Repository Settings ---
+
+# fasd_git_repo_url: Git repository URL for fasd
 fasd_git_repo_url: "https://github.com/clvv/fasd.git"
 
-# The branch or tag to checkout
+# fasd_git_version: Branch or tag to checkout
 fasd_git_version: "master"
 
-# The temporary directory to clone the repository into
+# fasd_clone_dir: Temporary directory for cloning
 fasd_clone_dir: "/tmp/fasd"
 
-# The installation path for the fasd binary
+# fasd_install_path: Installation path for fasd binary
 fasd_install_path: "/usr/local/bin"
 
-# A list of package dependencies required to build fasd
+# --- Dependencies ---
+
+# fasd_dependencies: Packages required to build fasd
 fasd_dependencies:
   - git
+  - make
 
-# A list of users to configure fasd for.
-# Each item in the list should be a dictionary with a 'name' key.
-# Example:
-# fasd_users:
-#   - name: "jdoe"
-#   - name: "asmith"
+# --- User Configuration ---
+
+# fasd_users: List of users to configure fasd for
+# Each item should have a 'name' key
 fasd_users: []
+# Example:
+#   - name: "admin"
+#   - name: "developer"
 
-# Boolean to control whether to add the fasd initialization to user shell configs.
+# fasd_configure_shell: Add fasd init to user's .bashrc
 fasd_configure_shell: true
 
-# Boolean to control whether to clean up the temporary build directory
+# --- Cleanup ---
+
+# fasd_cleanup_build_dir: Remove temp build directory after install
 fasd_cleanup_build_dir: true
