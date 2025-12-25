@@ -34,7 +34,9 @@
     _sudo_nopasswd: "{{ users_passwordless_sudo | ternary('NOPASSWD: ', '') }}"
     # Block both /bin/su and /usr/bin/su (location varies by distro)
     _sudo_deny_su: "{{ users_disable_su | ternary(', !/bin/su, !/usr/bin/su', '') }}"
-    _sudo_line: "%sudo ALL=(ALL) {{ _sudo_nopasswd }}ALL{{ _sudo_deny_su }}"
+    # Block sudo passwd root to prevent unlocking root account
+    _sudo_deny_passwd_root: "{{ users_lock_root | ternary(', !/usr/bin/passwd root', '') }}"
+    _sudo_line: "%sudo ALL=(ALL) {{ _sudo_nopasswd }}ALL{{ _sudo_deny_su }}{{ _sudo_deny_passwd_root }}"
 
 - name: Remove sudoers.d overrides that bypass our configuration
   ansible.builtin.file:

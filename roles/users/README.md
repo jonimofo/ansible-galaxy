@@ -175,20 +175,21 @@ By default, `users_disable_su: true` prevents sudo group members from using `su`
 
 By default, `users_lock_root: true` locks the root account. This:
 
-- Prevents `sudo passwd root` from being useful (account stays locked)
+- Blocks `sudo passwd root` via sudoers (prevents unlocking)
+- Locks the root password in `/etc/shadow`
 - Blocks direct root login via console or SSH
 - Root shell still accessible via `sudo -i` (maintains audit trail)
 
 ### Sudoers Result
 
-With defaults (`users_passwordless_sudo: true`, `users_disable_su: true`):
+With defaults (`users_passwordless_sudo: true`, `users_disable_su: true`, `users_lock_root: true`):
 ```
-%sudo ALL=(ALL) NOPASSWD: ALL, !/bin/su, !/usr/bin/su
+%sudo ALL=(ALL) NOPASSWD: ALL, !/bin/su, !/usr/bin/su, !/usr/bin/passwd root
 ```
 
 With `users_passwordless_sudo: false`:
 ```
-%sudo ALL=(ALL) ALL, !/bin/su, !/usr/bin/su
+%sudo ALL=(ALL) ALL, !/bin/su, !/usr/bin/su, !/usr/bin/passwd root
 ```
 
 ### Recommendations
