@@ -1,14 +1,26 @@
+#SPDX-License-Identifier: MIT-0
 ---
-# Default variables for locale role
-# List of packages to ensure installed
+# defaults file for roles/locale
+
+# --- Package Settings ---
+
+# locale_packages: Packages required for locale management
 locale_packages:
   - locales
-# Locale to generate and set as default
+
+# --- Locale Settings ---
+
+# locale_name: Locale to generate and set as default
 locale_name: "en_US.UTF-8"
-# Environment variables to write
+
+# locale_env: Environment variables for /etc/default/locale
 locale_env:
   LANG: "en_US.UTF-8"
   LANGUAGE: "en_US:en"
   LC_ALL: "en_US.UTF-8"
-# Whether to reboot if locale changed
-locale_reboot: true
+
+# --- Reboot Settings ---
+
+# locale_reboot: Reboot after locale change
+# Set to true if you want automatic reboot after changes
+locale_reboot: false

@@ -1,5 +1,14 @@
+#SPDX-License-Identifier: MIT-0
 ---
-# Tasks file for locale role
+# tasks file for roles/locale
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
 - name: Update apt cache (with retries)
   ansible.builtin.apt:
     update_cache: true

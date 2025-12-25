@@ -1,19 +1,21 @@
-# SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MIT-0
 ---
 galaxy_info:
   author: jonimofo
   description: Configures the system locale on Debian-based systems.
-  license: MIT
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
     - name: Debian
       versions:
         - bullseye
         - bookworm
+        - trixie
     - name: Ubuntu
       versions:
         - focal
         - jammy
+        - noble
   galaxy_tags:
     - system
     - localization

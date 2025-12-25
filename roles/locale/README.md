@@ -1,35 +1,66 @@
 # Ansible Role: locale
 
-This role configures the system-wide locale on **Debian-based systems** like Debian and Ubuntu. It installs necessary packages, generates the specified locale, sets it as the default, and can trigger a reboot to apply the changes.
+Configures the system locale on Debian-based systems.
+
+## Features
+
+- Installs locale packages
+- Generates specified locale
+- Sets locale as system default in `/etc/default/locale` and `/etc/environment`
+- Optional reboot after locale changes
 
 ## Requirements
 
-* This role is designed **exclusively for Debian-based distributions** due to its use of `apt` and `dpkg-reconfigure`.
-* The `community.general` Ansible collection must be installed (`ansible-galaxy collection install community.general`).
-* By default, this role **will reboot the server** if the locale settings are changed. This behavior can be disabled.
+- **Ansible version:** 2.12+
+- **Collections:** `community.general` (for `locale_gen` module)
+- **Supported OS:** Debian-based systems only
+  - Debian (bullseye, bookworm, trixie)
+  - Ubuntu (focal, jammy, noble)
+  - Raspberry Pi OS
+- **Supported architectures:** x86_64, aarch64, armv7l
+- **Privileges:** Requires `become: true`
 
 ## Role Variables
 
-The following variables can be configured, with default values located in `defaults/main.yml`.
+All variables are defined in `defaults/main.yml`:
 
-| Variable | Default Value | Description |
-|---|---|---|
-| `locale_packages` | `[ locales ]` | A list of system packages required for locale management. |
-| `locale_name` | `"en_US.UTF-8"` | The locale to generate and set as the system default. |
-| `locale_env` | `{ LANG: ..., LANGUAGE: ..., LC_ALL: ... }` | A dictionary of environment variables written to `/etc/default/locale`. |
-| `locale_reboot` | `true` | If `true`, the machine will be rebooted if the locale is changed. Set to `false` to prevent this. |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `locale_packages` | `[locales]` | Packages required for locale management |
+| `locale_name` | `"en_US.UTF-8"` | Locale to generate and set as default |
+| `locale_env` | `{LANG, LANGUAGE, LC_ALL}` | Environment variables for `/etc/default/locale` |
+| `locale_reboot` | `false` | Reboot after locale change (disabled by default) |
+
+### Default locale_env
+
+```yaml
+locale_env:
+  LANG: "en_US.UTF-8"
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+```
 
 ## Dependencies
 
-This role has no dependencies on other Ansible Galaxy roles.
+None.
 
 ## Example Playbook
 
-### Example 1: Set locale to German and allow reboot
+### Basic Usage (US English)
 
 ```yaml
-- name: Configure German locale on servers
-  hosts: app_servers
+- name: Configure locale
+  hosts: all
+  become: true
+  roles:
+    - role: jonimofo.infrastructure.locale
+```
+
+### German Locale
+
+```yaml
+- name: Configure German locale
+  hosts: all
   become: true
   vars:
     locale_name: "de_DE.UTF-8"
@@ -38,24 +69,36 @@ This role has no dependencies on other Ansible Galaxy roles.
       LANGUAGE: "de_DE:de"
       LC_ALL: "de_DE.UTF-8"
   roles:
-    - jonimofo.locale
+    - role: jonimofo.infrastructure.locale
 ```
 
-### Example 2: Set locale without rebooting
+### With Reboot Enabled
+
 ```yaml
-- name: Configure locale on critical server without rebooting
-  hosts: database_servers
+- name: Configure locale with reboot
+  hosts: all
   become: true
   vars:
-    locale_reboot: false
+    locale_reboot: true
   roles:
-    - jonimofo.locale
+    - role: jonimofo.infrastructure.locale
 ```
+
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Updates apt cache (with retries)
+3. Installs locale packages
+4. Generates specified locale using `locale_gen`
+5. Writes locale environment to `/etc/default/locale`
+6. Runs `dpkg-reconfigure locales` if config changed
+7. Ensures `LANG` is set in `/etc/environment`
+8. Optionally reboots if `locale_reboot: true` and changes were made
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author Information
 
-This role was created by jonimofo.
+jonimofo
