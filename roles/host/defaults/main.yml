@@ -1,3 +1,11 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for roles/host
+
+# host_hostname: The system hostname to set (REQUIRED)
+# Can be FQDN (server.example.com) or short name (server)
+host_hostname: ""
+
+# host_short_hostname: Short hostname for /etc/hosts
+# If not set, derived from host_hostname (part before first dot)
+# host_short_hostname: ""

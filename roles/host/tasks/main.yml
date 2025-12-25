@@ -1,28 +1,35 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# Tasks for setting the system hostname
+# tasks file for roles/host
 
-- name: Fail if desired_hostname is not set
+- name: Verify Debian-based system
   ansible.builtin.assert:
     that:
-      - desired_hostname | length > 0
-    fail_msg: "desired_hostname must be defined and not empty"
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
+- name: Verify host_hostname is set
+  ansible.builtin.assert:
+    that:
+      - host_hostname | length > 0
+    fail_msg: "host_hostname must be defined and not empty"
+
+- name: Set short hostname fact
+  ansible.builtin.set_fact:
+    _host_short: "{{ host_short_hostname | default(host_hostname.split('.')[0]) }}"
 
 - name: Set the hostname
   ansible.builtin.hostname:
-    name: "{{ desired_hostname }}"
+    name: "{{ host_hostname }}"
 
-# Per Debian convention, this maps the machine's specific hostname to 127.0.1.1,
-# leaving the standard 127.0.0.1 address reserved for 'localhost'.
-- name: Add the new hostname to /etc/hosts
+# Per Debian convention, 127.0.1.1 maps to the machine's hostname
+# while 127.0.0.1 is reserved for 'localhost'
+- name: Update /etc/hosts with hostname
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    # This regex finds the line that starts with 127.0.1.1, which is
-    # conventionally used for the machine's own hostname.
     regexp: '^127\.0\.1\.1.*'
-    # This is the line we want to ensure exists.
-    line: "127.0.1.1 {{ desired_hostname }}"
+    line: "127.0.1.1 {{ host_hostname }} {{ _host_short }}"
     owner: root
     group: root
     mode: '0644'
-  become: true
