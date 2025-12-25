@@ -29,6 +29,13 @@
     name: "{{ locale_name }}"
     state: present
 
+- name: Generate additional locales
+  community.general.locale_gen:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ locale_additional }}"
+  when: locale_additional | length > 0
+
 - name: Set default locale file
   ansible.builtin.copy:
     dest: /etc/default/locale

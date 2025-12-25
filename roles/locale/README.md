@@ -28,6 +28,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `locale_packages` | `[locales]` | Packages required for locale management |
 | `locale_name` | `"en_US.UTF-8"` | Locale to generate and set as default |
+| `locale_additional` | `[]` | Additional locales to generate (not set as default) |
 | `locale_env` | `{LANG, LANGUAGE, LC_ALL}` | Environment variables for `/etc/default/locale` |
 | `locale_reboot` | `false` | Reboot after locale change (disabled by default) |
 
@@ -72,6 +73,23 @@ None.
     - role: jonimofo.infrastructure.locale
 ```
 
+### With Additional Locales (SSH Forwarding)
+
+When SSH forwards locale settings from your local machine, the remote needs those locales generated. Use `locale_additional` to generate extra locales without changing the system default:
+
+```yaml
+- name: Configure locale with additional locales
+  hosts: all
+  become: true
+  vars:
+    locale_name: "en_US.UTF-8"
+    locale_additional:
+      - "fr_FR.UTF-8"
+      - "en_GB.UTF-8"
+  roles:
+    - role: jonimofo.infrastructure.locale
+```
+
 ### With Reboot Enabled
 
 ```yaml
@@ -90,10 +108,11 @@ None.
 2. Updates apt cache (with retries)
 3. Installs locale packages
 4. Generates specified locale using `locale_gen`
-5. Writes locale environment to `/etc/default/locale`
-6. Runs `dpkg-reconfigure locales` if config changed
-7. Ensures `LANG` is set in `/etc/environment`
-8. Optionally reboots if `locale_reboot: true` and changes were made
+5. Generates additional locales if specified
+6. Writes locale environment to `/etc/default/locale`
+7. Runs `dpkg-reconfigure locales` if config changed
+8. Ensures `LANG` is set in `/etc/environment`
+9. Optionally reboots if `locale_reboot: true` and changes were made
 
 ## License
 

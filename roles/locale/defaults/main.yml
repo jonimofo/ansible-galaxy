@@ -13,6 +13,13 @@ locale_packages:
 # locale_name: Locale to generate and set as default
 locale_name: "en_US.UTF-8"
 
+# locale_additional: Additional locales to generate (for SSH forwarding, etc.)
+# These are generated but not set as default
+locale_additional: []
+# Example:
+#   - "fr_FR.UTF-8"
+#   - "en_GB.UTF-8"
+
 # locale_env: Environment variables for /etc/default/locale
 locale_env:
   LANG: "en_US.UTF-8"
