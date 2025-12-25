@@ -1,21 +1,98 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# default variables for fail2ban role
-fail2ban_backend: systemd
-fail2ban_bantime: 600
+# defaults file for roles/fail2ban
+
+# --- Package Settings ---
+
+# fail2ban_package: APT package name
+fail2ban_package: fail2ban
+
+# fail2ban_service_name: Systemd service name
+fail2ban_service_name: fail2ban
+
+# fail2ban_update_cache: Update APT cache before install
+fail2ban_update_cache: true
+
+# fail2ban_jail_local_path: Path to jail.local configuration
+fail2ban_jail_local_path: /etc/fail2ban/jail.local
+
+# --- Global Ban Settings ---
+
+# fail2ban_bantime: Default ban duration in seconds (1 hour)
+fail2ban_bantime: 3600
+
+# fail2ban_findtime: Time window to count failures (10 minutes)
 fail2ban_findtime: 600
+
+# fail2ban_maxretry: Failures before ban (3 attempts)
+fail2ban_maxretry: 3
+
+# fail2ban_bantime_increment: Enable incremental ban times for repeat offenders
+# When true, ban time increases with each ban
+fail2ban_bantime_increment: true
+
+# fail2ban_bantime_factor: Multiplier for incremental bans (2 = double each time)
+fail2ban_bantime_factor: 2
+
+# fail2ban_bantime_maxtime: Maximum ban time for incremental bans (1 week)
+fail2ban_bantime_maxtime: 604800
+
+# --- Network Settings ---
+
+# fail2ban_backend: Log monitoring backend (systemd, auto, pyinotify, polling)
+fail2ban_backend: systemd
+
+# fail2ban_allowipv6: Enable IPv6 support
 fail2ban_allowipv6: false
+
+# fail2ban_ignoreip: IPs/networks to never ban
+# WARNING: Be careful not to lock yourself out
 fail2ban_ignoreip:
   - 127.0.0.1/8
-  - 192.168.1.0/24
+
+# fail2ban_banaction: Action to use for banning (ufw, iptables, iptables-multiport)
+# Using 'ufw' since this collection uses UFW for firewall management
+fail2ban_banaction: ufw
+
+# --- Jails Configuration ---
+
+# fail2ban_jails: Dictionary of jails to configure
+# Each jail can have: enabled, port, filter, maxretry, bantime, findtime, logpath
 fail2ban_jails:
   sshd:
     enabled: true
     port: ssh
     filter: sshd
-    logtarget: SYSLOG
-fail2ban_jail_local_path: /etc/fail2ban/jail.local
-fail2ban_maxretry: 3
-fail2ban_package: fail2ban
-fail2ban_service_name: fail2ban
-fail2ban_update_cache: true
+  # Recidive jail - bans repeat offenders for longer
+  recidive:
+    enabled: true
+    filter: recidive
+    logpath: /var/log/fail2ban.log
+    bantime: 604800    # 1 week
+    findtime: 86400    # 1 day
+    maxretry: 3        # 3 bans = recidive
+
+# --- Example Additional Jails ---
+# Add these to your playbook's fail2ban_jails if needed:
+#
+# nginx-http-auth:
+#   enabled: true
+#   port: http,https
+#   filter: nginx-http-auth
+#
+# nginx-botsearch:
+#   enabled: true
+#   port: http,https
+#   filter: nginx-botsearch
+#
+# apache-auth:
+#   enabled: true
+#   port: http,https
+#   filter: apache-auth
+#
+# TODO
+# traefik-auth:
+#   enabled: true
+#   port: http,https
+#   filter: traefik-auth
+#   logpath: /var/log/traefik/access.log

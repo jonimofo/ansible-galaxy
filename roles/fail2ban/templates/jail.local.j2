@@ -1,16 +1,56 @@
+# Ansible managed - do not edit manually
+# fail2ban jail.local configuration
+
 [DEFAULT]
-ignoreip = {% for ip in fail2ban_ignoreip %}{{ ip }} {% endfor %}
+# Ignore list - IPs that will never be banned
+ignoreip = {{ fail2ban_ignoreip | join(' ') }}
+
+# Ban settings
 bantime  = {{ fail2ban_bantime }}
 findtime = {{ fail2ban_findtime }}
 maxretry = {{ fail2ban_maxretry }}
-allowipv6 = {{ fail2ban_allowipv6 }}
 
+# Incremental ban times for repeat offenders
+bantime.increment = {{ fail2ban_bantime_increment | ternary('true', 'false') }}
+{% if fail2ban_bantime_increment %}
+bantime.factor = {{ fail2ban_bantime_factor }}
+bantime.maxtime = {{ fail2ban_bantime_maxtime }}
+{% endif %}
+
+# Network settings
+allowipv6 = {{ fail2ban_allowipv6 | ternary('yes', 'no') }}
+backend = {{ fail2ban_backend }}
+
+# Ban action
+banaction = {{ fail2ban_banaction }}
+
+# Jails
 {% for name, cfg in fail2ban_jails.items() %}
+
 [{{ name }}]
-enabled  = {{ cfg.enabled | default(false) }}
-port     = {{ cfg.port | default(name) }}
-filter   = {{ cfg.filter | default(name) }}
-backend  = {{ fail2ban_backend }}
-logtarget= {{ cfg.logtarget | default('SYSLOG') }}
-maxretry = {{ fail2ban_maxretry }}
+enabled  = {{ cfg.enabled | default(false) | ternary('true', 'false') }}
+{% if cfg.port is defined %}
+port     = {{ cfg.port }}
+{% endif %}
+{% if cfg.filter is defined %}
+filter   = {{ cfg.filter }}
+{% endif %}
+{% if cfg.logpath is defined %}
+logpath  = {{ cfg.logpath }}
+{% endif %}
+{% if cfg.backend is defined %}
+backend  = {{ cfg.backend }}
+{% endif %}
+{% if cfg.maxretry is defined %}
+maxretry = {{ cfg.maxretry }}
+{% endif %}
+{% if cfg.bantime is defined %}
+bantime  = {{ cfg.bantime }}
+{% endif %}
+{% if cfg.findtime is defined %}
+findtime = {{ cfg.findtime }}
+{% endif %}
+{% if cfg.action is defined %}
+action   = {{ cfg.action }}
+{% endif %}
 {% endfor %}

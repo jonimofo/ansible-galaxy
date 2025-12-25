@@ -1,26 +1,25 @@
-# SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MIT-0
 ---
 galaxy_info:
   author: jonimofo
-  description: A role to install and configure Fail2Ban to protect services from brute-force attacks.
-  license: MIT
+  description: Installs and configures Fail2Ban to protect services from brute-force attacks on Debian-based systems.
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
-    - name: EL
-      versions:
-        - "8"
-        - "9"
     - name: Debian
       versions:
         - bullseye
         - bookworm
+        - trixie
     - name: Ubuntu
       versions:
         - focal
         - jammy
+        - noble
   galaxy_tags:
     - security
     - firewall
     - system
     - fail2ban
+    - hardening
 dependencies: []
