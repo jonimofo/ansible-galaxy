@@ -1,30 +1,82 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for roles/ufw
-# roles/ufw/defaults/main.yml
-ufw_pkg_name: ufw  # apt package to install
-ufw_update_cache: true  # update apt cache before install
-ufw_config_path: /etc/default/ufw  # path to UFW config file
-ufw_enable_ipv6: false  # enable IPv6 in UFW (yes/no)
-ufw_logging: on  # UFW logging state ('on' or 'off')
-ufw_state: enabled  # final UFW state ('enabled', 'disabled', 'reset')
 
-ufw_default_policies: []  # default policy list (incoming/outgoing)
-# Examples
-# ufw_default_policies:
-#   - direction: incoming
-#     policy: deny
-#   - direction: outgoing
-#     policy: allow
+# --- Package Settings ---
 
-ufw_rules: []  # UFW rules list (rule, port, proto, name, comment)
-# Examples
+# ufw_pkg_name: APT package name for UFW
+ufw_pkg_name: ufw
+
+# ufw_update_cache: Update APT cache before install
+ufw_update_cache: true
+
+# ufw_config_path: Path to UFW configuration file
+ufw_config_path: /etc/default/ufw
+
+# --- UFW State ---
+
+# ufw_state: Final UFW state ('enabled', 'disabled', 'reset')
+ufw_state: enabled
+
+# ufw_reset_before_configure: Reset UFW before applying rules
+# WARNING: Set to true only for initial setup - wipes ALL existing rules
+ufw_reset_before_configure: false
+
+# --- Network Settings ---
+
+# ufw_enable_ipv6: Enable IPv6 support in UFW
+ufw_enable_ipv6: false
+
+# ufw_logging: UFW logging level ('on', 'off', 'low', 'medium', 'high', 'full')
+ufw_logging: "on"
+
+# --- Default Policies (Secure by Default) ---
+
+# ufw_default_policies: Default traffic policies
+# direction: incoming, outgoing, routed
+# policy: allow, deny, reject
+ufw_default_policies:
+  - direction: incoming
+    policy: deny
+  - direction: outgoing
+    policy: allow
+
+# --- Firewall Rules ---
+
+# ufw_rules: List of firewall rules to configure
+# Required: rule (allow, deny, reject, limit)
+# Optional: port, proto, name, comment, from_ip, to_ip, interface
+ufw_rules: []
+# Examples:
 # ufw_rules:
-#   - rule: allow
+#   - rule: limit
+#     port: 22
 #     proto: tcp
-#     port: "{{ ssh_port | default(22) }}"
-#     comment: "Allow SSH"
+#     comment: "Rate limit SSH"
+#
 #   - rule: allow
-#     proto: tcp
+#     name: "OpenSSH"
+#     comment: "Allow SSH via app profile"
+#
+#   - rule: allow
 #     port: 80
+#     proto: tcp
 #     comment: "Allow HTTP"
+#
+#   - rule: allow
+#     port: 443
+#     proto: tcp
+#     comment: "Allow HTTPS"
+#
+#   - rule: allow
+#     port: 22
+#     proto: tcp
+#     from_ip: "192.168.1.0/24"
+#     comment: "Allow SSH from local network only"
+#
+#   - rule: allow
+#     port: 80
+#     proto: tcp
+#     interface: eth0
+#     direction: in
+#     comment: "Allow HTTP on eth0 only"

@@ -1,14 +1,23 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/ufw
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
 - name: Update apt cache (with retries)
   ansible.builtin.apt:
     update_cache: true
-    cache_valid_time: 3600  # skip update if cache is newer than 1 hour
+    cache_valid_time: 3600
   register: cache_update
   until: cache_update is succeeded
   retries: 3
   delay: 5
+  when: ufw_update_cache | bool
 
 - name: Ensure UFW is installed
   ansible.builtin.apt:
@@ -19,38 +28,43 @@
   ansible.builtin.lineinfile:
     path: "{{ ufw_config_path }}"
     regexp: '^IPV6='
-    line: "IPV6={{ ufw_enable_ipv6 | ternary('yes','no') }}"
+    line: "IPV6={{ ufw_enable_ipv6 | ternary('yes', 'no') }}"
     state: present
-  notify: Restart ufw
+  notify: Reload ufw
 
 - name: Reset UFW to default settings
   community.general.ufw:
     state: reset
+  when: ufw_reset_before_configure | bool
 
 - name: Set UFW default policies
   community.general.ufw:
     direction: "{{ item.direction }}"
     policy: "{{ item.policy }}"
-  loop: "{{ ufw_default_policies | default([]) }}"
-  when: ufw_default_policies | length > 0
+  loop: "{{ ufw_default_policies }}"
+  loop_control:
+    label: "{{ item.direction }}: {{ item.policy }}"
 
 - name: Configure UFW rules
   community.general.ufw:
-    rule:    "{{ item.rule }}"
-    name:    "{{ item.name    | default(omit) }}"
-    port:    "{{ item.port    | default(omit) }}"
-    proto:   "{{ item.proto   | default(omit) }}"
+    rule: "{{ item.rule }}"
+    name: "{{ item.name | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
     comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ ufw_rules | default([]) }}"
-  when: (ufw_rules | default([])) | length > 0
+    from_ip: "{{ item.from_ip | default(omit) }}"
+    to_ip: "{{ item.to_ip | default(omit) }}"
+    interface: "{{ item.interface | default(omit) }}"
+    direction: "{{ item.direction | default(omit) }}"
+  loop: "{{ ufw_rules }}"
   loop_control:
-    label: "{{ item.rule }} {{ (item.name|default(item.port~'/'~item.proto)) }}"
+    label: "{{ item.rule }} {{ item.name | default(item.port | default('')) }}{{ item.from_ip | default('') | ternary(' from ' ~ item.from_ip | default(''), '') }}"
+  when: ufw_rules | length > 0
 
-- name: Enable UFW logging
+- name: Set UFW logging level
   community.general.ufw:
     logging: "{{ ufw_logging }}"
 
 - name: Ensure UFW is {{ ufw_state }}
   community.general.ufw:
     state: "{{ ufw_state }}"
-  notify: Restart ufw
