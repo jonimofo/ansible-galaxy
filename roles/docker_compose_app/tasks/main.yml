@@ -1,0 +1,56 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/docker_compose_app
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - docker_compose_app_name | length > 0
+      - docker_compose_app_git_repo | length > 0
+    fail_msg: "Required variables docker_compose_app_name and docker_compose_app_git_repo must be set"
+    quiet: true
+
+- name: Ensure git is installed
+  ansible.builtin.apt:
+    name: git
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Include user management tasks
+  ansible.builtin.include_tasks: user.yml
+  when: docker_compose_app_user_create | bool
+  tags:
+    - docker_compose_app
+    - docker_compose_app_user
+
+- name: Include directory setup tasks
+  ansible.builtin.include_tasks: directories.yml
+  tags:
+    - docker_compose_app
+    - docker_compose_app_directories
+
+- name: Include git clone/update tasks
+  ansible.builtin.include_tasks: git.yml
+  tags:
+    - docker_compose_app
+    - docker_compose_app_git
+
+- name: Include container permissions tasks
+  ansible.builtin.include_tasks: permissions.yml
+  tags:
+    - docker_compose_app
+    - docker_compose_app_permissions
+
+- name: Include systemd service tasks
+  ansible.builtin.include_tasks: systemd.yml
+  tags:
+    - docker_compose_app
+    - docker_compose_app_systemd

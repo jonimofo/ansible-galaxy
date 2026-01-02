@@ -1,0 +1,36 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for container permissions
+
+# Set ownership on writable directories for container access
+- name: Set ownership on writable directories
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ docker_compose_app_container_uid }}"
+    group: "{{ docker_compose_app_container_gid if docker_compose_app_container_gid | length > 0 else docker_compose_app_container_uid }}"
+    recurse: true
+  loop: "{{ docker_compose_app_writable_dirs }}"
+  when:
+    - docker_compose_app_container_uid | length > 0
+    - docker_compose_app_writable_dirs | length > 0
+
+# Set ownership on writable files for container access
+- name: Set ownership on writable files
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}/{{ item }}"
+    state: file
+    owner: "{{ docker_compose_app_container_uid }}"
+    group: "{{ docker_compose_app_container_gid if docker_compose_app_container_gid | length > 0 else docker_compose_app_container_uid }}"
+  loop: "{{ docker_compose_app_writable_files }}"
+  when:
+    - docker_compose_app_container_uid | length > 0
+    - docker_compose_app_writable_files | length > 0
+  failed_when: false  # Don't fail if file doesn't exist yet
+
+# Remove Vite hot file for production builds
+- name: Remove Vite hot file
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}/public/hot"
+    state: absent
+  when: docker_compose_app_remove_hot_file | bool

@@ -1,0 +1,26 @@
+#SPDX-License-Identifier: MIT-0
+---
+galaxy_info:
+  author: jonimofo
+  description: Deploys Docker Compose applications from git repositories with systemd management
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+        - trixie
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+  galaxy_tags:
+    - docker
+    - compose
+    - containers
+    - git
+    - systemd
+    - deployment
+dependencies: []

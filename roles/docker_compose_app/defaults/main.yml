@@ -1,0 +1,226 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for roles/docker_compose_app
+
+# =============================================================================
+# APPLICATION IDENTITY
+# =============================================================================
+
+# docker_compose_app_name: Unique name for this application
+# Used for: systemd service name, default directory names, logging
+# Required: yes
+docker_compose_app_name: ""
+
+# docker_compose_app_description: Description for systemd unit
+docker_compose_app_description: ""
+
+# =============================================================================
+# USER MANAGEMENT
+# =============================================================================
+
+# docker_compose_app_user: System user to run the Docker Compose stack
+# A new system user will be created if it doesn't exist
+docker_compose_app_user: "{{ docker_compose_app_name }}"
+
+# docker_compose_app_user_uid: Specific UID for the user (optional)
+# Leave empty for system-assigned UID
+docker_compose_app_user_uid: ""
+
+# docker_compose_app_user_create: Whether to create the user
+# Set to false if user already exists or is managed elsewhere
+docker_compose_app_user_create: true
+
+# docker_compose_app_user_shell: Shell for the app user
+docker_compose_app_user_shell: /usr/sbin/nologin
+
+# docker_compose_app_user_groups: Additional groups for the user
+# docker group is always added
+docker_compose_app_user_groups: []
+
+# =============================================================================
+# DIRECTORY CONFIGURATION
+# =============================================================================
+
+# docker_compose_app_dir: Directory where the git repo will be cloned
+# This is the working directory for docker-compose
+docker_compose_app_dir: "/opt/{{ docker_compose_app_name }}"
+
+# docker_compose_app_dir_mode: Permissions for the app directory
+docker_compose_app_dir_mode: "0755"
+
+# =============================================================================
+# CONTAINER PERMISSIONS
+# =============================================================================
+
+# docker_compose_app_container_uid: UID that the container runs as
+# Set this to match the UID inside your container (e.g., 1000 for laravel user)
+# Used to set correct ownership on writable directories
+docker_compose_app_container_uid: ""
+
+# docker_compose_app_container_gid: GID that the container runs as
+# Defaults to container_uid if not set
+docker_compose_app_container_gid: ""
+
+# docker_compose_app_writable_dirs: Directories that need to be writable by container
+# These will be chowned to container_uid:container_gid
+# Paths are relative to docker_compose_app_dir
+docker_compose_app_writable_dirs: []
+# Example for Laravel:
+# docker_compose_app_writable_dirs:
+#   - storage
+#   - bootstrap/cache
+
+# docker_compose_app_writable_files: Files that need to be readable by container
+# These will be chowned to container_uid:container_gid
+# Paths are relative to docker_compose_app_dir
+docker_compose_app_writable_files: []
+# Example:
+# docker_compose_app_writable_files:
+#   - .env
+
+# docker_compose_app_remove_hot_file: Remove Vite hot file for production
+# Set to true for Laravel/Vite apps to ensure production assets are used
+docker_compose_app_remove_hot_file: false
+
+# =============================================================================
+# SECRETS DIRECTORIES
+# =============================================================================
+
+# docker_compose_app_secrets_base_dir: Base directory for all secrets
+# Individual secret directories will be created under this path
+docker_compose_app_secrets_base_dir: "/home/{{ ansible_user }}/.secrets"
+
+# docker_compose_app_secrets: List of secret directories to create
+# Each entry can specify:
+#   - name: Directory name (required)
+#   - path: Full path (optional, defaults to secrets_base_dir/name)
+#   - owner: Owner UID or username (optional, defaults to app user)
+#   - group: Group GID or name (optional, defaults to owner)
+#   - mode: Directory permissions (optional, defaults to 0700)
+#   - files: List of expected secret files (optional)
+#            Each file entry: { name: "filename", mode: "0600", owner: UID, group: GID }
+#
+# Example:
+# docker_compose_app_secrets:
+#   - name: cloudflare
+#     owner: 65532
+#     group: 65532
+#     files:
+#       - name: cf-token
+#         mode: "0600"
+#   - name: tinyauth
+#     owner: 65532
+#     group: 65532
+#     files:
+#       - name: tinyauth_users
+#         mode: "0600"
+docker_compose_app_secrets: []
+
+# docker_compose_app_secrets_default_mode: Default mode for secret directories
+docker_compose_app_secrets_default_mode: "0700"
+
+# docker_compose_app_secrets_file_default_mode: Default mode for secret files
+docker_compose_app_secrets_file_default_mode: "0600"
+
+# =============================================================================
+# GIT REPOSITORY
+# =============================================================================
+
+# docker_compose_app_git_repo: Git repository URL (SSH format for private repos)
+# Example: git@github.com:user/repo.git
+# Required: yes
+docker_compose_app_git_repo: ""
+
+# docker_compose_app_git_version: Branch, tag, or commit to checkout
+docker_compose_app_git_version: "main"
+
+# docker_compose_app_git_force_update: Force update (discard local changes)
+# Set to true for immutable infrastructure
+# Set to false to preserve local changes (may fail on conflicts)
+docker_compose_app_git_force_update: true
+
+# docker_compose_app_git_accept_hostkey: Accept new SSH host keys
+# Required for first-time clones to github.com, etc.
+docker_compose_app_git_accept_hostkey: true
+
+# docker_compose_app_git_clone_as_ansible_user: Clone using ansible_user's SSH agent
+# When true: Uses SSH agent forwarding from the connecting user
+# When false: Expects SSH key to be available for app user
+docker_compose_app_git_clone_as_ansible_user: true
+
+# docker_compose_app_git_key_file: Path to SSH key for git operations
+# Only used when docker_compose_app_git_clone_as_ansible_user is false
+# The key must already exist on the target system
+docker_compose_app_git_key_file: ""
+
+# =============================================================================
+# DOCKER COMPOSE CONFIGURATION
+# =============================================================================
+
+# docker_compose_app_compose_file: Compose file name(s)
+# Can be a single file or a list for multiple compose files
+docker_compose_app_compose_file: "docker-compose.yml"
+
+# docker_compose_app_compose_profiles: Docker Compose profiles to activate
+docker_compose_app_compose_profiles: []
+
+# docker_compose_app_env_file: Path to environment file for docker-compose
+# Leave empty if not using an env file
+docker_compose_app_env_file: ""
+
+# docker_compose_app_pull_on_start: Pull images before starting
+# Set to false if using private registries with user-specific credentials
+docker_compose_app_pull_on_start: false
+
+# docker_compose_app_remove_orphans: Remove orphan containers on up
+docker_compose_app_remove_orphans: true
+
+# =============================================================================
+# SYSTEMD SERVICE
+# =============================================================================
+
+# docker_compose_app_service_enabled: Enable the systemd service
+docker_compose_app_service_enabled: true
+
+# docker_compose_app_service_state: Desired state of the service
+# Values: started, stopped, restarted
+docker_compose_app_service_state: started
+
+# docker_compose_app_service_restart_policy: Systemd restart policy
+# Values: no, always, on-success, on-failure, on-abnormal, on-watchdog, on-abort
+docker_compose_app_service_restart_policy: "on-failure"
+
+# docker_compose_app_service_restart_sec: Seconds before restart attempts
+docker_compose_app_service_restart_sec: 10
+
+# docker_compose_app_service_timeout_start_sec: Timeout for service start
+docker_compose_app_service_timeout_start_sec: 300
+
+# docker_compose_app_service_timeout_stop_sec: Timeout for service stop
+docker_compose_app_service_timeout_stop_sec: 120
+
+# docker_compose_app_service_environment: Additional environment variables
+# Dictionary of KEY: value pairs to set in the systemd unit
+docker_compose_app_service_environment: {}
+
+# docker_compose_app_service_after: Additional systemd After= dependencies
+docker_compose_app_service_after:
+  - docker.service
+
+# docker_compose_app_service_requires: Additional systemd Requires= dependencies
+docker_compose_app_service_requires:
+  - docker.service
+
+# =============================================================================
+# DOCKER COMPOSE COMMANDS
+# =============================================================================
+
+# docker_compose_app_docker_compose_cmd: Docker Compose command
+# Default uses 'docker compose' (v2). Change to 'docker-compose' for v1
+docker_compose_app_docker_compose_cmd: "docker compose"
+
+# docker_compose_app_up_extra_args: Extra arguments for 'up' command
+docker_compose_app_up_extra_args: ""
+
+# docker_compose_app_down_extra_args: Extra arguments for 'down' command
+docker_compose_app_down_extra_args: ""

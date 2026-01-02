@@ -1,0 +1,68 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for git operations
+
+- name: Check if app directory already contains git repo
+  ansible.builtin.stat:
+    path: "{{ docker_compose_app_dir }}/.git"
+  register: docker_compose_app_git_exists
+
+# Git requires safe.directory when cloning as different user than owner
+- name: Add app directory to git safe.directory
+  ansible.builtin.command:
+    cmd: git config --global --add safe.directory {{ docker_compose_app_dir }}
+  become: true
+  become_user: "{{ ansible_user }}"
+  changed_when: false
+  when: docker_compose_app_git_clone_as_ansible_user | bool
+
+# Temporarily change ownership to ansible_user for git operations (if repo exists)
+- name: Temporarily set ownership to ansible_user for git update
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: true
+  when:
+    - docker_compose_app_git_clone_as_ansible_user | bool
+    - docker_compose_app_git_exists.stat.exists
+
+- name: Clone git repository (using ansible_user SSH agent)
+  ansible.builtin.git:
+    repo: "{{ docker_compose_app_git_repo }}"
+    dest: "{{ docker_compose_app_dir }}"
+    version: "{{ docker_compose_app_git_version }}"
+    accept_hostkey: "{{ docker_compose_app_git_accept_hostkey }}"
+    force: "{{ docker_compose_app_git_force_update }}"
+    update: true
+  become: true
+  become_user: "{{ ansible_user }}"
+  when: docker_compose_app_git_clone_as_ansible_user | bool
+  register: docker_compose_app_git_clone_result
+  notify: Restart docker compose app
+
+- name: Clone git repository (using app user or deploy key)
+  ansible.builtin.git:
+    repo: "{{ docker_compose_app_git_repo }}"
+    dest: "{{ docker_compose_app_dir }}"
+    version: "{{ docker_compose_app_git_version }}"
+    accept_hostkey: "{{ docker_compose_app_git_accept_hostkey }}"
+    force: "{{ docker_compose_app_git_force_update }}"
+    update: true
+    key_file: "{{ docker_compose_app_git_key_file | default(omit, true) }}"
+  become: true
+  become_user: "{{ docker_compose_app_user }}"
+  when: not (docker_compose_app_git_clone_as_ansible_user | bool)
+  register: docker_compose_app_git_clone_alt_result
+  notify: Restart docker compose app
+
+# Always set final ownership to app user
+- name: Set ownership of app directory to app user
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}"
+    state: directory
+    owner: "{{ docker_compose_app_user }}"
+    group: "{{ docker_compose_app_user }}"
+    recurse: true
+  when: docker_compose_app_git_clone_as_ansible_user | bool

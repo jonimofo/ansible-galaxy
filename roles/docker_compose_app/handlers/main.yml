@@ -1,0 +1,15 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for roles/docker_compose_app
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart docker compose app
+  ansible.builtin.systemd:
+    name: "{{ docker_compose_app_name }}"
+    state: restarted
+  when:
+    - docker_compose_app_service_enabled | bool
+    - docker_compose_app_service_state == 'started'

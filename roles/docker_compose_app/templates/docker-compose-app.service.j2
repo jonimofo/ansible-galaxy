@@ -1,0 +1,44 @@
+# {{ ansible_managed }}
+#SPDX-License-Identifier: MIT-0
+[Unit]
+Description={{ docker_compose_app_description }} ({{ docker_compose_app_name }})
+{% for dep in docker_compose_app_service_requires %}
+Requires={{ dep }}
+{% endfor %}
+{% for dep in docker_compose_app_service_after %}
+After={{ dep }}
+{% endfor %}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ docker_compose_app_dir }}
+User={{ docker_compose_app_user }}
+Group={{ docker_compose_app_user }}
+
+{% if docker_compose_app_env_file %}
+EnvironmentFile={{ docker_compose_app_env_file }}
+{% endif %}
+{% for key, value in docker_compose_app_service_environment.items() %}
+Environment="{{ key }}={{ value }}"
+{% endfor %}
+
+# Start command
+ExecStart={{ docker_compose_app_docker_compose_cmd }} {{ _docker_compose_app_file_args | trim }} {{ _docker_compose_app_profile_args | trim }} up -d {% if docker_compose_app_pull_on_start %}--pull always {% endif %}{% if docker_compose_app_remove_orphans %}--remove-orphans {% endif %}{{ docker_compose_app_up_extra_args }}
+
+# Stop command
+ExecStop={{ docker_compose_app_docker_compose_cmd }} {{ _docker_compose_app_file_args | trim }} {{ _docker_compose_app_profile_args | trim }} down {{ docker_compose_app_down_extra_args }}
+
+# Reload command (pull and recreate)
+ExecReload=/bin/sh -c '{{ docker_compose_app_docker_compose_cmd }} {{ _docker_compose_app_file_args | trim }} {{ _docker_compose_app_profile_args | trim }} pull && {{ docker_compose_app_docker_compose_cmd }} {{ _docker_compose_app_file_args | trim }} {{ _docker_compose_app_profile_args | trim }} up -d {% if docker_compose_app_remove_orphans %}--remove-orphans {% endif %}'
+
+Restart={{ docker_compose_app_service_restart_policy }}
+RestartSec={{ docker_compose_app_service_restart_sec }}
+
+TimeoutStartSec={{ docker_compose_app_service_timeout_start_sec }}
+TimeoutStopSec={{ docker_compose_app_service_timeout_stop_sec }}
+
+[Install]
+WantedBy=multi-user.target

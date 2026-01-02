@@ -1,0 +1,20 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for user management
+
+- name: Ensure docker group exists
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: Create application system user
+  ansible.builtin.user:
+    name: "{{ docker_compose_app_user }}"
+    uid: "{{ docker_compose_app_user_uid | default(omit, true) }}"
+    system: true
+    shell: "{{ docker_compose_app_user_shell }}"
+    groups: "{{ ['docker'] + docker_compose_app_user_groups }}"
+    append: false
+    create_home: false
+    state: present
+  register: docker_compose_app_user_result

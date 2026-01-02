@@ -1,0 +1,15 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Test docker_compose_app role
+  hosts: localhost
+  become: true
+  vars:
+    docker_compose_app_name: test-app
+    docker_compose_app_git_repo: "https://github.com/docker/awesome-compose.git"
+    docker_compose_app_git_version: master
+    docker_compose_app_compose_file: "nginx-golang/compose.yaml"
+    docker_compose_app_service_state: stopped
+    docker_compose_app_service_enabled: false
+    docker_compose_app_git_clone_as_ansible_user: true
+  roles:
+    - role: docker_compose_app

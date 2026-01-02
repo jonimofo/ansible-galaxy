@@ -1,0 +1,40 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for systemd service management
+
+- name: Build compose file arguments
+  ansible.builtin.set_fact:
+    _docker_compose_app_file_args: >-
+      {% if docker_compose_app_compose_file is string %}
+      -f {{ docker_compose_app_compose_file }}
+      {% else %}
+      {% for f in docker_compose_app_compose_file %}-f {{ f }} {% endfor %}
+      {% endif %}
+
+- name: Build compose profile arguments
+  ansible.builtin.set_fact:
+    _docker_compose_app_profile_args: >-
+      {% if docker_compose_app_compose_profiles | length > 0 %}
+      {% for p in docker_compose_app_compose_profiles %}--profile {{ p }} {% endfor %}
+      {% endif %}
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: docker-compose-app.service.j2
+    dest: "/etc/systemd/system/{{ docker_compose_app_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart docker compose app
+
+- name: Ensure systemd is reloaded before managing service
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage docker compose application service
+  ansible.builtin.systemd:
+    name: "{{ docker_compose_app_name }}"
+    enabled: "{{ docker_compose_app_service_enabled }}"
+    state: "{{ docker_compose_app_service_state }}"
+    daemon_reload: true

@@ -1,0 +1,104 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for directory setup
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_dir }}"
+    state: directory
+    owner: "{{ docker_compose_app_user }}"
+    group: "{{ docker_compose_app_user }}"
+    mode: "{{ docker_compose_app_dir_mode }}"
+
+- name: Ensure secrets base directory exists
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_secrets_base_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  when: docker_compose_app_secrets | length > 0
+
+- name: Create secret directories
+  ansible.builtin.file:
+    path: "{{ item.path | default(docker_compose_app_secrets_base_dir + '/' + item.name) }}"
+    state: directory
+    owner: "{{ item.owner | default(docker_compose_app_user) }}"
+    group: "{{ item.group | default(item.owner | default(docker_compose_app_user)) }}"
+    mode: "{{ item.mode | default(docker_compose_app_secrets_default_mode) }}"
+  loop: "{{ docker_compose_app_secrets }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# --- Secret Files Ownership Management ---
+
+- name: Build list of secret files to manage
+  ansible.builtin.set_fact:
+    _docker_compose_app_secret_files: >-
+      {{
+        docker_compose_app_secrets
+        | selectattr('files', 'defined')
+        | map(attribute='files')
+        | flatten
+        | list
+      }}
+    _docker_compose_app_secret_files_with_paths: []
+
+- name: Build secret files with full paths
+  ansible.builtin.set_fact:
+    _docker_compose_app_secret_files_with_paths: >-
+      {{
+        _docker_compose_app_secret_files_with_paths + [{
+          'path': (item.0.path | default(docker_compose_app_secrets_base_dir + '/' + item.0.name)) + '/' + item.1.name,
+          'owner': item.1.owner | default(item.0.owner | default(docker_compose_app_user)),
+          'group': item.1.group | default(item.1.owner | default(item.0.group | default(item.0.owner | default(docker_compose_app_user)))),
+          'mode': item.1.mode | default(docker_compose_app_secrets_file_default_mode),
+          'dir_name': item.0.name,
+          'file_name': item.1.name
+        }]
+      }}
+  loop: "{{ docker_compose_app_secrets | subelements('files', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.name }}/{{ item.1.name }}"
+
+- name: Check if secret files exist
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ _docker_compose_app_secret_files_with_paths }}"
+  loop_control:
+    label: "{{ item.dir_name }}/{{ item.file_name }}"
+  register: _docker_compose_app_secret_files_stat
+  when: _docker_compose_app_secret_files_with_paths | length > 0
+
+- name: Set ownership and permissions on existing secret files
+  ansible.builtin.file:
+    path: "{{ item.item.path }}"
+    state: file
+    owner: "{{ item.item.owner }}"
+    group: "{{ item.item.group }}"
+    mode: "{{ item.item.mode }}"
+  loop: "{{ _docker_compose_app_secret_files_stat.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.dir_name }}/{{ item.item.file_name }}"
+  when:
+    - item.stat is defined
+    - item.stat.exists
+
+- name: Display missing secret files
+  ansible.builtin.debug:
+    msg: |
+      SECRET FILE MISSING: {{ item.item.path }}
+
+      Please create this file manually:
+        sudo touch {{ item.item.path }}
+        sudo chown {{ item.item.owner }}:{{ item.item.group }} {{ item.item.path }}
+        sudo chmod {{ item.item.mode }} {{ item.item.path }}
+        # Add your secret content to the file
+
+      Then re-run the playbook to set correct permissions.
+  loop: "{{ _docker_compose_app_secret_files_stat.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.dir_name }}/{{ item.item.file_name }}"
+  when:
+    - item.stat is defined
+    - not item.stat.exists
