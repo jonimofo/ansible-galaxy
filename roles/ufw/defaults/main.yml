@@ -100,7 +100,8 @@ ufw_docker_allowed_ports:
 
 # ufw_docker_private_networks: Networks considered "private" (LAN)
 # Traffic from these networks is always allowed to Docker containers.
+# Default includes Docker internal networks and typical home LANs.
+# Add 10.0.0.0/8 if you use VPNs (Tailscale, WireGuard) or Kubernetes.
 ufw_docker_private_networks:
-  - 10.0.0.0/8
   - 172.16.0.0/12
   - 192.168.0.0/16
