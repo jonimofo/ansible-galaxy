@@ -347,18 +347,19 @@ This role uses SSH agent forwarding by default (`docker_compose_app_git_clone_as
 
 Depending on the mode, the role runs these steps:
 
-| Step | deploy | update | build | restart |
-|------|--------|--------|-------|---------|
-| 1. Verify Debian-based system | ✅ | ✅ | ✅ | ✅ |
-| 2. Validate required variables | ✅ | ✅ | ✅ | ✅ |
-| 3. Ensure git is installed | ✅ | ❌ | ❌ | ❌ |
-| 4. Create system user | ✅ | ❌ | ❌ | ❌ |
-| 5. Create app + secrets directories | ✅ | ✅ | ✅ | ❌ |
-| 6. Clone/update git repository | ✅ | ❌ | ❌ | ❌ |
-| 7. Set container permissions | ✅ | ✅ | ✅ | ❌ |
-| 8. Run build command | ✅ | ❌ | ✅ | ❌ |
-| 9. Deploy systemd unit | ✅ | ✅ | ✅ | ✅ |
-| 10. Enable and start service | ✅ | ✅ | ✅ | ✅ |
+| Step                                | deploy | update | build | restart |
+|-------------------------------------|--------|--------|-------|---------|
+| 2. Validate required variables      | ✅     | ✅     | ✅    | ✅      |
+| 1. Verify Debian-based system       | ✅     | ✅     | ✅    | ✅      |
+| 3. Ensure git is installed          | ✅     | ❌     | ❌    | ❌      |
+| 4. Create system user               | ✅     | ❌     | ❌    | ❌      |
+| 5. Create app + secrets directories | ✅     | ✅     | ✅    | ❌      |
+| 6. Clone/update git repository      | ✅     | ❌     | ❌    | ❌      |
+| 7. Set container permissions        | ✅     | ✅     | ✅    | ❌      |
+| 8. Run build command                | ✅     | ❌     | ✅    | ❌      |
+| 9. Deploy systemd unit              | ✅     | ✅     | ✅    | ✅      |
+| 10. Enable and start service        | ✅     | ✅     | ✅    | ✅      |
+
 
 ## Manual Steps Required
 
