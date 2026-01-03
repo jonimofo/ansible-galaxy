@@ -68,3 +68,10 @@
 - name: Ensure UFW is {{ ufw_state }}
   community.general.ufw:
     state: "{{ ufw_state }}"
+
+- name: Include Docker integration tasks
+  ansible.builtin.include_tasks: docker.yml
+  when: ufw_docker_integration | bool
+  tags:
+    - ufw
+    - ufw_docker

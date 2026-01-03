@@ -80,3 +80,27 @@ ufw_rules: []
 #     interface: eth0
 #     direction: in
 #     comment: "Allow HTTP on eth0 only"
+
+# --- Docker Integration ---
+
+# ufw_docker_integration: Manage DOCKER-USER chain for Docker + UFW coexistence
+# Docker bypasses UFW by manipulating iptables directly. When enabled, this
+# configures the DOCKER-USER chain to restrict external access to Docker ports
+# while allowing LAN access.
+# IMPORTANT: Run UFW role AFTER Docker is installed for DOCKER-USER chain to exist.
+ufw_docker_integration: false
+
+# ufw_docker_allowed_ports: Ports accessible from the internet (not just LAN)
+# All other Docker-published ports will only be accessible from private networks.
+# Format: list of {port, proto} dicts
+ufw_docker_allowed_ports:
+  - { port: 80, proto: tcp }
+  - { port: 443, proto: tcp }
+  - { port: 443, proto: udp }
+
+# ufw_docker_private_networks: Networks considered "private" (LAN)
+# Traffic from these networks is always allowed to Docker containers.
+ufw_docker_private_networks:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16

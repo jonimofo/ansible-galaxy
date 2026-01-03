@@ -10,6 +10,7 @@ Installs and configures the Uncomplicated Firewall (UFW) on Debian-based systems
 - Application profile support (OpenSSH, etc.)
 - IPv6 support (optional)
 - Configurable logging levels
+- **Docker integration** - Manage DOCKER-USER chain to control container access
 
 ## Requirements
 
@@ -81,6 +82,18 @@ ufw_default_policies:
 | `interface` | No | Network interface (e.g., `eth0`) |
 | `direction` | No | Direction for interface rules: `in`, `out` |
 | `comment` | No | Rule description |
+
+### Docker Integration
+
+Docker bypasses UFW by manipulating iptables directly. This role can manage the `DOCKER-USER` chain to restrict external access to Docker containers while allowing LAN access.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ufw_docker_integration` | `false` | Enable Docker integration |
+| `ufw_docker_allowed_ports` | `[80/tcp, 443/tcp, 443/udp]` | Ports accessible from internet |
+| `ufw_docker_private_networks` | `[10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]` | Networks always allowed |
+
+**Important:** Run this role AFTER Docker is installed for the `DOCKER-USER` chain to exist.
 
 ## Dependencies
 
@@ -174,6 +187,34 @@ ufw_default_policies:
     - role: jonimofo.infrastructure.ufw
 ```
 
+### Docker Server with Traefik
+
+```yaml
+- name: Configure Docker server with UFW
+  hosts: docker_servers
+  become: true
+  vars:
+    ufw_rules:
+      - rule: limit
+        port: 22
+        proto: tcp
+        comment: "Rate limit SSH"
+    ufw_docker_integration: true
+    ufw_docker_allowed_ports:
+      - { port: 80, proto: tcp }
+      - { port: 443, proto: tcp }
+      - { port: 443, proto: udp }
+  roles:
+    - role: geerlingguy.docker  # Docker must be installed first
+    - role: jonimofo.infrastructure.ufw
+```
+
+This configuration:
+- Allows SSH with rate limiting (UFW rule)
+- Allows ports 80/443 from anywhere (Traefik)
+- Allows all Docker ports from LAN (192.168.x, 10.x, 172.16.x)
+- Blocks all other Docker ports from internet
+
 ## Platform Notes
 
 ### Raspberry Pi OS
@@ -220,6 +261,30 @@ The `limit` rule type automatically rate-limits connections:
   comment: "Rate limit SSH connections"
 ```
 
+### Docker and UFW
+
+By default, Docker manipulates iptables directly and bypasses UFW completely. Containers with published ports (e.g., `-p 3306:3306`) are accessible from the internet even if UFW would block them.
+
+When `ufw_docker_integration: true`, this role:
+
+1. Manages the `DOCKER-USER` chain (Docker's hook for custom rules)
+2. Allows traffic from private networks (LAN) to all Docker ports
+3. Allows only `ufw_docker_allowed_ports` from the internet
+4. Drops all other external traffic to Docker containers
+5. Persists rules using `iptables-persistent`
+
+| Traffic | Behavior |
+|---------|----------|
+| Internet → Container (allowed port) | ✅ Allowed |
+| Internet → Container (other port) | ❌ Blocked |
+| LAN → Container (any port) | ✅ Allowed |
+| Container → Container | ✅ Allowed |
+
+**Note:** This only controls network access. For maximum security, also:
+- Bind non-public services to `127.0.0.1` in docker-compose (e.g., `127.0.0.1:3306:3306`)
+- Use Docker networks for container-to-container communication
+- Don't publish ports that only need internal access
+
 ### Lockout Prevention
 
 Before running this role remotely:
@@ -251,6 +316,7 @@ With default policies:
 6. Configures firewall rules from `ufw_rules`
 7. Sets logging level
 8. Enables UFW
+9. (Optional) Configures Docker integration if `ufw_docker_integration: true`
 
 ## License
 
