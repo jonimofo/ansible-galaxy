@@ -91,7 +91,7 @@ Docker bypasses UFW by manipulating iptables directly. This role can manage the 
 |----------|---------|-------------|
 | `ufw_docker_integration` | `false` | Enable Docker integration |
 | `ufw_docker_allowed_ports` | `[80/tcp, 443/tcp, 443/udp]` | Ports accessible from internet |
-| `ufw_docker_private_networks` | `[10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]` | Networks always allowed |
+| `ufw_docker_private_networks` | `[172.16.0.0/12, 192.168.0.0/16]` | Networks always allowed |
 
 **Important:** Run this role AFTER Docker is installed for the `DOCKER-USER` chain to exist.
 
@@ -271,7 +271,7 @@ When `ufw_docker_integration: true`, this role:
 2. Allows traffic from private networks (LAN) to all Docker ports
 3. Allows only `ufw_docker_allowed_ports` from the internet
 4. Drops all other external traffic to Docker containers
-5. Persists rules using `iptables-persistent`
+5. Creates a systemd service (`ufw-docker`) to persist rules across reboots
 
 | Traffic | Behavior |
 |---------|----------|

@@ -2,6 +2,7 @@
 ---
 # Docker integration tasks for UFW
 # Manages DOCKER-USER chain to control external access to Docker containers
+# Uses systemd service to persist rules across Docker restarts
 
 - name: Check if DOCKER-USER chain exists
   ansible.builtin.command: iptables -L DOCKER-USER -n
@@ -19,48 +20,32 @@
 - name: Configure DOCKER-USER chain
   when: ufw_docker_user_chain.rc == 0
   block:
-    - name: Flush DOCKER-USER chain
-      ansible.builtin.iptables:
-        chain: DOCKER-USER
-        flush: true
+    - name: Deploy DOCKER-USER rules script
+      ansible.builtin.template:
+        src: ufw-docker-rules.sh.j2
+        dest: /usr/local/sbin/ufw-docker-rules.sh
+        owner: root
+        group: root
+        mode: "0755"
+      notify: Run ufw-docker-rules
 
-    - name: Allow established connections in DOCKER-USER
-      ansible.builtin.iptables:
-        chain: DOCKER-USER
-        ctstate: ESTABLISHED,RELATED
-        jump: RETURN
-        comment: "Allow established connections"
+    - name: Deploy ufw-docker systemd service
+      ansible.builtin.template:
+        src: ufw-docker.service.j2
+        dest: /etc/systemd/system/ufw-docker.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Restart ufw-docker
 
-    - name: Allow private networks in DOCKER-USER
-      ansible.builtin.iptables:
-        chain: DOCKER-USER
-        source: "{{ item }}"
-        jump: RETURN
-        comment: "Allow from private network {{ item }}"
-      loop: "{{ ufw_docker_private_networks }}"
+    - name: Enable ufw-docker service
+      ansible.builtin.systemd:
+        name: ufw-docker
+        enabled: true
+        daemon_reload: true
 
-    - name: Allow specified ports from anywhere in DOCKER-USER
-      ansible.builtin.iptables:
-        chain: DOCKER-USER
-        protocol: "{{ item.proto }}"
-        destination_port: "{{ item.port }}"
-        jump: RETURN
-        comment: "Allow port {{ item.port }}/{{ item.proto }} from anywhere"
-      loop: "{{ ufw_docker_allowed_ports }}"
-
-    - name: Drop all other external traffic in DOCKER-USER
-      ansible.builtin.iptables:
-        chain: DOCKER-USER
-        jump: DROP
-        comment: "Drop external traffic to non-allowed ports"
-
-    - name: Ensure iptables-persistent is installed
-      ansible.builtin.apt:
-        name: iptables-persistent
-        state: present
-        update_cache: true
-        cache_valid_time: 3600
-
-    - name: Save iptables rules for persistence
-      ansible.builtin.command: netfilter-persistent save
+    - name: Run DOCKER-USER rules script now
+      ansible.builtin.command: /usr/local/sbin/ufw-docker-rules.sh
       changed_when: true

@@ -53,27 +53,22 @@ ufw_rules: []
 #     port: 22
 #     proto: tcp
 #     comment: "Rate limit SSH"
-#
 #   - rule: allow
 #     name: "OpenSSH"
 #     comment: "Allow SSH via app profile"
-#
 #   - rule: allow
 #     port: 80
 #     proto: tcp
 #     comment: "Allow HTTP"
-#
 #   - rule: allow
 #     port: 443
 #     proto: tcp
 #     comment: "Allow HTTPS"
-#
 #   - rule: allow
 #     port: 22
 #     proto: tcp
 #     from_ip: "192.168.1.0/24"
 #     comment: "Allow SSH from local network only"
-#
 #   - rule: allow
 #     port: 80
 #     proto: tcp
@@ -93,15 +88,16 @@ ufw_docker_integration: false
 # ufw_docker_allowed_ports: Ports accessible from the internet (not just LAN)
 # All other Docker-published ports will only be accessible from private networks.
 # Format: list of {port, proto} dicts
-ufw_docker_allowed_ports:
-  - { port: 80, proto: tcp }
-  - { port: 443, proto: tcp }
-  - { port: 443, proto: udp }
+ufw_docker_allowed_ports: []
+  # - { port: 80, proto: tcp }
+  # - { port: 443, proto: tcp }
+  # - { port: 443, proto: udp }
 
 # ufw_docker_private_networks: Networks considered "private" (LAN)
 # Traffic from these networks is always allowed to Docker containers.
 # Default includes Docker internal networks and typical home LANs.
-# Add 10.0.0.0/8 if you use VPNs (Tailscale, WireGuard) or Kubernetes.
 ufw_docker_private_networks:
   - 172.16.0.0/12
   - 192.168.0.0/16
+  # Add 10.0.0.0/8 if you use VPNs (Tailscale, WireGuard) or Kubernetes
+  # - 10.0.0.0/8

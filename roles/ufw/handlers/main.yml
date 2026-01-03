@@ -5,3 +5,16 @@
 - name: Reload ufw
   community.general.ufw:
     state: reloaded
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Run ufw-docker-rules
+  ansible.builtin.command: /usr/local/sbin/ufw-docker-rules.sh
+  changed_when: true
+
+- name: Restart ufw-docker
+  ansible.builtin.systemd:
+    name: ufw-docker
+    state: restarted

@@ -1,0 +1,34 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT-0
+# UFW Docker integration script
+# Configures DOCKER-USER chain to control external access to Docker containers
+# Managed by Ansible - do not edit manually
+
+set -e
+
+# Check if DOCKER-USER chain exists
+if ! iptables -L DOCKER-USER -n >/dev/null 2>&1; then
+    echo "DOCKER-USER chain not found. Docker may not be running."
+    exit 0
+fi
+
+# Flush existing DOCKER-USER rules
+iptables -F DOCKER-USER
+
+# Allow established connections
+iptables -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+
+{% for network in ufw_docker_private_networks %}
+# Allow from private network {{ network }}
+iptables -A DOCKER-USER -s {{ network }} -j RETURN
+
+{% endfor %}
+{% for port in ufw_docker_allowed_ports %}
+# Allow port {{ port.port }}/{{ port.proto }} from anywhere
+iptables -A DOCKER-USER -p {{ port.proto }} --dport {{ port.port }} -j RETURN
+
+{% endfor %}
+# Drop all other external traffic to Docker containers
+iptables -A DOCKER-USER -j DROP
+
+echo "DOCKER-USER chain configured successfully"
