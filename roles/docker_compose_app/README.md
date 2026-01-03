@@ -4,10 +4,12 @@ Deploys Docker Compose applications from private git repositories with systemd s
 
 ## Features
 
+- **Deployment modes** - Full deploy, update, build, or restart only
 - Creates dedicated system user with docker group membership
 - Clones private git repositories using SSH agent forwarding
 - Manages secret directories with flexible ownership (supports container UIDs)
 - Sets ownership and permissions on secret files automatically
+- **Frontend build support** - Run build commands after git pull
 - Generates systemd service unit for application lifecycle management
 - Supports multiple compose files and profiles
 - Configurable restart policies and timeouts
@@ -28,6 +30,38 @@ Deploys Docker Compose applications from private git repositories with systemd s
 ## Role Variables
 
 All variables are defined in `defaults/main.yml`:
+
+### Deployment Mode
+
+Control which tasks run using the `docker_compose_app_mode` variable:
+
+| Mode | Git | Dirs | Permissions | Build | Service | Use Case |
+|------|-----|------|-------------|-------|---------|----------|
+| `deploy` | ✅ | ✅ | ✅ | ✅ | ✅ | Full deployment |
+| `update` | ❌ | ✅ | ✅ | ❌ | ✅ | Quick restart, fix permissions |
+| `build` | ❌ | ✅ | ✅ | ✅ | ✅ | Rebuild frontend only |
+| `restart` | ❌ | ❌ | ❌ | ❌ | ✅ | Just restart service |
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `docker_compose_app_mode` | `deploy` | Deployment mode (see table above) |
+| `docker_compose_app_build_command` | `""` | Command to build frontend (e.g., `make front-build`) |
+
+**Usage:**
+
+```bash
+# Full deployment (default)
+ansible-playbook site.yml
+
+# Quick update - fix permissions and restart (no git pull)
+ansible-playbook site.yml -e docker_compose_app_mode=update
+
+# Rebuild frontend and restart (no git pull)
+ansible-playbook site.yml -e docker_compose_app_mode=build
+
+# Just restart the service
+ansible-playbook site.yml -e docker_compose_app_mode=restart
+```
 
 ### Application Identity
 
@@ -224,6 +258,47 @@ None. However, Docker and Docker Compose must be pre-installed.
     - role: jonimofo.infrastructure.docker_compose_app
 ```
 
+### Laravel App with Frontend Build
+
+```yaml
+- name: Deploy Laravel application
+  hosts: docker_hosts
+  become: true
+  vars:
+    docker_compose_app_name: myapp
+    docker_compose_app_git_repo: "git@github.com:user/myapp.git"
+    docker_compose_app_build_command: "make front-build"
+    docker_compose_app_container_uid: "1000"
+    docker_compose_app_writable_dirs:
+      - storage
+      - bootstrap/cache
+      - resources/js/actions
+      - resources/js/routes
+      - resources/js/wayfinder
+    docker_compose_app_writable_files:
+      - .env
+    docker_compose_app_remove_hot_file: true
+  roles:
+    - role: geerlingguy.docker
+    - role: jonimofo.infrastructure.docker_compose_app
+```
+
+Then use different modes for different operations:
+
+```bash
+# Initial deployment or code update
+ansible-playbook site.yml
+
+# Rebuild frontend only (after CSS/JS changes)
+ansible-playbook site.yml -e docker_compose_app_mode=build
+
+# Quick restart (fix permissions issues)
+ansible-playbook site.yml -e docker_compose_app_mode=update
+
+# Just restart containers
+ansible-playbook site.yml -e docker_compose_app_mode=restart
+```
+
 ## Platform Notes
 
 ### Raspberry Pi OS
@@ -270,16 +345,20 @@ This role uses SSH agent forwarding by default (`docker_compose_app_git_clone_as
 
 ## What This Role Does
 
-1. Verifies Debian-based system
-2. Validates required variables
-3. Ensures git is installed
-4. Creates application system user with docker group
-5. Creates application directory and secrets directories
-6. Sets ownership/permissions on secret files (if they exist)
-7. Clones/updates git repository
-8. Sets correct ownership on cloned files
-9. Deploys systemd service unit
-10. Enables and starts the service
+Depending on the mode, the role runs these steps:
+
+| Step | deploy | update | build | restart |
+|------|--------|--------|-------|---------|
+| 1. Verify Debian-based system | ✅ | ✅ | ✅ | ✅ |
+| 2. Validate required variables | ✅ | ✅ | ✅ | ✅ |
+| 3. Ensure git is installed | ✅ | ❌ | ❌ | ❌ |
+| 4. Create system user | ✅ | ❌ | ❌ | ❌ |
+| 5. Create app + secrets directories | ✅ | ✅ | ✅ | ❌ |
+| 6. Clone/update git repository | ✅ | ❌ | ❌ | ❌ |
+| 7. Set container permissions | ✅ | ✅ | ✅ | ❌ |
+| 8. Run build command | ✅ | ❌ | ✅ | ❌ |
+| 9. Deploy systemd unit | ✅ | ✅ | ✅ | ✅ |
+| 10. Enable and start service | ✅ | ✅ | ✅ | ✅ |
 
 ## Manual Steps Required
 

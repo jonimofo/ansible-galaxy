@@ -2,6 +2,23 @@
 ---
 # tasks file for roles/docker_compose_app
 
+# Mode determines which tasks run:
+#   - deploy:  git + dirs + permissions + build + service
+#   - update:  dirs + permissions + service (no git, no build)
+#   - build:   dirs + permissions + build + service (no git)
+#   - restart: service only
+
+- name: Display deployment mode
+  ansible.builtin.debug:
+    msg: "Running in '{{ docker_compose_app_mode }}' mode for {{ docker_compose_app_name }}"
+
+- name: Validate deployment mode
+  ansible.builtin.assert:
+    that:
+      - docker_compose_app_mode in ['deploy', 'update', 'build', 'restart']
+    fail_msg: "Invalid mode '{{ docker_compose_app_mode }}'. Must be: deploy, update, build, or restart"
+    quiet: true
+
 - name: Verify Debian-based system
   ansible.builtin.assert:
     that:
@@ -23,31 +40,44 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  when: docker_compose_app_mode == 'deploy'
 
 - name: Include user management tasks
   ansible.builtin.include_tasks: user.yml
-  when: docker_compose_app_user_create | bool
+  when:
+    - docker_compose_app_user_create | bool
+    - docker_compose_app_mode == 'deploy'
   tags:
     - docker_compose_app
     - docker_compose_app_user
 
 - name: Include directory setup tasks
   ansible.builtin.include_tasks: directories.yml
+  when: docker_compose_app_mode in ['deploy', 'update', 'build']
   tags:
     - docker_compose_app
     - docker_compose_app_directories
 
 - name: Include git clone/update tasks
   ansible.builtin.include_tasks: git.yml
+  when: docker_compose_app_mode == 'deploy'
   tags:
     - docker_compose_app
     - docker_compose_app_git
 
 - name: Include container permissions tasks
   ansible.builtin.include_tasks: permissions.yml
+  when: docker_compose_app_mode in ['deploy', 'update', 'build']
   tags:
     - docker_compose_app
     - docker_compose_app_permissions
+
+- name: Include build tasks
+  ansible.builtin.include_tasks: build.yml
+  when: docker_compose_app_mode in ['deploy', 'build']
+  tags:
+    - docker_compose_app
+    - docker_compose_app_build
 
 - name: Include systemd service tasks
   ansible.builtin.include_tasks: systemd.yml

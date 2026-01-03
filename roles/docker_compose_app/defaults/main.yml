@@ -3,6 +3,27 @@
 # defaults file for roles/docker_compose_app
 
 # =============================================================================
+# DEPLOYMENT MODE
+# =============================================================================
+
+# docker_compose_app_mode: Controls which tasks run
+# Modes:
+#   - deploy:  Full deployment (git + dirs + permissions + build + service)
+#   - update:  Quick update (dirs + permissions + service, no git/build)
+#   - build:   Rebuild only (dirs + permissions + build + service, no git)
+#   - restart: Service only (just restart the systemd service)
+docker_compose_app_mode: deploy
+
+# docker_compose_app_build_command: Command to build frontend assets
+# Runs in the app directory after git pull (in deploy mode) or in build mode
+# Leave empty to skip build step
+# Examples:
+#   - "make front-build"
+#   - "docker compose exec -T node npm run build"
+#   - "docker compose exec -T bun bun run build"
+docker_compose_app_build_command: ""
+
+# =============================================================================
 # APPLICATION IDENTITY
 # =============================================================================
 

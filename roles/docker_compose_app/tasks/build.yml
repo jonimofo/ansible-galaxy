@@ -1,0 +1,21 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for building frontend assets
+
+- name: Run build command
+  ansible.builtin.command:
+    cmd: "{{ docker_compose_app_build_command }}"
+    chdir: "{{ docker_compose_app_dir }}"
+  become: true
+  become_user: "{{ docker_compose_app_user }}"
+  register: docker_compose_app_build_result
+  changed_when: docker_compose_app_build_result.rc == 0
+  when: docker_compose_app_build_command | length > 0
+
+- name: Display build output
+  ansible.builtin.debug:
+    msg: "{{ docker_compose_app_build_result.stdout_lines }}"
+  when:
+    - docker_compose_app_build_command | length > 0
+    - docker_compose_app_build_result.stdout_lines is defined
+    - docker_compose_app_build_result.stdout_lines | length > 0
