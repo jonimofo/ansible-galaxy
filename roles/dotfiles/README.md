@@ -27,6 +27,11 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `dotfiles_user_configs` | `[]` | Configuration dict (see below) |
+| `dotfiles_tmux_enabled` | `false` | Enable tmux setup (install tmux, TPM, symlink configs) |
+| `dotfiles_tmux_tpm_repo` | `https://github.com/tmux-plugins/tpm` | TPM repository URL |
+| `dotfiles_tmux_tpm_version` | `master` | TPM version/branch to clone |
+| `dotfiles_tmux_install_plugins` | `true` | Run TPM install_plugins script after setup |
+| `dotfiles_tmux_files` | See below | List of tmux config files to symlink |
 
 ### Configuration Structure
 
@@ -42,6 +47,29 @@ dotfiles_user_configs:
         - src: 'bashrc'                      # Source in repo
           dest: '.bashrc'                    # Destination in home
 ```
+
+### Tmux Configuration
+
+When `dotfiles_tmux_enabled: true`, the role will:
+
+1. Install tmux via apt
+2. Clone TPM (Tmux Plugin Manager) to `~/.tmux/plugins/tpm`
+3. Create symlinks for tmux configuration files
+4. Optionally run TPM's `install_plugins` script
+
+Default tmux files to symlink:
+
+```yaml
+dotfiles_tmux_files:
+  - src: '.tmux.conf'
+    dest: '.tmux.conf'
+  - src: 'tmux/powerline-config.sh'
+    dest: '.config/tmux-powerline/config.sh'
+  - src: 'tmux/powerline-theme.sh'
+    dest: '.config/tmux-powerline/themes/my-theme.sh'
+```
+
+Override `dotfiles_tmux_files` to customize which files are symlinked for your tmux setup.
 
 ## Dependencies
 
@@ -122,6 +150,34 @@ None.
     - role: jonimofo.infrastructure.dotfiles
 ```
 
+### With Tmux Setup
+
+```yaml
+- name: Configure dotfiles with tmux
+  hosts: all
+  become: true
+  vars:
+    dotfiles_user_configs:
+      repo: 'git@github.com:jonimofo/dotfiles.git'
+      version: 'main'
+      clone_dir: '.dotfiles'
+      users:
+        - user: admin
+          files:
+            - src: 'bashrc'
+              dest: '.bashrc'
+    dotfiles_tmux_enabled: true
+    dotfiles_tmux_files:
+      - src: '.tmux.conf'
+        dest: '.tmux.conf'
+      - src: 'tmux/powerline-config.sh'
+        dest: '.config/tmux-powerline/config.sh'
+      - src: 'tmux/powerline-theme.sh'
+        dest: '.config/tmux-powerline/themes/my-theme.sh'
+  roles:
+    - role: jonimofo.infrastructure.dotfiles
+```
+
 ## What This Role Does
 
 1. Verifies Debian-based system
@@ -129,6 +185,14 @@ None.
 3. Clones dotfiles repository to each user's home
 4. Creates parent directories for symlink destinations
 5. Creates symlinks from repo files to home directory
+
+When `dotfiles_tmux_enabled: true`:
+
+6. Installs tmux via apt
+7. Clones TPM to `~/.tmux/plugins/tpm` for each user
+8. Creates parent directories for tmux config files
+9. Creates symlinks for tmux configuration files
+10. Runs TPM `install_plugins` script (if enabled)
 
 ## License
 

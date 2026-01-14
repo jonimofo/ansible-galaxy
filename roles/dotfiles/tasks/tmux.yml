@@ -1,36 +1,23 @@
 #SPDX-License-Identifier: MIT-0
 ---
-# tasks file for roles/dotfiles
+# Tmux setup tasks for roles/dotfiles
 
-- name: Verify Debian-based system
-  ansible.builtin.assert:
-    that:
-      - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
-    quiet: true
-  tags:
-    - always
-
-- name: Ensure git is installed
+- name: Install tmux
   ansible.builtin.apt:
-    name: git
+    name: tmux
     state: present
     update_cache: true
     cache_valid_time: 3600
   tags:
-    - dotfiles
     - tmux
 
-- name: Clone or update dotfiles repo for {{ item.user }}
+- name: Clone TPM (Tmux Plugin Manager) for {{ item.user }}
   ansible.builtin.git:
-    repo: "{{ dotfiles_user_configs.repo }}"
-    dest: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}"
-    version: "{{ dotfiles_user_configs.version }}"
+    repo: "{{ dotfiles_tmux_tpm_repo }}"
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    version: "{{ dotfiles_tmux_tpm_version }}"
     update: true
     accept_hostkey: true
-    force: true
-  # Only use become when target user differs from ansible_user
-  # This preserves SSH agent forwarding for the connecting user
   become: "{{ item.user != ansible_user }}"
   become_user: "{{ item.user if item.user != ansible_user else omit }}"
   loop: "{{ dotfiles_user_configs.users }}"
@@ -39,17 +26,16 @@
   vars:
     user_home: "{{ item.home | default('/home/' + item.user) }}"
   tags:
-    - dotfiles
     - tmux
 
-- name: Ensure parent directory exists for {{ file.dest }} of {{ user.user }}
+- name: Ensure parent directory exists for tmux config {{ file.dest }} of {{ user.user }}
   ansible.builtin.file:
     path: "{{ (user_home + '/' + file.dest) | dirname }}"
     state: directory
     owner: "{{ user.user }}"
     group: "{{ user.user }}"
     mode: '0755'
-  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
+  loop: "{{ dotfiles_user_configs.users | product(dotfiles_tmux_files) | list }}"
   loop_control:
     label: "{{ user.user }}:{{ file.dest }}"
   vars:
@@ -57,9 +43,9 @@
     file: "{{ item.1 }}"
     user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
   tags:
-    - dotfiles
+    - tmux
 
-- name: Create symlink {{ file.src }} -> {{ file.dest }} for {{ user.user }}
+- name: Create tmux symlink {{ file.src }} -> {{ file.dest }} for {{ user.user }}
   ansible.builtin.file:
     src: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
     dest: "{{ user_home }}/{{ file.dest }}"
@@ -68,7 +54,7 @@
     owner: "{{ user.user }}"
     group: "{{ user.user }}"
     follow: false
-  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
+  loop: "{{ dotfiles_user_configs.users | product(dotfiles_tmux_files) | list }}"
   loop_control:
     label: "{{ user.user }}:{{ file.src }}"
   vars:
@@ -76,11 +62,19 @@
     file: "{{ item.1 }}"
     user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
   tags:
-    - dotfiles
+    - tmux
 
-- name: Include tmux setup tasks
-  ansible.builtin.include_tasks: tmux.yml
-  when: dotfiles_tmux_enabled | bool
+- name: Run TPM install_plugins for {{ item.user }}
+  ansible.builtin.command:
+    cmd: "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  become: "{{ item.user != ansible_user }}"
+  become_user: "{{ item.user if item.user != ansible_user else omit }}"
+  loop: "{{ dotfiles_user_configs.users }}"
+  loop_control:
+    label: "{{ item.user }}"
+  vars:
+    user_home: "{{ item.home | default('/home/' + item.user) }}"
+  when: dotfiles_tmux_install_plugins | bool
+  changed_when: false
   tags:
-    - dotfiles
     - tmux

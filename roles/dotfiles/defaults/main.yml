@@ -11,3 +11,25 @@ dotfiles_user_configs: []
 #       files:
 #         - src: 'bashrc'
 #           dest: '.bashrc'
+
+# dotfiles_tmux_enabled: Enable tmux setup (install tmux, TPM, symlink configs)
+dotfiles_tmux_enabled: false
+
+# dotfiles_tmux_tpm_repo: TPM (Tmux Plugin Manager) repository URL
+dotfiles_tmux_tpm_repo: 'https://github.com/tmux-plugins/tpm'
+
+# dotfiles_tmux_tpm_version: TPM version/branch to clone
+dotfiles_tmux_tpm_version: 'master'
+
+# dotfiles_tmux_install_plugins: Run TPM install_plugins script after setup
+dotfiles_tmux_install_plugins: true
+
+# dotfiles_tmux_files: Tmux-related files to symlink from dotfiles repo
+# Each entry requires: src (path in dotfiles repo), dest (path relative to home)
+dotfiles_tmux_files:
+  - src: '.tmux.conf'
+    dest: '.tmux.conf'
+  - src: 'tmux/powerline-config.sh'
+    dest: '.config/tmux-powerline/config.sh'
+  - src: 'tmux/powerline-theme.sh'
+    dest: '.config/tmux-powerline/themes/my-theme.sh'
