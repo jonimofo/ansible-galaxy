@@ -21,10 +21,11 @@ locale_additional: []
 #   - "en_GB.UTF-8"
 
 # locale_env: Environment variables for /etc/default/locale
+# Defaults are derived from locale_name to stay in sync
 locale_env:
-  LANG: "en_US.UTF-8"
-  LANGUAGE: "en_US:en"
-  LC_ALL: "en_US.UTF-8"
+  LANG: "{{ locale_name }}"
+  LANGUAGE: "{{ locale_name.split('.')[0] }}:{{ locale_name[:2] }}"
+  LC_ALL: "{{ locale_name }}"
 
 # --- Reboot Settings ---
 
