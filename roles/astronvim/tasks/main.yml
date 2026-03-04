@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Ensure git is installed
   ansible.builtin.apt:
@@ -15,6 +16,9 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - astronvim
+    - install
 
 # ---------------------------------------------------------------------------
 # STAGE 1: INSTALL NEOVIM
@@ -23,18 +27,30 @@
 - name: Determine Neovim archive name based on architecture
   ansible.builtin.set_fact:
     neovim_archive_name: "{{ 'nvim-linux-arm64.tar.gz' if ansible_architecture == 'aarch64' else 'nvim-linux-x86_64.tar.gz' }}"
+  tags:
+    - astronvim
+    - install
 
 - name: Display detected architecture and selected archive
   ansible.builtin.debug:
     msg: "Detected architecture '{{ ansible_architecture }}', using archive '{{ neovim_archive_name }}'."
+  tags:
+    - astronvim
+    - install
 
 - name: Check if Neovim is already installed
   ansible.builtin.stat:
     path: "{{ neovim_binary_path }}"
   register: nvim_binary_stat
+  tags:
+    - astronvim
+    - install
 
 - name: Install Neovim {{ neovim_version }}
   when: not nvim_binary_stat.stat.exists
+  tags:
+    - astronvim
+    - install
   block:
     - name: Download Neovim {{ neovim_version }} tarball
       ansible.builtin.get_url:
@@ -65,3 +81,6 @@
     loop_var: user
     label: "{{ user.name }}"
   when: astronvim_users | length > 0
+  tags:
+    - astronvim
+    - configure

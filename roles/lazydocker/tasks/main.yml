@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Verify supported architecture
   ansible.builtin.assert:
@@ -15,25 +16,38 @@
       - ansible_architecture in lazydocker_arch_map
     fail_msg: "Unsupported architecture: {{ ansible_architecture }}. Supported: {{ lazydocker_arch_map.keys() | list }}"
     quiet: true
+  tags: always
 
 - name: Set architecture suffix for lazydocker
   ansible.builtin.set_fact:
     lazydocker_arch: "{{ lazydocker_arch_map[ansible_architecture] }}"
+  tags:
+    - lazydocker
+    - install
 
 - name: Set lazydocker archive filename
   ansible.builtin.set_fact:
     lazydocker_archive_filename: "lazydocker_{{ lazydocker_version }}_{{ lazydocker_arch }}.tar.gz"
+  tags:
+    - lazydocker
+    - install
 
 - name: Set download path and URL for lazydocker
   ansible.builtin.set_fact:
     lazydocker_archive_path: "{{ lazydocker_download_dir }}/{{ lazydocker_archive_filename }}"
     lazydocker_download_url: "https://github.com/jesseduffield/lazydocker/releases/download/v{{ lazydocker_version }}/{{ lazydocker_archive_filename }}"
+  tags:
+    - lazydocker
+    - install
 
 - name: Ensure download directory exists
   ansible.builtin.file:
     path: "{{ lazydocker_download_dir }}"
     state: directory
     mode: '0755'
+  tags:
+    - lazydocker
+    - install
 
 - name: Check installed lazydocker version
   ansible.builtin.command:
@@ -41,12 +55,18 @@
   register: lazydocker_installed_version
   changed_when: false
   failed_when: false
+  tags:
+    - lazydocker
+    - install
 
 - name: Determine if lazydocker install is needed
   ansible.builtin.set_fact:
     lazydocker_needs_install: >-
       {{ lazydocker_installed_version.rc != 0 or
          lazydocker_version not in (lazydocker_installed_version.stdout | default('')) }}
+  tags:
+    - lazydocker
+    - install
 
 - name: Download lazydocker archive
   ansible.builtin.get_url:
@@ -56,6 +76,9 @@
     mode: '0644'
     force: true
   when: lazydocker_needs_install
+  tags:
+    - lazydocker
+    - install
 
 - name: Extract lazydocker binary
   ansible.builtin.unarchive:
@@ -65,6 +88,9 @@
     include:
       - lazydocker
   when: lazydocker_needs_install
+  tags:
+    - lazydocker
+    - install
 
 - name: Ensure lazydocker binary is executable
   ansible.builtin.file:
@@ -73,9 +99,15 @@
     group: root
     mode: '0755'
   when: lazydocker_needs_install
+  tags:
+    - lazydocker
+    - install
 
 - name: Clean up downloaded archive
   ansible.builtin.file:
     path: "{{ lazydocker_archive_path }}"
     state: absent
   when: lazydocker_needs_install
+  tags:
+    - lazydocker
+    - install

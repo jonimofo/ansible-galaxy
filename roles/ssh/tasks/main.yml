@@ -8,9 +8,16 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Include SSH configuration tasks
   ansible.builtin.include_tasks: configure_ssh.yml
+  tags:
+    - ssh
+    - configure
 
 - name: Include user management tasks
   ansible.builtin.include_tasks: manage_users.yml
+  tags:
+    - ssh
+    - configure

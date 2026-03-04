@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Update apt cache (with retries)
   ansible.builtin.apt:
@@ -18,11 +19,17 @@
   retries: 3
   delay: 5
   when: ufw_update_cache | bool
+  tags:
+    - ufw
+    - install
 
 - name: Ensure UFW is installed
   ansible.builtin.apt:
     name: "{{ ufw_pkg_name }}"
     state: present
+  tags:
+    - ufw
+    - install
 
 - name: Configure IPv6 support
   ansible.builtin.lineinfile:
@@ -31,11 +38,17 @@
     line: "IPV6={{ ufw_enable_ipv6 | ternary('yes', 'no') }}"
     state: present
   notify: Reload ufw
+  tags:
+    - ufw
+    - configure
 
 - name: Reset UFW to default settings
   community.general.ufw:
     state: reset
   when: ufw_reset_before_configure | bool
+  tags:
+    - ufw
+    - configure
 
 - name: Set UFW default policies  # noqa: args[module]
   community.general.ufw:
@@ -44,6 +57,9 @@
   loop: "{{ ufw_default_policies }}"
   loop_control:
     label: "{{ item.direction }}: {{ item.policy }}"
+  tags:
+    - ufw
+    - configure
 
 - name: Configure UFW rules
   community.general.ufw:
@@ -60,14 +76,23 @@
   loop_control:
     label: "{{ item.rule }} {{ item.name | default(item.port | default('')) }}{{ item.from_ip | default('') | ternary(' from ' ~ item.from_ip | default(''), '') }}"
   when: ufw_rules | length > 0
+  tags:
+    - ufw
+    - configure
 
 - name: Set UFW logging level
   community.general.ufw:
     logging: "{{ ufw_logging }}"
+  tags:
+    - ufw
+    - configure
 
 - name: Ensure UFW is {{ ufw_state }}
   community.general.ufw:
     state: "{{ ufw_state }}"
+  tags:
+    - ufw
+    - configure
 
 - name: Include Docker integration tasks
   ansible.builtin.include_tasks: docker.yml

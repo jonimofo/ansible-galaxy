@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Create users
   ansible.builtin.user:
@@ -23,6 +24,9 @@
   loop_control:
     label: "{{ item.name }}"
   when: users_list | length > 0
+  tags:
+    - users
+    - configure
 
 - name: Configure sudo group privileges
   ansible.builtin.lineinfile:
@@ -38,6 +42,9 @@
     # Block sudo passwd root to prevent unlocking root account
     _sudo_deny_passwd_root: "{{ users_lock_root | ternary(', !/usr/bin/passwd root', '') }}"
     _sudo_line: "%sudo ALL=(ALL) {{ _sudo_nopasswd }}ALL{{ _sudo_deny_su }}{{ _sudo_deny_passwd_root }}"
+  tags:
+    - users
+    - configure
 
 - name: Remove sudoers.d overrides that bypass our configuration
   ansible.builtin.file:
@@ -46,9 +53,15 @@
   loop:
     - /etc/sudoers.d/010_pi-nopasswd
     - /etc/sudoers.d/90-cloud-init-users
+  tags:
+    - users
+    - configure
 
 - name: Lock root account
   ansible.builtin.user:
     name: root
     password_lock: true
   when: users_lock_root
+  tags:
+    - users
+    - configure

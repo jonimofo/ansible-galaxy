@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Update apt cache (with retries)
   ansible.builtin.apt:
@@ -17,17 +18,26 @@
   until: cache_update is succeeded
   retries: 3
   delay: 5
+  tags:
+    - locale
+    - install
 
 - name: Install locale packages
   ansible.builtin.apt:
     name: "{{ locale_packages }}"
     state: present
     update_cache: true
+  tags:
+    - locale
+    - install
 
 - name: Generate locale {{ locale_name }}
   community.general.locale_gen:
     name: "{{ locale_name }}"
     state: present
+  tags:
+    - locale
+    - configure
 
 - name: Generate additional locales
   community.general.locale_gen:
@@ -35,6 +45,9 @@
     state: present
   loop: "{{ locale_additional }}"
   when: locale_additional | length > 0
+  tags:
+    - locale
+    - configure
 
 - name: Set default locale file
   ansible.builtin.copy:
@@ -45,6 +58,9 @@
     mode: '0644'
   register: locale_file
   notify: Reconfigure locales
+  tags:
+    - locale
+    - configure
 
 - name: Ensure LANG in /etc/environment
   ansible.builtin.lineinfile:
@@ -52,11 +68,17 @@
     regexp: '^LANG='
     line: "LANG={{ locale_name }}"
     state: present
+  tags:
+    - locale
+    - configure
 
 - name: Reboot if locale updated
   ansible.builtin.reboot:
     msg: "Rebooting to apply locale settings"
-    pre_reboot_delay: 60
-    post_reboot_delay: 60
-    test_command: locale | grep '{{ locale_name }}'
+    pre_reboot_delay: 5
+    post_reboot_delay: 5
+    test_command: cat /etc/default/locale | grep {{ locale_name }}
   when: locale_reboot and locale_file.changed
+  tags:
+    - locale
+    - configure

@@ -8,17 +8,24 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
   when: fail2ban_update_cache | bool
+  tags:
+    - fail2ban
+    - install
 
 - name: Install fail2ban package
   ansible.builtin.apt:
     name: "{{ fail2ban_package }}"
     state: present
+  tags:
+    - fail2ban
+    - install
 
 - name: Deploy jail.local from template
   ansible.builtin.template:
@@ -28,9 +35,15 @@
     group: root
     mode: '0644'
   notify: Restart fail2ban
+  tags:
+    - fail2ban
+    - configure
 
 - name: Ensure fail2ban is enabled and running
   ansible.builtin.service:
     name: "{{ fail2ban_service_name }}"
     state: started
     enabled: true
+  tags:
+    - fail2ban
+    - configure

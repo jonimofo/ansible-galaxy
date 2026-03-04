@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Ensure git is installed
   ansible.builtin.apt:
@@ -15,11 +16,17 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - fzf
+    - install
 
 - name: Check if fzf is installed
   ansible.builtin.stat:
     path: "{{ fzf_install_path }}/bin/fzf"
   register: fzf_installed
+  tags:
+    - fzf
+    - install
 
 - name: Clone fzf repository
   ansible.builtin.git:
@@ -28,18 +35,27 @@
     version: "{{ fzf_version }}"
     update: false
   when: not fzf_installed.stat.exists
+  tags:
+    - fzf
+    - install
 
 - name: Install fzf
   ansible.builtin.command:
     cmd: "{{ fzf_install_path }}/install --bin"
     creates: "{{ fzf_install_path }}/bin/fzf"
   when: not fzf_installed.stat.exists
+  tags:
+    - fzf
+    - install
 
 - name: Create symlink in /usr/local/bin
   ansible.builtin.file:
     src: "{{ fzf_install_path }}/bin/fzf"
     dest: /usr/local/bin/fzf
     state: link
+  tags:
+    - fzf
+    - install
 
 - name: Render fzf.bash template for each user
   ansible.builtin.template:
@@ -52,6 +68,9 @@
   loop_control:
     label: "{{ item.name }}"
   when: fzf_users | length > 0
+  tags:
+    - fzf
+    - configure
 
 - name: Ensure .bashrc sources fzf.bash
   ansible.builtin.lineinfile:
@@ -67,3 +86,6 @@
   when:
     - fzf_users | length > 0
     - item.update_bashrc | default(fzf_update_bashrc)
+  tags:
+    - fzf
+    - configure

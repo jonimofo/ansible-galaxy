@@ -8,6 +8,7 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Ensure dependencies are installed
   ansible.builtin.apt:
@@ -15,11 +16,17 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - fasd
+    - install
 
 - name: Check if fasd is already installed
   ansible.builtin.stat:
     path: "{{ fasd_install_path }}/fasd"
   register: fasd_binary_stat
+  tags:
+    - fasd
+    - install
 
 - name: Clone fasd repository
   ansible.builtin.git:
@@ -27,6 +34,9 @@
     dest: "{{ fasd_clone_dir }}"
     version: "{{ fasd_git_version }}"
   when: not fasd_binary_stat.stat.exists
+  tags:
+    - fasd
+    - install
 
 - name: Build and install fasd
   ansible.builtin.command:
@@ -35,6 +45,9 @@
     creates: "{{ fasd_install_path }}/fasd"
   changed_when: not fasd_binary_stat.stat.exists
   when: not fasd_binary_stat.stat.exists
+  tags:
+    - fasd
+    - install
 
 - name: Ensure fasd is sourced in user shell config
   ansible.builtin.lineinfile:
@@ -52,9 +65,15 @@
   when:
     - fasd_configure_shell
     - fasd_users | length > 0
+  tags:
+    - fasd
+    - configure
 
 - name: Remove fasd installation directory
   ansible.builtin.file:
     path: "{{ fasd_clone_dir }}"
     state: absent
   when: fasd_cleanup_build_dir
+  tags:
+    - fasd
+    - install

@@ -8,20 +8,28 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Verify host_hostname is set
   ansible.builtin.assert:
     that:
       - host_hostname | length > 0
     fail_msg: "host_hostname must be defined and not empty"
+  tags: always
 
 - name: Set short hostname fact
   ansible.builtin.set_fact:
     _host_short: "{{ host_short_hostname | default(host_hostname.split('.')[0]) }}"
+  tags:
+    - host
+    - configure
 
 - name: Set the hostname
   ansible.builtin.hostname:
     name: "{{ host_hostname }}"
+  tags:
+    - host
+    - configure
 
 # Per Debian convention, 127.0.1.1 maps to the machine's hostname
 # while 127.0.0.1 is reserved for 'localhost'
@@ -33,3 +41,6 @@
     owner: root
     group: root
     mode: '0644'
+  tags:
+    - host
+    - configure

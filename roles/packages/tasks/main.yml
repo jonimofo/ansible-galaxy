@@ -8,24 +8,37 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
+  tags: always
 
 - name: Update APT cache if older than cache_valid_time
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: "{{ apt_update_cache_valid_time }}"
+  tags:
+    - packages
+    - install
 
 - name: Install required packages
   ansible.builtin.package:
     name: "{{ apt_update_packages_to_install }}"
     state: present
+  tags:
+    - packages
+    - install
 
 - name: Remove unused dependencies
   ansible.builtin.apt:
     autoremove: true
+  tags:
+    - packages
+    - install
 
 - name: Clean package cache
   ansible.builtin.apt:
     autoclean: true
+  tags:
+    - packages
+    - install
 
 - name: Deploy APT update systemd service
   ansible.builtin.copy:
@@ -35,6 +48,9 @@
     group: root
     mode: "{{ apt_update_service_mode }}"
   notify: Reload systemd
+  tags:
+    - packages
+    - configure
 
 - name: Deploy APT update systemd timer
   ansible.builtin.template:
@@ -44,15 +60,24 @@
     group: root
     mode: "{{ apt_update_timer_mode }}"
   notify: Reload systemd
+  tags:
+    - packages
+    - configure
 
 - name: Enable and start APT update timer
   ansible.builtin.systemd:
     name: "{{ apt_update_timer_unit }}"
     enabled: true
     state: started
+  tags:
+    - packages
+    - configure
 
 - name: Gather service facts for APT unit detection
   ansible.builtin.service_facts:
+  tags:
+    - packages
+    - configure
 
 - name: Disable and mask default APT timers/services
   ansible.builtin.systemd:
@@ -63,11 +88,15 @@
   loop: "{{ apt_update_disable_units }}"
   when: item in ansible_facts.services
   notify: Reload systemd
+  tags:
+    - packages
+    - configure
 
 # --- Security: Unattended Upgrades ---
 - name: Configure unattended-upgrades
   when: apt_update_unattended_upgrades | bool
   tags:
+    - packages
     - security
     - unattended-upgrades
   block:
@@ -103,6 +132,7 @@
 - name: Disable unattended-upgrades when not configured
   when: not (apt_update_unattended_upgrades | bool)
   tags:
+    - packages
     - security
     - unattended-upgrades
   block:
