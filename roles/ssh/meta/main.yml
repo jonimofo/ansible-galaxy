@@ -3,7 +3,7 @@
 galaxy_info:
   author: jonimofo
   description: Hardens SSH server configuration and manages user access with authorized keys on Debian-based systems.
-  license: MIT
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
     - name: Debian
