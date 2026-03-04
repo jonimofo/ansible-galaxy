@@ -25,8 +25,9 @@ build:
 
 test:
 	@for f in roles/*/tests/test.yml; do \
+		dir=$$(dirname "$$f"); \
 		echo "Syntax-checking $$f ..."; \
-		ansible-playbook --syntax-check "$$f" || exit 1; \
+		ansible-playbook --syntax-check -i "$$dir/inventory" "$$f" || exit 1; \
 	done
 	@echo "All syntax checks passed."
 

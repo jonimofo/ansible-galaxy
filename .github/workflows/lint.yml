@@ -35,6 +35,7 @@ jobs:
       - name: Syntax-check test playbooks
         run: |
           for f in roles/*/tests/test.yml; do
+            dir=$(dirname "$f")
             echo "Checking $f ..."
-            ansible-playbook --syntax-check "$f"
+            ansible-playbook --syntax-check -i "$dir/inventory" "$f"
           done
