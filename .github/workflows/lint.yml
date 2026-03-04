@@ -1,0 +1,40 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Run yamllint
+        run: yamllint .
+
+  ansible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pip install ansible-core ansible-lint
+      - name: Run ansible-lint
+        run: ansible-lint
+
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ansible-core
+        run: pip install ansible-core
+      - name: Syntax-check test playbooks
+        run: |
+          for f in roles/*/tests/test.yml; do
+            echo "Checking $f ..."
+            ansible-playbook --syntax-check "$f"
+          done

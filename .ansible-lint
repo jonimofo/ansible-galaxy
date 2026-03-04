@@ -1,0 +1,21 @@
+---
+offline: true
+
+exclude_paths:
+  - brave_students_profile/
+  - .github/
+  - .claude/
+
+# Skip rules with widespread pre-existing violations.
+# These should be addressed incrementally in future PRs.
+skip_list:
+  - yaml[comments]           # SPDX headers use #SPDX without space
+  - yaml[document-start]     # galaxy.yml missing ---
+  - yaml[comments-indentation]
+  - var-naming[no-role-prefix]  # many roles use non-prefixed var names
+  - name[play]               # test playbooks have unnamed plays
+  - name[template]           # Jinja in middle of task names
+  - role-name[path]          # test playbooks use path-based role refs
+  - partial-become[task]     # become_user without become
+  - galaxy[no-changelog]     # no changelog file yet
+  - meta-runtime[unsupported-version]  # requires_ansible needs update
