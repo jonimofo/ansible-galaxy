@@ -21,7 +21,7 @@
     path: "{{ fzf_install_path }}/bin/fzf"
   register: fzf_installed
 
-- name: Clone fzf repository
+- name: Clone fzf repository  # noqa: latest[git]
   ansible.builtin.git:
     repo: "{{ fzf_repo_url }}"
     dest: "{{ fzf_install_path }}"

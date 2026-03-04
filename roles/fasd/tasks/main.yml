@@ -33,6 +33,7 @@
     cmd: make install
     chdir: "{{ fasd_clone_dir }}"
     creates: "{{ fasd_install_path }}/fasd"
+  changed_when: not fasd_binary_stat.stat.exists
   when: not fasd_binary_stat.stat.exists
 
 - name: Ensure fasd is sourced in user shell config

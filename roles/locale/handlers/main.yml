@@ -1,3 +1,9 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # handlers file for roles/locale
+
+- name: Reconfigure locales
+  ansible.builtin.command:
+    cmd: dpkg-reconfigure -f noninteractive locales
+  register: locale_reconfigure
+  changed_when: "'Generating locales' in locale_reconfigure.stdout"
