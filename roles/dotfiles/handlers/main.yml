@@ -1,3 +1,7 @@
 # SPDX-License-Identifier: MIT-0
 ---
 # handlers file for roles/dotfiles
+
+- name: Refresh font cache
+  ansible.builtin.command: fc-cache -f
+  changed_when: false

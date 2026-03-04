@@ -88,3 +88,10 @@
   tags:
     - dotfiles
     - tmux
+
+- name: Include Nerd Fonts installation tasks
+  ansible.builtin.include_tasks: fonts.yml
+  when: dotfiles_nerd_fonts_enabled | bool
+  tags:
+    - dotfiles
+    - fonts

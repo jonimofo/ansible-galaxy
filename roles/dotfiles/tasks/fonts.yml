@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: MIT-0
+---
+# Nerd Fonts installation tasks
+
+- name: Build Nerd Font download URL
+  ansible.builtin.set_fact:
+    dotfiles_nerd_font_url: >-
+      https://github.com/ryanoasis/nerd-fonts/releases/download/v{{ dotfiles_nerd_font_version }}/{{ dotfiles_nerd_font_name }}.zip
+    dotfiles_nerd_font_archive: "{{ dotfiles_nerd_font_download_dir }}/{{ dotfiles_nerd_font_name }}.zip"
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Check if Nerd Font is already installed
+  ansible.builtin.find:
+    paths: "{{ dotfiles_nerd_font_install_dir }}"
+    patterns: '*.ttf'
+  register: dotfiles_nerd_font_installed
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Ensure unzip is installed
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: dotfiles_nerd_font_installed.matched == 0
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Create Nerd Font install directory
+  ansible.builtin.file:
+    path: "{{ dotfiles_nerd_font_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: dotfiles_nerd_font_installed.matched == 0
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Download {{ dotfiles_nerd_font_name }} Nerd Font v{{ dotfiles_nerd_font_version }}
+  ansible.builtin.get_url:
+    url: "{{ dotfiles_nerd_font_url }}"
+    dest: "{{ dotfiles_nerd_font_archive }}"
+    mode: '0644'
+  when: dotfiles_nerd_font_installed.matched == 0
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Extract {{ dotfiles_nerd_font_name }} Nerd Font to {{ dotfiles_nerd_font_install_dir }}
+  ansible.builtin.unarchive:
+    src: "{{ dotfiles_nerd_font_archive }}"
+    dest: "{{ dotfiles_nerd_font_install_dir }}"
+    remote_src: true
+    include:
+      - '*.ttf'
+  when: dotfiles_nerd_font_installed.matched == 0
+  notify: Refresh font cache
+  tags:
+    - dotfiles
+    - fonts
+
+- name: Clean up Nerd Font archive
+  ansible.builtin.file:
+    path: "{{ dotfiles_nerd_font_archive }}"
+    state: absent
+  when: dotfiles_nerd_font_installed.matched == 0
+  tags:
+    - dotfiles
+    - fonts

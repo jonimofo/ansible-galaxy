@@ -33,3 +33,19 @@ dotfiles_tmux_files:
     dest: '.config/tmux-powerline/config.sh'
   - src: 'tmux/powerline-theme.sh'
     dest: '.config/tmux-powerline/themes/my-theme.sh'
+
+# --- Nerd Fonts ---
+# dotfiles_nerd_fonts_enabled: install Nerd Fonts system-wide
+dotfiles_nerd_fonts_enabled: false
+
+# dotfiles_nerd_font_version: Nerd Fonts release version
+dotfiles_nerd_font_version: "3.4.0"
+
+# dotfiles_nerd_font_name: font family to install (archive name on GitHub)
+dotfiles_nerd_font_name: "Hack"
+
+# dotfiles_nerd_font_install_dir: system-wide font directory
+dotfiles_nerd_font_install_dir: "/usr/local/share/fonts/nerd-fonts"
+
+# dotfiles_nerd_font_download_dir: temporary download location
+dotfiles_nerd_font_download_dir: "/tmp"
