@@ -50,6 +50,7 @@
 - name: Ensure LANG in /etc/environment
   ansible.builtin.lineinfile:
     path: /etc/environment
+    regexp: '^LANG='
     line: "LANG={{ locale_name }}"
     state: present
 
