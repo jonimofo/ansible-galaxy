@@ -39,10 +39,11 @@
       when: item.stat.exists
       changed_when: true
 
-    - name: "Clone AstroNvim template"  # noqa: latest[git]
+    - name: "Clone AstroNvim template"
       ansible.builtin.git:
-        repo: "https://github.com/AstroNvim/template"
+        repo: "{{ astronvim_template_repo }}"
         dest: "{{ _astronvim_user_home }}/.config/nvim"
+        version: "{{ astronvim_template_version }}"
         depth: 1
 
     - name: "Remove .git directory from AstroNvim clone"

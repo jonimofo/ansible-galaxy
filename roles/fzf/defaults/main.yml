@@ -7,6 +7,9 @@
 # fzf_repo_url: Git repository URL for fzf
 fzf_repo_url: "https://github.com/junegunn/fzf.git"
 
+# fzf_version: Git tag/branch to clone (pin for reproducible installs)
+fzf_version: "v0.70.0"
+
 # fzf_install_path: Directory where fzf repository is cloned
 # Binary will be at {{ fzf_install_path }}/bin/fzf
 fzf_install_path: "/opt/fzf"
