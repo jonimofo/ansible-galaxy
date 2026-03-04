@@ -13,6 +13,7 @@
   ansible.builtin.user:
     name: "{{ item.name }}"
     groups: "{{ item.groups | default(omit) }}"
+    append: true
     shell: "{{ item.shell | default(users_default_shell) }}"
     state: present
     create_home: "{{ item.create_home | default(users_default_create_home) }}"
@@ -22,7 +23,6 @@
   loop_control:
     label: "{{ item.name }}"
   when: users_list | length > 0
-  no_log: true
 
 - name: Configure sudo group privileges
   ansible.builtin.lineinfile:
@@ -46,8 +46,6 @@
   loop:
     - /etc/sudoers.d/010_pi-nopasswd
     - /etc/sudoers.d/90-cloud-init-users
-  # Ignore errors if files don't exist
-  failed_when: false
 
 - name: Lock root account
   ansible.builtin.user:
