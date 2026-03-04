@@ -37,7 +37,7 @@
     state: reset
   when: ufw_reset_before_configure | bool
 
-- name: Set UFW default policies
+- name: Set UFW default policies  # noqa: args[module]
   community.general.ufw:
     direction: "{{ item.direction }}"
     policy: "{{ item.policy }}"
