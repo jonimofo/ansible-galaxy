@@ -29,7 +29,7 @@
 
 - name: Deploy APT update systemd service
   ansible.builtin.copy:
-    src: files/apt_update.service
+    src: apt_update.service
     dest: "{{ apt_update_service_dest }}"
     owner: root
     group: root
@@ -38,7 +38,7 @@
 
 - name: Deploy APT update systemd timer
   ansible.builtin.template:
-    src: templates/apt_update.timer.j2
+    src: apt_update.timer.j2
     dest: "{{ apt_update_timer_dest }}"
     owner: root
     group: root
@@ -51,6 +51,9 @@
     enabled: true
     state: started
 
+- name: Gather service facts for APT unit detection
+  ansible.builtin.service_facts:
+
 - name: Disable and mask default APT timers/services
   ansible.builtin.systemd:
     name: "{{ item }}"
@@ -58,6 +61,7 @@
     state: stopped
     masked: true
   loop: "{{ apt_update_disable_units }}"
+  when: item in ansible_facts.services
   notify: Reload systemd
 
 # --- Security: Unattended Upgrades ---
@@ -76,7 +80,7 @@
 
     - name: Deploy unattended-upgrades configuration
       ansible.builtin.template:
-        src: templates/50unattended-upgrades.j2
+        src: 50unattended-upgrades.j2
         dest: /etc/apt/apt.conf.d/50unattended-upgrades
         owner: root
         group: root
@@ -84,7 +88,7 @@
 
     - name: Deploy auto-upgrades configuration
       ansible.builtin.template:
-        src: templates/20auto-upgrades.j2
+        src: 20auto-upgrades.j2
         dest: /etc/apt/apt.conf.d/20auto-upgrades
         owner: root
         group: root
