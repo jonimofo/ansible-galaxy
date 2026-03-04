@@ -35,34 +35,46 @@
     state: directory
     mode: '0755'
 
-- name: Check if lazydocker binary exists
-  ansible.builtin.stat:
-    path: "{{ lazydocker_install_path }}/lazydocker"
-  register: lazydocker_binary
+- name: Check installed lazydocker version
+  ansible.builtin.command:
+    cmd: "{{ lazydocker_install_path }}/lazydocker --version"
+  register: lazydocker_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Determine if lazydocker install is needed
+  ansible.builtin.set_fact:
+    lazydocker_needs_install: >-
+      {{ lazydocker_installed_version.rc != 0 or
+         lazydocker_version not in (lazydocker_installed_version.stdout | default('')) }}
 
 - name: Download lazydocker archive
   ansible.builtin.get_url:
     url: "{{ lazydocker_download_url }}"
     dest: "{{ lazydocker_archive_path }}"
     mode: '0644'
-    force: false
-  when: not lazydocker_binary.stat.exists
+    force: true
+  when: lazydocker_needs_install
 
 - name: Extract lazydocker binary
   ansible.builtin.unarchive:
     src: "{{ lazydocker_archive_path }}"
     dest: "{{ lazydocker_install_path }}"
     remote_src: true
-    creates: "{{ lazydocker_install_path }}/lazydocker"
-  when: not lazydocker_binary.stat.exists
+    include:
+      - lazydocker
+  when: lazydocker_needs_install
 
 - name: Ensure lazydocker binary is executable
   ansible.builtin.file:
     path: "{{ lazydocker_install_path }}/lazydocker"
+    owner: root
+    group: root
     mode: '0755'
+  when: lazydocker_needs_install
 
 - name: Clean up downloaded archive
   ansible.builtin.file:
     path: "{{ lazydocker_archive_path }}"
     state: absent
-  when: lazydocker_download_dir == '/tmp'
+  when: lazydocker_needs_install
