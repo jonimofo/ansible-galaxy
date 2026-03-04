@@ -44,7 +44,6 @@
       {% endfor %}
     mode: '0644'
   register: locale_file
-  changed_when: locale_file.changed
   notify: Reconfigure locales
 
 - name: Ensure LANG in /etc/environment

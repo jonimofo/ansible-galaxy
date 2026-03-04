@@ -6,4 +6,4 @@
   ansible.builtin.command:
     cmd: dpkg-reconfigure -f noninteractive locales
   register: locale_reconfigure
-  changed_when: "'Generating locales' in locale_reconfigure.stdout"
+  changed_when: "'Generating locales' in (locale_reconfigure.stdout + locale_reconfigure.stderr)"

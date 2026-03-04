@@ -43,7 +43,7 @@ All variables are defined in `defaults/main.yml`:
 | `fail2ban_backend` | `systemd` | Log backend (`systemd`, `auto`, `pyinotify`) |
 | `fail2ban_allowipv6` | `false` | Enable IPv6 support |
 | `fail2ban_ignoreip` | `['127.0.0.1/8']` | IPs/networks to never ban |
-| `fail2ban_banaction` | `iptables-multiport` | Ban action (`ufw`, `iptables-multiport`) |
+| `fail2ban_banaction` | `ufw` | Ban action (`ufw`, `iptables-multiport`) |
 
 ### Package Settings
 
