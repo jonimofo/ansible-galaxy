@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run yamllint and ansible-lint before committing.
+# Activate the project virtualenv to pick up linting tools.
+#
+# Install with:
+#   git config core.hooksPath .githooks
+
+set -e
+
+VENV="$HOME/.virtualenv/bin/activate"
+if [ -f "$VENV" ]; then
+    # shellcheck disable=SC1090
+    source "$VENV"
+fi
+
+echo "Running yamllint..."
+yamllint .
+
+echo "Running ansible-lint..."
+ansible-lint
+
+echo "Linting passed."

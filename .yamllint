@@ -15,10 +15,7 @@ rules:
     indent-sequences: true
   comments:
     min-spaces-from-content: 1
-    level: warning
   comments-indentation: false
-  document-start:
-    level: warning
   braces:
     max-spaces-inside: 1
   empty-lines:

@@ -1,15 +1,20 @@
 # jonimofo.infrastructure - Ansible Collection Makefile
 
-.PHONY: help lint build test clean
+.PHONY: help lint build test clean setup
 
 # Default target
 help:
 	@echo "jonimofo.infrastructure - Available commands:"
 	@echo ""
+	@echo "  make setup  - Install pre-commit hook"
 	@echo "  make lint   - Run ansible-lint and yamllint"
 	@echo "  make build  - Build the collection archive"
 	@echo "  make test   - Syntax-check all test playbooks"
 	@echo "  make clean  - Remove build artifacts"
+
+setup:
+	git config core.hooksPath .githooks
+	@echo "Pre-commit hook installed."
 
 lint:
 	yamllint .

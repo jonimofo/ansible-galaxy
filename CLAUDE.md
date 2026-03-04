@@ -304,7 +304,42 @@ build_ignore:
 
 ## Linting
 
-Run `make lint` before committing. This runs both `yamllint` and `ansible-lint`. The CI pipeline enforces this on push and PRs.
+Run `make lint` before committing. This runs both `yamllint` and `ansible-lint`. A pre-commit hook enforces this automatically, and the CI pipeline enforces it on push and PRs.
+
+### Setup
+
+Linting tools live in the project virtualenv:
+```bash
+source ~/.virtualenv/bin/activate
+```
+
+Install the pre-commit hook:
+```bash
+git config core.hooksPath .githooks
+```
+
+### Linting Rules
+
+**yamllint** (`.yamllint`):
+- Line length: max 200 (warning)
+- Indentation: 2 spaces, sequences indented
+- Comments: require space after `#` (e.g., `# SPDX`, not `#SPDX`)
+- Braces: max 1 space inside
+- Truthy values: warning only (GitHub Actions uses `on:`)
+- Comments-indentation: disabled (ansible-lint requirement)
+- Octal values: forbid both implicit and explicit
+
+**ansible-lint** (`.ansible-lint`):
+- Runs offline for speed
+- Excludes `brave_students_profile/`, `.github/`, `.claude/`
+- Skipped rules (pre-existing, to fix incrementally):
+  - `var-naming[no-role-prefix]` — many roles use non-prefixed variable names
+  - `name[play]` — test playbooks have unnamed plays
+  - `name[template]` — Jinja in middle of task names
+  - `role-name[path]` — test playbooks use path-based role refs
+  - `partial-become[task]` — `become_user` without `become`
+  - `galaxy[no-changelog]` — no changelog file yet
+  - `meta-runtime[unsupported-version]` — `requires_ansible` needs update
 
 ## Testing
 

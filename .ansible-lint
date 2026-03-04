@@ -6,11 +6,8 @@ exclude_paths:
   - .github/
   - .claude/
 
-# Skip rules with widespread pre-existing violations.
-# These should be addressed incrementally in future PRs.
+# Skip rules with pre-existing violations to be addressed incrementally.
 skip_list:
-  - yaml[comments]           # SPDX headers use #SPDX without space
-  - yaml[document-start]     # galaxy.yml missing ---
   - yaml[comments-indentation]
   - var-naming[no-role-prefix]  # many roles use non-prefixed var names
   - name[play]               # test playbooks have unnamed plays
