@@ -277,6 +277,35 @@ All roles MUST be idempotent:
 - Use `changed_when: false` for read-only commands
 - Register results and use conditions to skip unnecessary actions
 
+## Collection Dependencies
+
+When a role uses modules from another collection (e.g., `community.general.locale_gen`), that collection **must** be declared in `galaxy.yml` under `dependencies`:
+
+```yaml
+dependencies:
+  community.general: ">=1.0.0"
+```
+
+## Build Ignore Convention
+
+Always exclude development and CI files from the collection build artifact. Keep the `build_ignore` list in `galaxy.yml` up to date:
+
+```yaml
+build_ignore:
+  - CLAUDE.md
+  - .claude/
+  - TODO.md
+  - Makefile
+  - '*.tar.gz'
+  - .github/
+  - .ansible-lint
+  - .yamllint
+```
+
+## Linting
+
+Run `make lint` before committing. This runs both `yamllint` and `ansible-lint`. The CI pipeline enforces this on push and PRs.
+
 ## Testing
 
 Each role should have a test playbook in `tests/test.yml` that:

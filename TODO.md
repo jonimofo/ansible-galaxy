@@ -1,4 +1,4 @@
 # TODO
-- logrotate
-- install tmux plugin manager
 
+- logrotate role
+- molecule testing framework integration
