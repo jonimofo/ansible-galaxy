@@ -12,7 +12,7 @@
 
 - name: Run ufw-docker-rules
   ansible.builtin.command: /usr/local/sbin/ufw-docker-rules.sh
-  changed_when: true
+  changed_when: false
 
 - name: Restart ufw-docker
   ansible.builtin.systemd:

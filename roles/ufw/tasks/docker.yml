@@ -4,11 +4,22 @@
 # Manages DOCKER-USER chain to control external access to Docker containers
 # Uses systemd service to persist rules across Docker restarts
 
-- name: Check if DOCKER-USER chain exists
-  ansible.builtin.command: iptables -L DOCKER-USER -n
-  register: ufw_docker_user_chain
+- name: Check if DOCKER-USER chain exists (iptables-legacy)
+  ansible.builtin.command: iptables-legacy -L DOCKER-USER -n
+  register: ufw_docker_user_chain_legacy
   failed_when: false
   changed_when: false
+
+- name: Check if DOCKER-USER chain exists (iptables)
+  ansible.builtin.command: iptables -L DOCKER-USER -n
+  register: ufw_docker_user_chain_nft
+  failed_when: false
+  changed_when: false
+  when: ufw_docker_user_chain_legacy.rc != 0
+
+- name: Set DOCKER-USER chain detection result
+  ansible.builtin.set_fact:
+    ufw_docker_user_chain: "{{ ufw_docker_user_chain_legacy if ufw_docker_user_chain_legacy.rc == 0 else (ufw_docker_user_chain_nft | default(ufw_docker_user_chain_legacy)) }}"
 
 - name: Warn if DOCKER-USER chain does not exist
   ansible.builtin.debug:
@@ -48,4 +59,4 @@
 
     - name: Run DOCKER-USER rules script now
       ansible.builtin.command: /usr/local/sbin/ufw-docker-rules.sh
-      changed_when: true
+      changed_when: false
