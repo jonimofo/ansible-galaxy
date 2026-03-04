@@ -49,6 +49,8 @@
     owner: "{{ user.user }}"
     group: "{{ user.user }}"
     mode: '0755'
+  become: true
+  become_user: "{{ user.user }}"
   loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
   loop_control:
     label: "{{ user.user }}:{{ file.dest }}"
@@ -68,6 +70,8 @@
     owner: "{{ user.user }}"
     group: "{{ user.user }}"
     follow: false
+  become: true
+  become_user: "{{ user.user }}"
   loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
   loop_control:
     label: "{{ user.user }}:{{ file.src }}"
