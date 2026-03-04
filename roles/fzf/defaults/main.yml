@@ -16,6 +16,7 @@ fzf_install_path: "/opt/fzf"
 # fzf_users: List of users to configure fzf shell integration for
 # Each user can have:
 #   - name: username (required)
+#   - home: home directory (default: /home/<name>)
 #   - update_bashrc: add source line to .bashrc (default: fzf_update_bashrc)
 fzf_users: []
 

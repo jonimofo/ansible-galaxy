@@ -1,15 +1,20 @@
 ---
 # STEP 1: Check if AstroNvim is already fully installed. This is the main idempotency check.
+- name: "Set user home directory for {{ user.name }}"
+  ansible.builtin.set_fact:
+    _astronvim_user_home: "{{ user.home | default('/home/' + user.name) }}"
+
 - name: "Check if AstroNvim is already installed for user {{ user.name }}"
   ansible.builtin.stat:
-    path: "/home/{{ user.name }}/.local/share/nvim/lazy/lazy.nvim"
+    path: "{{ _astronvim_user_home }}/.local/share/nvim/lazy/lazy.nvim"
   register: astronvim_install_stat
+  become: true
   become_user: "{{ user.name }}"
 
 # STEP 2: If AstroNvim isn't installed, check which (if any) old config directories exist.
 - name: "Check for existing directories to backup for user {{ user.name }}"
   ansible.builtin.stat:
-    path: "/home/{{ user.name }}/{{ item }}"
+    path: "{{ _astronvim_user_home }}/{{ item }}"
   loop:
     - ".config/nvim"
     - ".local/share/nvim"
@@ -17,10 +22,12 @@
     - ".cache/nvim"
   register: existing_paths
   when: not astronvim_install_stat.stat.exists
+  become: true
   become_user: "{{ user.name }}"
 
 # STEP 3: If AstroNvim isn't installed, run the main setup block.
 - name: "Set up AstroNvim for user {{ user.name }}"
+  become: true
   become_user: "{{ user.name }}"
   when: not astronvim_install_stat.stat.exists
   block:
@@ -35,10 +42,10 @@
     - name: "Clone AstroNvim template"  # noqa: latest[git]
       ansible.builtin.git:
         repo: "https://github.com/AstroNvim/template"
-        dest: "/home/{{ user.name }}/.config/nvim"
+        dest: "{{ _astronvim_user_home }}/.config/nvim"
         depth: 1
 
     - name: "Remove .git directory from AstroNvim clone"
       ansible.builtin.file:
-        path: "/home/{{ user.name }}/.config/nvim/.git"
+        path: "{{ _astronvim_user_home }}/.config/nvim/.git"
         state: absent

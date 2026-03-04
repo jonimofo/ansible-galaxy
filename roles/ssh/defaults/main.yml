@@ -55,6 +55,7 @@ ssh_strict_host_key_checking: "ask"
 
 # ssh_users: List of users allowed to SSH with their public keys
 # Each user requires: name, pubkey
+# Optional: home (defaults to /home/<name>)
 ssh_users: []
 # Example:
 # ssh_users:
@@ -62,6 +63,9 @@ ssh_users: []
 #     pubkey: "ssh-ed25519 AAAA... alice@example.com"
 #   - name: "bob"
 #     pubkey: "ssh-rsa AAAA... bob@workstation"
+#   - name: "root"
+#     pubkey: "ssh-ed25519 AAAA... admin@example.com"
+#     home: "/root"
 
 # ssh_exclusive_keys: Remove unmanaged keys from authorized_keys
 # When true: authorized_keys will contain ONLY keys defined in ssh_users

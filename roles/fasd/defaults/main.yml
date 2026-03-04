@@ -26,11 +26,14 @@ fasd_dependencies:
 # --- User Configuration ---
 
 # fasd_users: List of users to configure fasd for
-# Each item should have a 'name' key
+# Each item requires: name
+# Optional: home (defaults to /home/<name>)
 fasd_users: []
 # Example:
 #   - name: "admin"
 #   - name: "developer"
+#   - name: "root"
+#     home: "/root"
 
 # fasd_configure_shell: Add fasd init to user's .bashrc
 fasd_configure_shell: true

@@ -16,8 +16,11 @@ neovim_version: "v0.11.3"
 # --- User Configuration ---
 
 # astronvim_users: List of users to configure AstroNvim for
-# Each user should have a 'name' key
+# Each user requires: name
+# Optional: home (defaults to /home/<name>)
 astronvim_users: []
 # Example:
 #   - name: "admin"
 #   - name: "developer"
+#   - name: "root"
+#     home: "/root"

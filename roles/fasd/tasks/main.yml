@@ -38,7 +38,7 @@
 
 - name: Ensure fasd is sourced in user shell config
   ansible.builtin.lineinfile:
-    path: "/home/{{ item.name }}/.bashrc"
+    path: "{{ item.home | default('/home/' + item.name) }}/.bashrc"
     regexp: '^eval "\$\(fasd --init auto\)"'
     line: 'eval "$(fasd --init auto)"'
     state: present
