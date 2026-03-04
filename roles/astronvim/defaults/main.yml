@@ -13,6 +13,17 @@ neovim_download_url: "https://github.com/neovim/neovim/releases/download"
 # neovim_version: Neovim version to install
 neovim_version: "v0.11.3"
 
+# neovim_checksum: SHA256 checksum for the downloaded archive (optional)
+# Format: "sha256:<hash>" — leave empty to skip verification
+# Neovim does not publish checksums; compute your own if needed
+neovim_checksum: ""
+
+# astronvim_template_repo: AstroNvim template repository URL
+astronvim_template_repo: "https://github.com/AstroNvim/template"
+
+# astronvim_template_version: Branch/tag of the template to clone
+astronvim_template_version: "main"
+
 # --- User Configuration ---
 
 # astronvim_users: List of users to configure AstroNvim for

@@ -52,6 +52,7 @@
   ansible.builtin.get_url:
     url: "{{ lazydocker_download_url }}"
     dest: "{{ lazydocker_archive_path }}"
+    checksum: "{{ lazydocker_checksums[ansible_architecture] | default(omit) }}"
     mode: '0644'
     force: true
   when: lazydocker_needs_install

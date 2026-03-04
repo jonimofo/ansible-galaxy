@@ -40,6 +40,7 @@
       ansible.builtin.get_url:
         url: "{{ neovim_download_url }}/{{ neovim_version }}/{{ neovim_archive_name }}"
         dest: "/tmp/{{ neovim_archive_name }}"
+        checksum: "{{ neovim_checksum | default(omit, true) }}"
         mode: '0644'
 
     - name: Extract Neovim archive into /usr/local/
