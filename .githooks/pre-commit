@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-commit checks..."
+
+# Activate virtualenv if available
+if [ -f "$HOME/.virtualenv/bin/activate" ]; then
+    # shellcheck disable=SC1091
+    source "$HOME/.virtualenv/bin/activate"
+fi
+
+echo "  yamllint..."
+yamllint .
+
+echo "  ansible-lint..."
+ansible-lint
+
+echo "All checks passed."

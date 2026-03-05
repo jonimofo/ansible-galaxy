@@ -1,4 +1,4 @@
-.PHONY: lint lint-yaml lint-ansible check help
+.PHONY: lint lint-yaml lint-ansible check setup help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -10,6 +10,10 @@ lint-yaml: ## Run yamllint on all YAML files
 
 lint-ansible: ## Run ansible-lint on all roles
 	ansible-lint
+
+setup: ## Configure git hooks path
+	git config core.hooksPath .githooks
+	@echo "Git hooks configured."
 
 check: ## Run ansible-playbook --check (syntax check) on all roles
 	@for role in roles/*/; do \
