@@ -13,8 +13,6 @@
   ansible.builtin.apt:
     name: git
     state: present
-    update_cache: true
-    cache_valid_time: 3600
 
 - name: Clone or update dotfiles repo for {{ item.user }}
   ansible.builtin.git:

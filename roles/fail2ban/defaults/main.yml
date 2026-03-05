@@ -10,9 +10,6 @@ fail2ban_package: fail2ban
 # fail2ban_service_name: Systemd service name
 fail2ban_service_name: fail2ban
 
-# fail2ban_update_cache: Update APT cache before install
-fail2ban_update_cache: true
-
 # fail2ban_jail_local_path: Path to jail.local configuration
 fail2ban_jail_local_path: /etc/fail2ban/jail.local
 

@@ -21,8 +21,6 @@
   ansible.builtin.apt:
     name: brave-browser
     state: present
-    update_cache: true
-    cache_valid_time: "{{ apt_update_cache_valid_time }}"
 
 # ---
 # - name: Install Brave browser

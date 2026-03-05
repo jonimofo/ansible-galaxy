@@ -29,7 +29,6 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `apt_update_packages_to_install` | `[]` | List of packages to install |
-| `apt_update_cache_valid_time` | `3600` | Seconds before APT cache is considered stale |
 
 ### Custom Update Timer
 

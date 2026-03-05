@@ -4,11 +4,6 @@
     path: "/etc/apt/sources.list.d/download_sublimetext_com.list"
     state: absent
 
-- name: "Refresh apt sources list"
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
-
 - name: "Ensure dependencies are installed"
   ansible.builtin.apt:
     name: "{{ packages }}"

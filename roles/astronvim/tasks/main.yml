@@ -13,8 +13,6 @@
   ansible.builtin.apt:
     name: git
     state: present
-    update_cache: true
-    cache_valid_time: 3600
 
 # ---------------------------------------------------------------------------
 # STAGE 1: INSTALL NEOVIM

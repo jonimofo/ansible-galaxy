@@ -9,16 +9,6 @@
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
 
-- name: Update apt cache (with retries)
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
-  register: cache_update
-  until: cache_update is succeeded
-  retries: 3
-  delay: 5
-  when: ufw_update_cache | bool
-
 - name: Ensure UFW is installed
   ansible.builtin.apt:
     name: "{{ ufw_pkg_name }}"

@@ -3,8 +3,6 @@
 # defaults file for roles/gui-apps
 # brave_browser_download_url: "https://dl.brave.com/install.sh"
 
-apt_update_cache_valid_time: 7200  # seconds before apt cache is considered stale
-
 deb_packages_to_install: []
 # Example structure
 # deb_packages_to_install:

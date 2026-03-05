@@ -13,8 +13,6 @@
   ansible.builtin.apt:
     name: "{{ fasd_dependencies }}"
     state: present
-    update_cache: true
-    cache_valid_time: 3600
 
 - name: Check if fasd is already installed
   ansible.builtin.stat:

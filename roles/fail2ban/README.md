@@ -51,7 +51,6 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `fail2ban_package` | `fail2ban` | APT package name |
 | `fail2ban_service_name` | `fail2ban` | Systemd service name |
-| `fail2ban_update_cache` | `true` | Update APT cache before install |
 | `fail2ban_jail_local_path` | `/etc/fail2ban/jail.local` | Path to config file |
 
 ### Jails Configuration

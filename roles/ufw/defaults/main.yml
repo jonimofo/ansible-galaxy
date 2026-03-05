@@ -7,9 +7,6 @@
 # ufw_pkg_name: APT package name for UFW
 ufw_pkg_name: ufw
 
-# ufw_update_cache: Update APT cache before install
-ufw_update_cache: true
-
 # ufw_config_path: Path to UFW configuration file
 ufw_config_path: /etc/default/ufw
 

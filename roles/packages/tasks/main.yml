@@ -9,11 +9,6 @@
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
     quiet: true
 
-- name: Update APT cache if older than cache_valid_time
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: "{{ apt_update_cache_valid_time }}"
-
 - name: Install required packages
   ansible.builtin.package:
     name: "{{ apt_update_packages_to_install }}"

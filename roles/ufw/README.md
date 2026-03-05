@@ -45,7 +45,6 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ufw_pkg_name` | `ufw` | APT package name |
-| `ufw_update_cache` | `true` | Update APT cache before install |
 | `ufw_config_path` | `/etc/default/ufw` | Path to UFW config file |
 
 ### Default Policies
