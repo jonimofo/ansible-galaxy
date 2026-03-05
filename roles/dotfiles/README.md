@@ -8,6 +8,7 @@ Clones a dotfiles Git repository and creates symlinks to user home directories.
 - Creates parent directories as needed
 - Symlinks specified files to home directory
 - Supports multiple users with different file mappings
+- Optional tmux setup: installs tmux, TPM, and plugins
 - Idempotent - safe to run multiple times
 
 ## Requirements
@@ -27,6 +28,7 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `dotfiles_user_configs` | `[]` | Configuration dict (see below) |
+| `dotfiles_tmux_install` | `false` | Install tmux, TPM, and plugins for all users |
 
 ### Configuration Structure
 
@@ -101,6 +103,33 @@ None.
     - role: jonimofo.infrastructure.dotfiles
 ```
 
+### With Tmux, TPM, and Powerline Theme
+
+```yaml
+- name: Configure dotfiles with tmux
+  hosts: all
+  become: true
+  vars:
+    dotfiles_tmux_install: true
+    dotfiles_user_configs:
+      repo: 'git@github.com:jonimofo/dotfiles.git'
+      version: 'main'
+      clone_dir: 'Repos/dotfiles'
+      users:
+        - user: bgi
+          files:
+            - src: '.bashrc'
+              dest: '.bashrc'
+            - src: '.tmux.conf'
+              dest: '.tmux.conf'
+            - src: 'tmux/powerline-config.sh'
+              dest: '.config/tmux-powerline/config.sh'
+            - src: 'tmux/powerline-theme.sh'
+              dest: '.config/tmux-powerline/themes/my-theme.sh'
+  roles:
+    - role: jonimofo.infrastructure.dotfiles
+```
+
 ### Custom Home Directory
 
 ```yaml
@@ -129,6 +158,7 @@ None.
 3. Clones dotfiles repository to each user's home
 4. Creates parent directories for symlink destinations
 5. Creates symlinks from repo files to home directory
+6. Optionally installs tmux, clones TPM, and installs tmux plugins
 
 ## License
 

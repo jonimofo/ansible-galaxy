@@ -65,3 +65,7 @@
     user: "{{ item.0 }}"
     file: "{{ item.1 }}"
     user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
+
+- name: Include tmux tasks
+  ansible.builtin.include_tasks: tmux.yml
+  when: dotfiles_tmux_install | bool

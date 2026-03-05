@@ -3,11 +3,36 @@
 # defaults file for roles/dotfiles
 dotfiles_user_configs: []
 # dotfiles_user_configs:
-#   repo: 'git@github.com:example/dotfiles.git'
-#   version: 'main'
-#   clone_dir: '.dotfiles'
-#   users:
-#     - user: user
-#       files:
-#         - src: 'bashrc'
-#           dest: '.bashrc'
+  # repo: 'git@github.com:example/dotfiles.git'
+  # version: 'main'
+  # clone_dir: '.dotfiles'
+  # users:
+  #   - user: user
+  #     files:
+  #       - src: '.bashrc'
+  #         dest: '.bashrc'
+  #       - src: '.bash_aliases'
+  #         dest: '.bash_aliases'
+  #       - src: '.bash_functions'
+  #         dest: '.bash_functions'
+  #       - src: '.inputrc'
+  #         dest: '.inputrc'
+  #       # TMUX
+  #       - src: '.tmux.conf'
+  #         dest: '.tmux.conf'
+  #       - src: 'tmux/powerline-config.sh'
+  #         dest: '.config/tmux-powerline/config.sh'
+  #       - src: 'tmux/powerline-theme.sh'
+  #         dest: '.config/tmux-powerline/themes/my-theme.sh'
+  #       # GIT
+  #       - src: '.git-completion.bash'
+  #         dest: '.git-completion.bash'
+  #       - src: '.gitconfig'
+  #         dest: '.gitconfig'
+  #       # SSH
+  #       - src: 'ssh/config'
+  #         dest: '.ssh/config'
+
+
+# dotfiles_tmux_install: Install tmux, TPM, and plugins for users with .tmux.conf symlinked
+dotfiles_tmux_install: false

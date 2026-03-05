@@ -1,0 +1,37 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Tmux: install tmux, TPM, and plugins
+
+- name: Install tmux
+  ansible.builtin.apt:
+    name: tmux
+    state: present
+
+- name: Clone TPM for {{ item.user }}
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    version: master
+    update: true
+  become: true
+  become_user: "{{ item.user }}"
+  loop: "{{ dotfiles_user_configs.users }}"
+  loop_control:
+    label: "{{ item.user }}"
+  vars:
+    user_home: "{{ item.home | default('/home/' + item.user) }}"
+
+- name: Install tmux plugins for {{ item.user }}
+  ansible.builtin.command:
+    cmd: "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  become: true
+  become_user: "{{ item.user }}"
+  loop: "{{ dotfiles_user_configs.users }}"
+  loop_control:
+    label: "{{ item.user }}"
+  vars:
+    user_home: "{{ item.home | default('/home/' + item.user) }}"
+  environment:
+    TMUX_PLUGIN_MANAGER_PATH: "{{ user_home }}/.tmux/plugins"
+  register: tpm_install
+  changed_when: "'Installing' in tpm_install.stdout"
