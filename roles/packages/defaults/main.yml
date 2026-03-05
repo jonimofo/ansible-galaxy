@@ -16,22 +16,22 @@ apt_update_timer_persistent: true  # whether the timer is persistent
 apt_update_timer_unit: apt_update.timer  # name of the timer unit to enable/start
 
 apt_update_packages_to_install: []  # list of packages to install via apt
-  # - git
-  # - vim
-  # - curl
-  # - ufw
-  # - fail2ban
-  # - colordiff
-  # - tty-clock
-  # - bat
-  # - lnav
-  # - fd-find
-  # - silversearcher-ag
-  # - tmux
-  # - zsh
-  # - neovim
-  # - bpytop
-  # - jq
+# - git
+# - vim
+# - curl
+# - ufw
+# - fail2ban
+# - colordiff
+# - tty-clock
+# - bat
+# - lnav
+# - fd-find
+# - silversearcher-ag
+# - tmux
+# - zsh
+# - neovim
+# - bpytop
+# - jq
 
 # --- Security: Unattended Upgrades ---
 # apt_update_unattended_upgrades: Enable automatic security updates
@@ -45,8 +45,8 @@ apt_update_unattended_origins:
 
 # apt_update_unattended_blacklist: Packages to never auto-upgrade
 apt_update_unattended_blacklist: []
-  # - linux-image
-  # - linux-headers
+# - linux-image
+# - linux-headers
 
 # apt_update_unattended_autofix: Attempt to fix interrupted dpkg
 apt_update_unattended_autofix: true

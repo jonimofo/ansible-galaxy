@@ -27,7 +27,10 @@
 - name: Set download path and URL for lazydocker
   ansible.builtin.set_fact:
     lazydocker_archive_path: "{{ lazydocker_download_dir }}/{{ lazydocker_archive_filename }}"
-    lazydocker_download_url: "https://github.com/jesseduffield/lazydocker/releases/download/v{{ lazydocker_version }}/{{ lazydocker_archive_filename }}"
+    lazydocker_release_url: >-
+      https://github.com/jesseduffield/lazydocker/releases/download
+    lazydocker_download_url: >-
+      {{ lazydocker_release_url }}/v{{ lazydocker_version }}/{{ lazydocker_archive_filename }}
 
 - name: Ensure download directory exists
   ansible.builtin.file:

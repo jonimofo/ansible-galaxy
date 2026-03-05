@@ -1,3 +1,4 @@
+---
 - name: Gather installed package facts
   ansible.builtin.package_facts:
     manager: auto
@@ -35,4 +36,3 @@
   loop_control:
     label: "{{ item.name }}"
   when: ansible_facts.packages is not defined or item.package_name not in ansible_facts.packages
-

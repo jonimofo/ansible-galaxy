@@ -24,7 +24,7 @@
 - name: Include deb-packages task
   ansible.builtin.include_tasks: deb-packages.yml
   tags: "deb_packages"
-  
+
 - name: Include sublime-text task
   ansible.builtin.include_tasks: sublime-text.yml
   tags: "sublime_text"

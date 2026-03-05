@@ -42,15 +42,9 @@
     content: |
       {% for key, val in locale_env.items() %}{{ key }}={{ val }}
       {% endfor %}
+    mode: '0644'
   register: locale_file
-  changed_when: locale_file.changed
-
-- name: Reconfigure locales if file changed
-  ansible.builtin.command:
-    cmd: dpkg-reconfigure -f noninteractive locales
-  when: locale_file.changed
-  register: locale_reconfigure
-  changed_when: "'Generating locales' in locale_reconfigure.stdout"
+  notify: Reconfigure locales
 
 - name: Ensure LANG in /etc/environment
   ansible.builtin.lineinfile:
@@ -64,4 +58,4 @@
     pre_reboot_delay: 60
     post_reboot_delay: 60
     test_command: locale | grep '{{ locale_name }}'
-  when: locale_reboot and (locale_file.changed or locale_reconfigure.changed)
+  when: locale_reboot and locale_file.changed

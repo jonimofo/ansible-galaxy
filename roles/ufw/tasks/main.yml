@@ -58,7 +58,9 @@
     direction: "{{ item.direction | default(omit) }}"
   loop: "{{ ufw_rules }}"
   loop_control:
-    label: "{{ item.rule }} {{ item.name | default(item.port | default('')) }}{{ item.from_ip | default('') | ternary(' from ' ~ item.from_ip | default(''), '') }}"
+    label: >-
+      {{ item.rule }} {{ item.name | default(item.port | default('')) }}{{
+      item.from_ip | default('') | ternary(' from ' ~ item.from_ip | default(''), '') }}
   when: ufw_rules | length > 0
 
 - name: Set UFW logging level

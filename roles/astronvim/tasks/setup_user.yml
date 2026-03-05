@@ -27,15 +27,18 @@
     - name: "Backup existing Neovim directories"
       ansible.builtin.command:
         cmd: "mv {{ item.stat.path }} {{ item.stat.path }}.bak"
+        removes: "{{ item.stat.path }}"
       loop: "{{ existing_paths.results }}"
       when: item.stat.exists
+      changed_when: true
 
     - name: "Clone AstroNvim template"
       ansible.builtin.git:
         repo: "https://github.com/AstroNvim/template"
         dest: "/home/{{ user.name }}/.config/nvim"
+        version: main
         depth: 1
-    
+
     - name: "Remove .git directory from AstroNvim clone"
       ansible.builtin.file:
         path: "/home/{{ user.name }}/.config/nvim/.git"

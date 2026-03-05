@@ -22,14 +22,18 @@
     - { regexp: '^#?\s*Port\s', line: "Port {{ ssh_port }}" }
     # Authentication
     - { regexp: '^#?\s*PermitRootLogin', line: "PermitRootLogin {{ ssh_permit_root_login }}" }
-    - { regexp: '^#?\s*PasswordAuthentication', line: "PasswordAuthentication {{ ssh_password_authentication | ternary('yes', 'no') }}" }
-    - { regexp: '^#?\s*PermitEmptyPasswords', line: "PermitEmptyPasswords {{ ssh_permit_empty_passwords | ternary('yes', 'no') }}" }
+    - regexp: '^#?\s*PasswordAuthentication'
+      line: "PasswordAuthentication {{ ssh_password_authentication | ternary('yes', 'no') }}"
+    - regexp: '^#?\s*PermitEmptyPasswords'
+      line: "PermitEmptyPasswords {{ ssh_permit_empty_passwords | ternary('yes', 'no') }}"
     - { regexp: '^#?\s*MaxAuthTries', line: "MaxAuthTries {{ ssh_max_auth_tries }}" }
     - { regexp: '^#?\s*LoginGraceTime', line: "LoginGraceTime {{ ssh_login_grace_time }}" }
     - { regexp: '^#?\s*MaxSessions', line: "MaxSessions {{ ssh_max_sessions }}" }
     # Forwarding
-    - { regexp: '^#?\s*AllowAgentForwarding', line: "AllowAgentForwarding {{ ssh_allow_agent_forwarding | ternary('yes', 'no') }}" }
-    - { regexp: '^#?\s*AllowTcpForwarding', line: "AllowTcpForwarding {{ ssh_allow_tcp_forwarding | ternary('yes', 'no') }}" }
+    - regexp: '^#?\s*AllowAgentForwarding'
+      line: "AllowAgentForwarding {{ ssh_allow_agent_forwarding | ternary('yes', 'no') }}"
+    - regexp: '^#?\s*AllowTcpForwarding'
+      line: "AllowTcpForwarding {{ ssh_allow_tcp_forwarding | ternary('yes', 'no') }}"
     - { regexp: '^#?\s*X11Forwarding', line: "X11Forwarding {{ ssh_x11_forwarding | ternary('yes', 'no') }}" }
     # Keep-alive
     - { regexp: '^#?\s*ClientAliveInterval', line: "ClientAliveInterval {{ ssh_client_alive_interval }}" }

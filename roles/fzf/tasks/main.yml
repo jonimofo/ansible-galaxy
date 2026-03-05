@@ -25,6 +25,7 @@
   ansible.builtin.git:
     repo: "{{ fzf_repo_url }}"
     dest: "{{ fzf_install_path }}"
+    version: master
     update: false
   when: not fzf_installed.stat.exists
 

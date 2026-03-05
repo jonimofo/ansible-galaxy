@@ -1,3 +1,4 @@
+---
 - name: "Download AppImage for {{ item.name }}"
   ansible.builtin.get_url:
     url: "{{ item.url }}"

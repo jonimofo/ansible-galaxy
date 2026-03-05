@@ -1,3 +1,4 @@
+---
 # PRE-TASK
 - name: Gather installed package facts
   ansible.builtin.package_facts:
@@ -45,7 +46,7 @@
 # TASKS: INSTALL VS CODE EXTENSIONS
 #==================================================================
 - name: Get list of already installed VS Code extensions
-  ansible.builtin.shell: "code --list-extensions"
+  ansible.builtin.command: "code --list-extensions"
   register: installed_extensions
   changed_when: false
   check_mode: false # Always run this task, even in check mode
@@ -53,13 +54,12 @@
   when: vscode_package_name in ansible_facts.packages
 
 - name: "Install VS Code extensions"
-  ansible.builtin.shell: "code --install-extension {{ item }}"
+  ansible.builtin.command: "code --install-extension {{ item }}"
   loop: "{{ vscode_extensions }}"
   loop_control:
     label: "{{ item }}"
   become: false   # Run this command as the normal user, not root
-  # This condition checks if the extension ID is already in the output
-  # of the '--list-extensions' command before trying to install.
+  changed_when: item not in installed_extensions.stdout_lines
   when:
     - vscode_package_name in ansible_facts.packages
     - item not in installed_extensions.stdout_lines
