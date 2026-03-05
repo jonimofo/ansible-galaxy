@@ -1,0 +1,46 @@
+---
+- name: Configure Debian Server
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+  roles:
+    - role: users
+      tags: "users"
+
+    - role: ssh
+      tags: "ssh"
+
+    - role: ufw
+      tags: "ufw"
+
+    - role: locale
+      tags: "locale"
+
+    - role: packages
+      tags: "packages"
+
+    - role: host
+      tags: "host"
+
+    - role: dotfiles
+      tags: "dotfiles"
+
+    - role: fzf
+      tags: "fzf"
+
+    - role: lazydocker
+      tags: "lazydocker"
+
+    - role: fasd
+      tags: "fasd"
+
+    - role: astronvim
+      tags: "astronvim"
+
+    # ANSIBLE GALAXY ROLES
+    - role: geerlingguy.docker
+      tags: docker
