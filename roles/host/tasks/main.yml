@@ -15,6 +15,13 @@
       - host_hostname | length > 0
     fail_msg: "host_hostname must be defined and not empty"
 
+- name: Ensure /tmp has correct permissions
+  ansible.builtin.file:
+    path: /tmp
+    mode: '1777'
+    owner: root
+    group: root
+
 - name: Set short hostname fact
   ansible.builtin.set_fact:
     _host_short: "{{ host_short_hostname | default(host_hostname.split('.')[0]) }}"

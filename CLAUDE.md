@@ -34,7 +34,8 @@ Use the role name as scope when changes are role-specific:
 
 ### Rules
 
-- **NEVER** include `🤖 Generated with [Claude Code]` or `Co-Authored-By: Claude` in commits
+- **NEVER** include `🤖 Generated with [Claude Code]`, `Co-Authored-By: Claude`, or any mention of Claude/AI in commits
+- **NEVER** sign commits (`--gpg-sign`, `-S`) or add `Signed-off-by` trailers
 - Keep subject line under 72 characters
 - Use imperative mood ("add" not "added")
 

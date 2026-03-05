@@ -8,6 +8,7 @@ Sets the system hostname and updates `/etc/hosts` on Debian-based systems.
 - Updates `/etc/hosts` with proper Debian convention (127.0.1.1)
 - Supports FQDN and short hostname
 - Auto-derives short hostname from FQDN
+- Ensures `/tmp` has correct permissions (1777)
 
 ## Requirements
 
@@ -92,9 +93,10 @@ Standard Debian and Ubuntu installations are fully supported. The role follows t
 
 1. Verifies Debian-based system
 2. Validates `host_hostname` is set
-3. Derives short hostname if not provided
-4. Sets hostname using `hostnamectl`
-5. Updates `/etc/hosts`:
+3. Ensures `/tmp` has correct permissions (1777)
+4. Derives short hostname if not provided
+5. Sets hostname using `hostnamectl`
+6. Updates `/etc/hosts`:
    ```
    127.0.1.1 webserver01.example.com webserver01
    ```
