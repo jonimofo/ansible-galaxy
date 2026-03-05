@@ -23,6 +23,16 @@
     label: "{{ item.name }}"
   when: users_list | length > 0
 
+- name: Warn if disabling passwordless sudo without ansible_become_password
+  ansible.builtin.debug:
+    msg: >-
+      Disabling passwordless sudo but ansible_become_password is not set.
+      Ensure ansible_become_password is configured in your inventory or
+      use --ask-become-pass (-K) on the next run, or you will be locked out.
+  when:
+    - not users_passwordless_sudo
+    - ansible_become_password is not defined or ansible_become_password == ''
+
 - name: Configure sudo group privileges
   ansible.builtin.lineinfile:
     dest: /etc/sudoers
@@ -48,8 +58,15 @@
   # Ignore errors if files don't exist
   failed_when: false
 
+- name: Warn if skipping root lock (connected as root)
+  ansible.builtin.debug:
+    msg: >-
+      Skipping root account lock because Ansible is connected as root.
+      Switch ansible_user to a non-root user with sudo access to enable this.
+  when: users_lock_root and ansible_user == 'root'
+
 - name: Lock root account
   ansible.builtin.user:
     name: root
     password_lock: true
-  when: users_lock_root
+  when: users_lock_root and ansible_user != 'root'

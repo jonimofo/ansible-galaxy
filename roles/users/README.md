@@ -180,6 +180,23 @@ By default, `users_lock_root: true` locks the root account. This:
 - Blocks direct root login via console or SSH
 - Root shell still accessible via `sudo -i` (maintains audit trail)
 
+**Safety check:** The role will **skip locking root** and print a warning if Ansible is connected as root (`ansible_user: root`), preventing you from locking yourself out. To use this feature:
+
+1. First run: connect as root to create a non-root user with sudo access
+2. Switch your inventory to the non-root user with `ansible_become: true`
+3. Subsequent runs will lock root safely
+
+```yaml
+# Step 1: Initial setup (as root)
+astrohub-server:
+  ansible_user: root
+
+# Step 2: Switch to non-root user
+astrohub-server:
+  ansible_user: bgi
+  ansible_become: true
+```
+
 ### Sudoers Result
 
 With defaults (`users_passwordless_sudo: true`, `users_disable_su: true`, `users_lock_root: true`):
@@ -209,7 +226,7 @@ With `users_passwordless_sudo: false`:
    - Disable `su` command (optional)
 4. Validates sudoers before applying
 5. Removes sudoers.d override files (Pi OS, cloud-init)
-6. Locks root account (optional, enabled by default)
+6. Locks root account (optional, enabled by default, refuses if connected as root)
 
 ## License
 
