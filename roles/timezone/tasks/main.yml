@@ -1,0 +1,14 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/timezone
+
+- name: Verify Debian-based system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == 'Debian'
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    quiet: true
+
+- name: Set timezone to {{ timezone_name }}
+  community.general.timezone:
+    name: "{{ timezone_name }}"
