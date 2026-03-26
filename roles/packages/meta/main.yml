@@ -3,7 +3,7 @@
 galaxy_info:
   author: jonimofo
   description: Installs packages and manages APT updates via a custom systemd timer on Debian-based systems.
-  license: MIT
+  license: GPL-2.0-or-later
   min_ansible_version: "2.12"
   platforms:
     - name: Debian
