@@ -1,0 +1,46 @@
+# Ansible Collection Audit Configuration
+# Project-specific settings for audit.py
+#
+# Most values are auto-detected from galaxy.yml if not set here.
+# Only override what differs from your collection defaults.
+
+# --- Collection identity (auto-detected from galaxy.yml if omitted) ---
+# namespace: jonimofo
+# name: infrastructure
+
+# --- Compliance ---
+license: GPL-2.0-or-later
+platforms:
+  - Debian
+  - Ubuntu
+
+# --- Roles to exclude from audit ---
+exclude_roles:
+  - brave_students_profile
+
+# --- Variable prefix overrides ---
+# When a role uses prefixes that differ from the role name.
+# Format: role_name: [list of accepted prefixes]
+variable_prefix_overrides:
+  astronvim:
+    - astronvim_
+    - neovim_
+  packages:
+    - apt_update_
+
+# --- README required sections (case-insensitive match against headings) ---
+required_readme_sections:
+  - requirements
+  - role variables
+  - dependencies
+  - example playbook
+  - license
+  - author
+
+# --- OS family assertion ---
+# The ansible fact checked in the platform assertion (check I1).
+# Set to null to disable this check.
+os_family_assertion: ansible_os_family
+
+# --- Roles directory (relative to repo root) ---
+# roles_dir: roles

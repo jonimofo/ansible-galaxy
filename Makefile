@@ -1,4 +1,4 @@
-.PHONY: lint lint-yaml lint-ansible check setup help
+.PHONY: lint lint-yaml lint-ansible check setup help audit
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -14,6 +14,9 @@ lint-ansible: ## Run ansible-lint on all roles
 setup: ## Configure git hooks path
 	git config core.hooksPath .githooks
 	@echo "Git hooks configured."
+
+audit: ## Run automated audit checks on all roles
+	python audit/audit.py
 
 check: ## Run ansible-playbook --check (syntax check) on all roles
 	@for role in roles/*/; do \

@@ -43,6 +43,9 @@ minor improvements, not critical issues.
 
 ### All Good (No Issues Found)
 
+> Automated checks are now handled by `make audit` (`audit/audit.py`).
+> The table below tracks manual review items that require human judgment.
+
 - SSH hardening defaults are strong (no root login, no passwords, low MaxAuthTries)
 - Firewall defaults deny incoming, logging enabled
 - Fail2ban has SSH + recidive jails, incremental bans, ufw integration
@@ -55,3 +58,24 @@ minor improvements, not critical issues.
 - Cross-platform assertions on every role
 - Documentation complete with READMEs, variable tables, examples
 - Meta files complete with platforms and min_ansible_version
+
+## Manual Audit Tracking
+
+Items that require human judgment — update this table when performing manual reviews.
+
+| Role | Last Reviewed | Secure Defaults | Idempotent | Permissions | Docs Quality |
+|------|--------------|----------------|------------|-------------|-------------|
+| astronvim | 2026-03-26 | PASS | PASS | PASS | PASS |
+| dotfiles | 2026-03-26 | PASS | PASS | PASS | PASS |
+| fail2ban | 2026-03-26 | PASS | PASS | PASS | PASS |
+| fasd | 2026-03-26 | PASS | PASS | PASS | PASS |
+| fzf | 2026-03-26 | PASS | PASS | PASS | PASS |
+| host | 2026-03-26 | PASS | PASS | PASS | PASS |
+| lazydocker | 2026-03-26 | PASS | PASS | PASS | PASS |
+| locale | 2026-03-26 | PASS | PASS | PASS | PASS |
+| packages | 2026-03-26 | PASS | PASS | PASS | PASS |
+| ssh | 2026-03-26 | PASS | PASS | PASS | PASS |
+| timezone | 2026-03-26 | PASS | PASS | PASS | PASS |
+| ufw | 2026-03-26 | PASS | PASS | PASS | PASS |
+| users | 2026-03-26 | PASS | PASS | PASS | PASS |
+| brave_students_profile | N/A | N/A | N/A | N/A | Excluded (not a role) |
