@@ -44,3 +44,66 @@ os_family_assertion: ansible_os_family
 
 # --- Roles directory (relative to repo root) ---
 # roles_dir: roles
+
+# --- Accepted warnings ---
+# Suppress specific check+role combinations that have been reviewed and accepted.
+# Each entry requires a reason so future reviewers understand why.
+# Use --show-ignored to display these when running the audit.
+ignore:
+  - check: E6
+    role: astronvim
+    reason: "HTTPS + version-pinned download, Neovim has no published checksums"
+  - check: E7
+    role: astronvim
+    reason: "AstroNvim template repo, latest main is intentional"
+  - check: J2
+    role: astronvim
+    reason: "Block-level when: guards the download, audit doesn't detect block scope"
+  - check: E7
+    role: dotfiles
+    reason: "TPM is a tool manager, latest master is intentional"
+  - check: C5
+    role: fail2ban
+    reason: "fail2ban_jails is intentionally a dict (jail_name -> config), not a list"
+  - check: G2
+    role: fail2ban
+    reason: "README documents jail sub-keys intentionally, not top-level defaults"
+  - check: G3
+    role: fail2ban
+    reason: "False positive — FQCN is correct, audit regex matches numbered list '1.'"
+  - check: E7
+    role: fzf
+    reason: "fzf is a tool, latest master is intentional"
+  - check: G2
+    role: fzf
+    reason: "README documents per-user sub-keys intentionally"
+  - check: G2
+    role: host
+    reason: "host_short_hostname is an optional override, documented but commented out in defaults"
+  - check: E6
+    role: lazydocker
+    reason: "HTTPS + version-pinned download, acceptable risk"
+  - check: G3
+    role: lazydocker
+    reason: "False positive — geerlingguy.docker is a dependency, not this role"
+  - check: C5
+    role: packages
+    reason: "False positive — apt_update_packages_to_install is a list, _install suffix is coincidental"
+  - check: E5
+    role: ssh
+    reason: "False positive — sshd_config keys contain 'password' but no secrets are handled"
+  - check: G3
+    role: ssh
+    reason: "False positive — FQCN is correct, audit regex matches numbered list '1.'"
+  - check: G2
+    role: ufw
+    reason: "README documents ufw_rules sub-keys intentionally"
+  - check: D4
+    role: users
+    reason: "Debug messages are lockout prevention warnings, must stay visible"
+  - check: E5
+    role: users
+    reason: "False positive — sudo config uses 'password' in directive names, no secrets handled"
+  - check: G2
+    role: users
+    reason: "README documents users_list sub-keys intentionally"

@@ -1,6 +1,8 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for roles/packages
+
+# apt_update_disable_units: Systemd units to disable and mask
 apt_update_disable_units:
   - apt-daily.timer
   - apt-daily-upgrade.timer

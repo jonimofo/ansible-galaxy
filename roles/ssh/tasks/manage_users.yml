@@ -20,5 +20,7 @@
     # exclusive: Determines if unlisted keys should be removed from authorized_keys
     exclusive: "{{ ssh_exclusive_keys }}"
     manage_dir: true
-  with_items: "{{ ssh_users }}"
+  loop: "{{ ssh_users }}"
+  loop_control:
+    label: "{{ item.name }}"
   when: ssh_users is defined and ssh_users | length > 0

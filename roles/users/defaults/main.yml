@@ -35,7 +35,7 @@ users_lock_root: true
 #   create_home: true/false (defaults to users_default_create_home)
 #   comment: user description/GECOS field
 #   uid: specific UID (optional)
-users_list: []
+users_list: []  # users_list: list of users to create (see above)
 # Example:
 # users_list:
 #   - name: "admin"

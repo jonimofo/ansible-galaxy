@@ -28,6 +28,7 @@
 - name: Display detected architecture and selected archive
   ansible.builtin.debug:
     msg: "Detected architecture '{{ ansible_architecture }}', using archive '{{ neovim_archive_name }}'."
+    verbosity: 1
 
 - name: Check if Neovim is already installed
   ansible.builtin.stat:

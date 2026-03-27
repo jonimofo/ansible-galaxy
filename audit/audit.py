@@ -62,6 +62,9 @@ VARIABLE_PREFIX_OVERRIDES: dict[str, list[str]] = {}
 DEFAULT_EXCLUDES: set[str] = set()
 OS_FAMILY_ASSERTION = "ansible_os_family"
 
+# Ignored warnings: set of (check_id, role_name) tuples
+IGNORED_CHECKS: dict[tuple[str, str], str] = {}  # (check, role) -> reason
+
 BOOL_SUFFIXES = ("_enabled", "_enable", "_disable", "_disabled", "_lock",
                  "_install", "_reset", "_persistent", "_autofix",
                  "_reboot", "_on_error")
@@ -190,6 +193,11 @@ def load_config(config_path: Path | None = None) -> None:
         REQUIRED_README_SECTIONS = cfg["required_readme_sections"]
     if "os_family_assertion" in cfg:
         OS_FAMILY_ASSERTION = cfg["os_family_assertion"] or ""
+    if "ignore" in cfg and isinstance(cfg["ignore"], list):
+        for entry in cfg["ignore"]:
+            if isinstance(entry, dict) and "check" in entry and "role" in entry:
+                key = (str(entry["check"]), str(entry["role"]))
+                IGNORED_CHECKS[key] = str(entry.get("reason", ""))
 
 
 INIT_CONFIG_TEMPLATE = """\
@@ -609,7 +617,7 @@ def check_var_documentation(ctx: RoleContext) -> list[CheckResult]:
             stripped = line.lstrip()
             if stripped.startswith(f"{key}:"):
                 # Look at preceding 3 lines for a comment mentioning the key
-                for j in range(max(0, i - 3), i):
+                for j in range(max(0, i - 5), i):
                     if lines[j].lstrip().startswith("#") and key in lines[j]:
                         found_comment = True
                         break
@@ -733,9 +741,12 @@ def check_command_hygiene(ctx: RoleContext) -> list[CheckResult]:
         if module in ("ansible.builtin.command", "ansible.builtin.shell"):
             has_guard = any(k in task for k in ("changed_when", "creates", "removes"))
             if not has_guard:
-                args = task.get("args", {})
-                if isinstance(args, dict) and ("creates" in args or "removes" in args):
-                    has_guard = True
+                # Check inside args: and module dict for creates/removes
+                for args_key in ("args", module):
+                    args = task.get(args_key, {})
+                    if isinstance(args, dict) and ("creates" in args or "removes" in args):
+                        has_guard = True
+                        break
             if not has_guard:
                 cmd = task.get(module, "")
                 if isinstance(cmd, dict):
@@ -1396,9 +1407,11 @@ def check_idempotency_guards(ctx: RoleContext) -> list[CheckResult]:
             continue
         has_guard = any(k in task for k in ("changed_when", "creates", "removes", "when"))
         if not has_guard:
-            args = task.get("args", {})
-            if isinstance(args, dict) and ("creates" in args or "removes" in args):
-                has_guard = True
+            for args_key in ("args", module):
+                args = task.get(args_key, {})
+                if isinstance(args, dict) and ("creates" in args or "removes" in args):
+                    has_guard = True
+                    break
         if not has_guard:
             name = task.get("name", "")
             issues.append(f"{tf.name}: {name}")
@@ -1467,14 +1480,17 @@ class AuditRunner:
         category: str | None = None,
         single_role: str | None = None,
         verbose: bool = False,
+        show_ignored: bool = False,
     ):
         self.roles_dir = roles_dir
         self.exclude = exclude
         self.category = category.upper() if category else None
         self.single_role = single_role
         self.verbose = verbose
+        self.show_ignored = show_ignored
         self.results: dict[str, list[CheckResult]] = {}
         self.skipped_roles: list[str] = []
+        self.ignored_count = 0
 
     def _get_checks(self) -> list[dict]:
         checks = _checks
@@ -1526,18 +1542,30 @@ class AuditRunner:
                         check["id"], check["name"], Status.FAIL,
                         f"Check error: {e}"))
 
-            self.results[name] = role_results
+            # Filter ignored checks
+            filtered_results: list[CheckResult] = []
+            for r in role_results:
+                key = (r.check_id, name)
+                if key in IGNORED_CHECKS and r.status in (Status.WARN, Status.INFO):
+                    self.ignored_count += 1
+                    if self.show_ignored:
+                        reason = IGNORED_CHECKS[key]
+                        print(f"  {Color.DIM}IGNR{Color.RESET}  [{r.check_id}] {r.message} ({reason})")
+                else:
+                    filtered_results.append(r)
+
+            self.results[name] = filtered_results
 
             # Render results (only non-PASS in non-verbose, all in verbose)
-            for r in role_results:
+            for r in filtered_results:
                 if self.verbose or r.status != Status.PASS:
                     print(r.render(self.verbose))
 
             # In non-verbose mode, show pass count
             if not self.verbose:
-                pass_count = sum(1 for r in role_results if r.status == Status.PASS)
+                pass_count = sum(1 for r in filtered_results if r.status == Status.PASS)
                 if pass_count > 0:
-                    total = len(role_results)
+                    total = len(filtered_results)
                     non_pass = total - pass_count
                     if non_pass == 0:
                         print(f"  {Color.PASS}PASS{Color.RESET}  All {pass_count} checks passed")
@@ -1563,7 +1591,8 @@ class AuditRunner:
               f"  {Color.FAIL}FAIL{Color.RESET}: {counts[Status.FAIL]}"
               f"  {Color.WARN}WARN{Color.RESET}: {counts[Status.WARN]}"
               f"  {Color.INFO}INFO{Color.RESET}: {counts[Status.INFO]}"
-              f"  {Color.SKIP}SKIP{Color.RESET}: {counts[Status.SKIP]}")
+              f"  {Color.SKIP}SKIP{Color.RESET}: {counts[Status.SKIP]}"
+              + (f"  {Color.DIM}IGNR: {self.ignored_count}{Color.RESET}" if self.ignored_count else ""))
 
         # Per-category breakdown
         cat_counts: dict[str, dict[str, int]] = {}
@@ -1616,7 +1645,9 @@ class AuditRunner:
               help="Path to audit.yml config (default: audit/audit.yml)")
 @click.option("--init", "init_config", is_flag=True,
               help="Generate a starter audit.yml and exit")
-def main(role, category, verbose, exclude, list_checks, no_color, config_path, init_config):
+@click.option("--show-ignored", is_flag=True,
+              help="Show warnings suppressed by ignore list in audit.yml")
+def main(role, category, verbose, exclude, list_checks, no_color, config_path, init_config, show_ignored):
     """Comprehensive audit tool for Ansible collections.
 
     Checks roles against security best practices, Ansible conventions,
@@ -1661,6 +1692,7 @@ def main(role, category, verbose, exclude, list_checks, no_color, config_path, i
         category=category,
         single_role=role,
         verbose=verbose,
+        show_ignored=show_ignored,
     )
     sys.exit(runner.run())
 
