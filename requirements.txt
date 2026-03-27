@@ -1,0 +1,5 @@
+ansible-core>=2.17
+ansible-lint>=24.0
+yamllint>=1.35
+ruamel.yaml>=0.18
+click>=8.0

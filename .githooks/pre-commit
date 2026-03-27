@@ -3,16 +3,18 @@ set -euo pipefail
 
 echo "Running pre-commit checks..."
 
-# Activate virtualenv if available
-if [ -f "$HOME/.virtualenv/bin/activate" ]; then
-    # shellcheck disable=SC1091
-    source "$HOME/.virtualenv/bin/activate"
+# Use project venv binaries directly
+VENV_BIN="$(git rev-parse --show-toplevel)/.venv/bin"
+
+if [ ! -d "$VENV_BIN" ]; then
+    echo "Error: .venv not found. Run 'make setup' first." >&2
+    exit 1
 fi
 
 echo "  yamllint..."
-yamllint .
+"$VENV_BIN/yamllint" .
 
 echo "  ansible-lint..."
-ansible-lint
+"$VENV_BIN/ansible-lint"
 
 echo "All checks passed."
