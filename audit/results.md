@@ -35,11 +35,11 @@ minor improvements, not critical issues.
 5. **Removed 12 empty `vars/main.yml` files** — Boilerplate from `ansible-galaxy init`
    with no actual content. All variables are properly defined in `defaults/main.yml`.
 
-### Not Fixed (Require Design Decisions)
+### Deferred (Tracked in TODO.md)
 
 6. **`brave_students_profile` is not a proper Ansible role** — It contains only
    `student_profile.json` and `brave_steps.md` with no tasks, defaults, or meta. It's
-   effectively a documentation/config snippet, not executable.
+   effectively a documentation/config snippet, not executable. Excluded from audits.
 
 ### All Good (No Issues Found)
 

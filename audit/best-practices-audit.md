@@ -9,7 +9,7 @@ Scope: All roles in jonimofo.infrastructure collection
 - [x] handlers/main.yml present where services are managed
 - [x] tests/test.yml and tests/inventory present for all roles
 - [x] No unnecessary empty files — removed 12 empty vars/main.yml boilerplate files
-- [ ] `brave_students_profile` is not a proper role (only has .json and .md, no tasks/)
+- [x] `brave_students_profile` is not a proper role — tracked in TODO.md, excluded from audits
 
 ## 2. Task Quality
 
