@@ -67,4 +67,4 @@
   ansible.builtin.file:
     path: "{{ lazydocker_archive_path }}"
     state: absent
-  when: lazydocker_download_dir == '/tmp'
+  when: lazydocker_download_dir is match('^/tmp(/|$)')

@@ -17,10 +17,12 @@
 - name: Remove unused dependencies
   ansible.builtin.apt:
     autoremove: true
+  when: packages_run_cleanup | bool
 
 - name: Clean package cache
   ansible.builtin.apt:
     autoclean: true
+  when: packages_run_cleanup | bool
 
 - name: Deploy APT update systemd service
   ansible.builtin.copy:

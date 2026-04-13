@@ -13,6 +13,13 @@
   ansible.builtin.user:
     name: "{{ item.name }}"
     groups: "{{ item.groups | default(omit) }}"
+    # Default append=true so supplementary groups declared here are ADDED
+    # to any existing membership rather than replacing it. Required for
+    # multi-role setups where other roles (e.g. geerlingguy.docker) also
+    # manage group membership for the same user — otherwise this role
+    # strips those groups on every run and the two roles oscillate.
+    # Opt into replace semantics per-user with `append: false`.
+    append: "{{ item.append | default(true) }}"
     shell: "{{ item.shell | default(users_default_shell) }}"
     state: present
     create_home: "{{ item.create_home | default(users_default_create_home) }}"
