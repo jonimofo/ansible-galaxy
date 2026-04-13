@@ -66,3 +66,10 @@ apt_update_unattended_mail: ""
 
 # apt_update_unattended_mail_on_error: Only send mail on errors
 apt_update_unattended_mail_on_error: true
+
+# packages_run_cleanup: Gate apt autoremove + autoclean behind an explicit opt-in.
+# Unconditional cleanup is not idempotent (always "changed" when old kernels
+# are pending removal) and can destroy manually-pinned packages. Routine
+# kernel cleanup is handled by unattended-upgrades when enabled.
+# Trigger cleanup explicitly with: -e packages_run_cleanup=true
+packages_run_cleanup: false
