@@ -17,7 +17,7 @@ setup: ## Create venv, install dependencies, and configure git hooks
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 	git config core.hooksPath .githooks
-	@echo "\n\033[32m✓ Setup complete. Use 'make lint' or 'make audit' — no activation needed.\033[0m"
+	@echo "\n\033[32m✓ Setup complete. Use 'make lint' or 'make audit', no activation needed.\033[0m"
 
 lint: lint-yaml lint-ansible ## Run all linters
 

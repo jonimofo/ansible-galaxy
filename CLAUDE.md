@@ -37,6 +37,8 @@ Use the role name as scope when changes are role-specific:
 - **NEVER** include `🤖 Generated with [Claude Code]`, `Co-Authored-By: Claude`, or any mention of Claude/AI in commits
 - **NEVER** sign commits (`--gpg-sign`, `-S`) or add `Signed-off-by` trailers
 - Keep subject line under 72 characters
+- **NEVER** add em-dashes in added lines (the pre-commit hook rejects them; fix with `python3 scripts/em-dashes.py --staged --apply`)
+- **NEVER** push directly to `main` or `develop` (the pre-push hook rejects it): work on `feat/*` or `fix/*`, open a PR to `develop`, promote `develop` to `main` with a merge commit and a `vX.Y.Z` tag
 - Use imperative mood ("add" not "added")
 
 ### Examples

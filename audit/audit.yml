@@ -67,7 +67,7 @@ ignore:
     reason: "README documents jail sub-keys intentionally, not top-level defaults"
   - check: G3
     role: fail2ban
-    reason: "False positive — FQCN is correct, audit regex matches numbered list '1.'"
+    reason: "False positive · FQCN is correct, audit regex matches numbered list '1.'"
   - check: E7
     role: fzf
     reason: "fzf is a tool, latest master is intentional"
@@ -82,16 +82,16 @@ ignore:
     reason: "HTTPS + version-pinned download, acceptable risk"
   - check: G3
     role: lazydocker
-    reason: "False positive — geerlingguy.docker is a dependency, not this role"
+    reason: "False positive · geerlingguy.docker is a dependency, not this role"
   - check: C5
     role: packages
-    reason: "False positive — apt_update_packages_to_install is a list, _install suffix is coincidental"
+    reason: "False positive · apt_update_packages_to_install is a list, _install suffix is coincidental"
   - check: E5
     role: ssh
-    reason: "False positive — sshd_config keys contain 'password' but no secrets are handled"
+    reason: "False positive · sshd_config keys contain 'password' but no secrets are handled"
   - check: G3
     role: ssh
-    reason: "False positive — FQCN is correct, audit regex matches numbered list '1.'"
+    reason: "False positive · FQCN is correct, audit regex matches numbered list '1.'"
   - check: G2
     role: ufw
     reason: "README documents ufw_rules sub-keys intentionally"
@@ -100,7 +100,7 @@ ignore:
     reason: "Debug messages are lockout prevention warnings, must stay visible"
   - check: E5
     role: users
-    reason: "False positive — sudo config uses 'password' in directive names, no secrets handled"
+    reason: "False positive · sudo config uses 'password' in directive names, no secrets handled"
   - check: G2
     role: users
     reason: "README documents users_list sub-keys intentionally"

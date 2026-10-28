@@ -70,6 +70,8 @@ issues: http://example.com/issue/tracker
 build_ignore:
   - .venv
   - .githooks
+  - scripts
+  - docs
   - .yamllint
   - .ansible-lint
   - .ansible
