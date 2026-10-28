@@ -28,6 +28,7 @@ All variables are defined in `defaults/main.yml`:
 | `astronvim_neovim_binary_path` | `/usr/local/bin/nvim` | Path for nvim binary |
 | `astronvim_neovim_download_url` | GitHub releases URL | Base URL for downloads |
 | `astronvim_neovim_version` | `v0.12.6` | Neovim version to install |
+| `astronvim_download_dir` | `/tmp` | Parent of the private download directory (mktemp, root-only) |
 | `astronvim_build_packages` | `[git, gcc, unzip]` | Packages needed to clone the config and build plugins |
 | `astronvim_users` | `[]` | List of users to configure |
 
@@ -93,7 +94,7 @@ None.
 1. Verifies Debian-based system
 2. Installs `astronvim_build_packages` (git, gcc, unzip) via apt
 3. Detects CPU architecture (x86_64 or aarch64)
-4. Downloads Neovim tarball from GitHub releases
+4. Downloads the Neovim tarball into a private root-only directory
 5. Extracts Neovim to `/usr/local/` owned by root, and repairs ownership left by older runs
 6. For each user:
    - Backs up existing nvim configs (`.config/nvim`, `.local/share/nvim`, etc.)

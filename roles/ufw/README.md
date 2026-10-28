@@ -31,7 +31,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `ufw_state` | `enabled` | Final UFW state (`enabled`, `disabled`, `reset`) |
 | `ufw_reset_before_configure` | `false` | Reset UFW before applying rules (wipes all rules!) |
-| `ufw_verify_port` | `22` | After enabling, verify this port answers from the control node (`0` to skip) |
+| `ufw_verify_port` | `ssh_port`, else `22` | Port that must have an allow/limit rule before enabling, then verified from the control node (`0` to skip) |
+| `ufw_verify_timeout` | `10` | Seconds to wait for `ufw_verify_port` in that check |
 | `ufw_logging` | `"on"` | Logging level (`on`, `off`, `low`, `medium`, `high`, `full`) |
 
 ### Network Settings
@@ -239,7 +240,7 @@ With default policies:
 5. Sets default policies (deny incoming, allow outgoing)
 6. Configures firewall rules from `ufw_rules`
 7. Sets logging level
-8. Enables UFW
+8. Asserts a rule allows `ufw_verify_port`, then enables UFW
 9. Verifies `ufw_verify_port` still answers from the control node
 
 ## License

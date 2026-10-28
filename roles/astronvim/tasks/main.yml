@@ -27,28 +27,40 @@
     path: "{{ astronvim_neovim_binary_path }}"
   register: astronvim_nvim_binary_stat
 
+# The archive is fetched into a fresh root-only directory (mktemp under
+# astronvim_download_dir): a predictable path in /tmp could be planted by a
+# local user and extracted as root into /usr/local.
 - name: Install Neovim {{ astronvim_neovim_version }}
   when: not astronvim_nvim_binary_stat.stat.exists
   block:
+    - name: Create a private download directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "{{ astronvim_download_dir }}"
+        suffix: neovim
+      register: _astronvim_tmp
+
     - name: Download Neovim tarball for version {{ astronvim_neovim_version }}
       ansible.builtin.get_url:
         url: "{{ astronvim_neovim_download_url }}/{{ astronvim_neovim_version }}/{{ astronvim_neovim_archive_name }}"
-        dest: "/tmp/{{ astronvim_neovim_archive_name }}"
+        dest: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         mode: "0644"
+        force: false
 
     - name: Extract Neovim archive into /usr/local/
       ansible.builtin.unarchive:
-        src: "/tmp/{{ astronvim_neovim_archive_name }}"
+        src: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         dest: "/usr/local/"
         # --no-same-owner: root would otherwise keep the UID stored in the
         # archive, which also applies to /usr/local/{bin,lib,share} themselves
         extra_opts: [--strip-components=1, --no-same-owner]
         remote_src: true
-
-    - name: Clean up downloaded tarball
+  always:
+    - name: Remove the private download directory
       ansible.builtin.file:
-        path: "/tmp/{{ astronvim_neovim_archive_name }}"
+        path: "{{ _astronvim_tmp.path }}"
         state: absent
+      when: _astronvim_tmp.path is defined
 
 # Older runs extracted with the archive owner: give those files back to root
 - name: Ensure Neovim files in /usr/local belong to root

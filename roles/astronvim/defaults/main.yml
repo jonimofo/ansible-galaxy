@@ -13,6 +13,9 @@ astronvim_neovim_download_url: "https://github.com/neovim/neovim/releases/downlo
 # astronvim_neovim_version: Neovim version to install
 astronvim_neovim_version: "v0.12.6"
 
+# astronvim_download_dir: Parent of the private (mktemp) download directory
+astronvim_download_dir: "/tmp"
+
 # astronvim_build_packages: Packages needed to clone the config and build plugins
 astronvim_build_packages:
   - git

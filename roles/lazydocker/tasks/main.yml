@@ -25,33 +25,40 @@
     path: "{{ lazydocker_install_path }}/lazydocker"
   register: lazydocker_binary
 
-# No mkdir/chmod on lazydocker_download_dir on purpose: with the default /tmp
-# that would strip the sticky bit and break SSH agent forwarding.
+# The archive is fetched into a fresh root-only directory (mktemp under
+# lazydocker_download_dir): a predictable path in /tmp could be planted by a
+# local user and extracted as root.
 - name: Download and install lazydocker
   when: not lazydocker_binary.stat.exists
   block:
+    - name: Create a private download directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "{{ lazydocker_download_dir }}"
+        suffix: lazydocker
+      register: _lazydocker_tmp
+
     - name: Download lazydocker archive
       ansible.builtin.get_url:
-        url: >-
-          https://github.com/jesseduffield/lazydocker/releases/download/v{{
-          lazydocker_version }}/{{ _lazydocker_archive }}
-        dest: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        url: "{{ lazydocker_download_url }}/v{{ lazydocker_version }}/{{ _lazydocker_archive }}"
+        dest: "{{ _lazydocker_tmp.path }}/{{ _lazydocker_archive }}"
         mode: "0644"
         force: false
 
     - name: Extract lazydocker binary
       ansible.builtin.unarchive:
-        src: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        src: "{{ _lazydocker_tmp.path }}/{{ _lazydocker_archive }}"
         dest: "{{ lazydocker_install_path }}"
         remote_src: true
         include: [lazydocker]
         owner: root
         group: root
-
-    - name: Clean up archive
+  always:
+    - name: Remove the private download directory
       ansible.builtin.file:
-        path: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        path: "{{ _lazydocker_tmp.path }}"
         state: absent
+      when: _lazydocker_tmp.path is defined
 
 - name: Ensure lazydocker binary is executable and owned by root
   ansible.builtin.file:
