@@ -20,3 +20,5 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | timezone | `timezone_name` default `Asia/Ho_Chi_Minh` | default `Europe/Paris` | variable name unchanged, only the default moved |
 | locale | `locale_reboot` | removed | reboot task deleted, reboot manually if needed |
 | locale | `locale_env.LC_ALL` | removed from default | setting LC_ALL system-wide overrode per-user LC_*; set it in your own `locale_env` if wanted |
+| lazydocker | `lazydocker_download_dir` default `/tmp/ansible-lazydocker` | default `/tmp` | the role no longer creates or chmods the directory |
+| lazydocker | `lazydocker_arch_map.armv7l` | removed | 32-bit ARM dropped with Raspberry Pi support |

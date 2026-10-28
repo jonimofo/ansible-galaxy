@@ -6,7 +6,7 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Verify supported architecture
@@ -16,55 +16,54 @@
     fail_msg: "Unsupported architecture: {{ ansible_architecture }}. Supported: {{ lazydocker_arch_map.keys() | list }}"
     quiet: true
 
-- name: Set architecture suffix for lazydocker
+- name: Set lazydocker download facts
   ansible.builtin.set_fact:
-    lazydocker_arch: "{{ lazydocker_arch_map[ansible_architecture] }}"
-
-- name: Set lazydocker archive filename
-  ansible.builtin.set_fact:
-    lazydocker_archive_filename: "lazydocker_{{ lazydocker_version }}_{{ lazydocker_arch }}.tar.gz"
-
-- name: Set download path and URL for lazydocker
-  ansible.builtin.set_fact:
-    lazydocker_archive_path: "{{ lazydocker_download_dir }}/{{ lazydocker_archive_filename }}"
-    lazydocker_download_url: >-
-      https://github.com/jesseduffield/lazydocker/releases/download/v{{
-      lazydocker_version }}/{{ lazydocker_archive_filename }}
-
-- name: Ensure download directory exists
-  ansible.builtin.file:
-    path: "{{ lazydocker_download_dir }}"
-    state: directory
-    mode: '0755'
+    _lazydocker_archive: "lazydocker_{{ lazydocker_version }}_{{ lazydocker_arch_map[ansible_architecture] }}.tar.gz"
 
 - name: Check if lazydocker binary exists
   ansible.builtin.stat:
     path: "{{ lazydocker_install_path }}/lazydocker"
   register: lazydocker_binary
 
-- name: Download lazydocker archive
-  ansible.builtin.get_url:
-    url: "{{ lazydocker_download_url }}"
-    dest: "{{ lazydocker_archive_path }}"
-    mode: '0644'
-    force: false
+# No mkdir/chmod on lazydocker_download_dir on purpose: with the default /tmp
+# that would strip the sticky bit and break SSH agent forwarding.
+- name: Download and install lazydocker
   when: not lazydocker_binary.stat.exists
+  block:
+    - name: Download lazydocker archive
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/jesseduffield/lazydocker/releases/download/v{{
+          lazydocker_version }}/{{ _lazydocker_archive }}
+        dest: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        mode: "0644"
 
-- name: Extract lazydocker binary
-  ansible.builtin.unarchive:
-    src: "{{ lazydocker_archive_path }}"
-    dest: "{{ lazydocker_install_path }}"
-    remote_src: true
-    creates: "{{ lazydocker_install_path }}/lazydocker"
-  when: not lazydocker_binary.stat.exists
+    - name: Extract lazydocker binary
+      ansible.builtin.unarchive:
+        src: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        dest: "{{ lazydocker_install_path }}"
+        remote_src: true
+        include: [lazydocker]
+        owner: root
+        group: root
 
-- name: Ensure lazydocker binary is executable
+    - name: Clean up archive
+      ansible.builtin.file:
+        path: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
+        state: absent
+
+- name: Ensure lazydocker binary is executable and owned by root
   ansible.builtin.file:
     path: "{{ lazydocker_install_path }}/lazydocker"
-    mode: '0755'
+    owner: root
+    group: root
+    mode: "0755"
 
-- name: Clean up downloaded archive
+# Older runs extracted the whole archive into the install path
+- name: Remove archive extras from the install path
   ansible.builtin.file:
-    path: "{{ lazydocker_archive_path }}"
+    path: "{{ lazydocker_install_path }}/{{ item }}"
     state: absent
-  when: lazydocker_download_dir is match('^/tmp(/|$)')
+  loop:
+    - LICENSE
+    - README.md
