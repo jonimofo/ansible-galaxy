@@ -27,12 +27,19 @@ Merges the QDV role implementations into this collection, which becomes the sing
 
 ### Added
 
-- `community.general` declared as a dependency.
+- `timezone` role.
+- `community.general` and `ansible.posix` declared as dependencies.
+- Configurable Python audit tool (`make audit`).
 - `scripts/em-dashes.py`, pre-commit em-dash check and pre-push protected-branch hook.
+
+### Also since the v1.1.0 tag
+
+- `gui_apps` role removed.
+- **dotfiles**: tmux and TPM install (`dotfiles_tmux_install`).
+- **users**: root lock and sudo safeguards.
+- **packages**: autoremove/autoclean gated behind `packages_run_cleanup`.
+- **lazydocker**: download URL fix, no more chmod of `/tmp`.
 
 ## [1.1.0] - 2026-04-13
 
-- `packages`: autoremove/autoclean gated behind `packages_run_cleanup`.
-- `users`: `append: true` by default to stop stripping groups managed by other roles.
-- `lazydocker`: role-owned download directory instead of chmodding `/tmp`.
-- `ansible.posix` declared as a dependency, collection resolution fixed.
+Published on Galaxy from the `v1.1.0` tag.

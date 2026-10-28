@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/fzf
 
@@ -6,6 +6,9 @@
 
 # fzf_repo_url: Git repository URL for fzf
 fzf_repo_url: "https://github.com/junegunn/fzf.git"
+
+# fzf_version: Git tag of fzf to install (its install script fetches the matching binary)
+fzf_version: "v0.74.5"
 
 # fzf_install_path: Directory where fzf repository is cloned
 # Binary will be at {{ fzf_install_path }}/bin/fzf
