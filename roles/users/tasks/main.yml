@@ -17,9 +17,18 @@
     name: "{{ item }}"
     system: true
     state: present
-  loop: >-
-    {{ users_list | selectattr('groups', 'defined') | map(attribute='groups')
-       | map('split', ',') | flatten | map('trim') | unique }}
+  loop: "{{ _users_groups }}"
+  vars:
+    # groups may be a comma-separated string or a list; empty entries are dropped
+    _users_groups: >-
+      {%- set out = [] -%}
+      {%- for g in users_list | selectattr('groups', 'defined') | map(attribute='groups') -%}
+        {%- set items = g if (g is sequence and g is not string) else (g | string).split(',') -%}
+        {%- for i in items if (i | trim) | length > 0 -%}
+          {%- set _ = out.append(i | trim) -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ out | unique | list }}
 
 - name: Create users
   ansible.builtin.user:
@@ -56,15 +65,17 @@
     - users_home_mode | length > 0
     - item.create_home | default(users_default_create_home)
 
-- name: Warn if disabling passwordless sudo without ansible_become_password
-  ansible.builtin.debug:
-    msg: >-
-      Disabling passwordless sudo but ansible_become_password is not set.
-      Ensure ansible_become_password is configured in your inventory or
-      use --ask-become-pass (-K) on the next run, or you will be locked out.
-  when:
-    - not users_passwordless_sudo
-    - ansible_become_password is not defined or ansible_become_password == ''
+# Lockout guard: cloud images grant NOPASSWD through sudoers.d files that this
+# role removes below. Without a become password, password-required sudo would
+# leave no way to become root.
+- name: Assert a become password is set when passwordless sudo is disabled
+  ansible.builtin.assert:
+    that: ansible_become_password is defined and ansible_become_password | length > 0
+    fail_msg: >-
+      users_passwordless_sudo is false but ansible_become_password is not set.
+      Set it in the inventory or run with --ask-become-pass (-K), or you will be locked out.
+    quiet: true
+  when: not users_passwordless_sudo
 
 - name: Configure sudo group privileges
   ansible.builtin.lineinfile:
@@ -88,8 +99,6 @@
   loop:
     - /etc/sudoers.d/010_pi-nopasswd
     - /etc/sudoers.d/90-cloud-init-users
-  # Ignore errors if files don't exist
-  failed_when: false
 
 - name: Remove absent users
   ansible.builtin.user:
@@ -106,10 +115,14 @@
     msg: >-
       Skipping root account lock because Ansible is connected as root.
       Switch ansible_user to a non-root user with sudo access to enable this.
-  when: users_lock_root and ansible_user == 'root'
+  when: users_lock_root and _users_connecting_user == 'root'
+  vars:
+    _users_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
 
 - name: Lock root account
   ansible.builtin.user:
     name: root
     password_lock: true
-  when: users_lock_root and ansible_user != 'root'
+  when: users_lock_root and _users_connecting_user != 'root'
+  vars:
+    _users_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"

@@ -59,7 +59,7 @@ docs: update CLAUDE.md with security guidelines
 
 ## Overview
 
-This is an Ansible collection (`jonimofo.infrastructure`) for managing Debian-based servers, including Raspberry Pi and standard Debian/Ubuntu machines.
+This is an Ansible collection (`jonimofo.infrastructure`) for managing Debian (bookworm, trixie) and Ubuntu (jammy, noble, resolute) servers, x86_64 and aarch64.
 
 ## Ansible Best Practices
 
@@ -74,45 +74,50 @@ Key principles:
 - **Use `changed_when` and `failed_when`** - Make task status explicit when needed
 - **Validate before apply** - Use `validate:` parameter for config files (sshd, sudoers, etc.)
 
-## Cross-Platform Compatibility (Raspberry Pi + Debian)
+## Cross-Platform Compatibility (Debian + Ubuntu)
 
 ### Architecture Detection
 
-Always detect and handle different architectures:
+Architecture selection uses a map in `defaults/main.yml` plus an assert. Never a ternary or a `default('amd64')` fallback, which silently installs the wrong binary:
 ```yaml
-vars:
-  arch_map:
-    x86_64: amd64
-    aarch64: arm64
-    armv7l: armhf
+# defaults/main.yml
+role_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+# tasks/main.yml
+- name: Verify supported architecture
+  ansible.builtin.assert:
+    that: ansible_architecture in role_arch_map
+    fail_msg: "Unsupported architecture: {{ ansible_architecture }}"
+    quiet: true
 
 - name: Set architecture
   ansible.builtin.set_fact:
-    target_arch: "{{ arch_map[ansible_architecture] | default('amd64') }}"
+    role_target_arch: "{{ role_arch_map[ansible_architecture] }}"
 ```
+
+A binary installed from a release is gated on the installed version (`<tool> --version`), not only on the file's existence, so a version bump upgrades the host.
 
 ### Distribution Detection
 
 Use Ansible facts for distro-specific logic:
-- `ansible_os_family`: "Debian" (covers Debian, Ubuntu, Raspbian)
-- `ansible_distribution`: "Debian", "Ubuntu", "Raspbian"
+- `ansible_os_family`: "Debian" (covers Debian and Ubuntu)
+- `ansible_distribution`: "Debian", "Ubuntu"
 - `ansible_distribution_major_version`: "11", "12", "22", etc.
-- `ansible_architecture`: "x86_64", "aarch64", "armv7l"
+- `ansible_architecture`: "x86_64", "aarch64"
 
 ### Conditional Tasks for Distro Differences
 
 ```yaml
-- name: Install package (Debian/Raspbian)
-  ansible.builtin.apt:
-    name: "{{ package_name }}"
-  when: ansible_os_family == 'Debian'
-
-- name: Handle Raspberry Pi specific configuration
+- name: Configure primary DNS servers (netplan)
   ansible.builtin.template:
-    src: rpi-config.j2
-    dest: /boot/config.txt
-  when: ansible_distribution == 'Raspbian' or 'raspberry' in ansible_kernel | lower
+    src: netplan-dns.yaml.j2
+    dest: /etc/netplan/99-dns.yaml
+  when: ansible_distribution == 'Ubuntu'
 ```
+
+Tools that exist on one distribution only (netplan, systemd-resolved) are detected with `stat` and the dependent tasks are skipped, not failed, when they are absent.
 
 ### Package Handling
 
@@ -186,8 +191,8 @@ Brief description of what the role does.
 ## Requirements
 
 - Minimum Ansible version
-- Supported platforms (Debian, Ubuntu, Raspbian)
-- Supported architectures (x86_64, aarch64, armv7l)
+- Supported platforms (Debian bookworm/trixie, Ubuntu jammy/noble/resolute)
+- Supported architectures (x86_64, aarch64)
 - Any external dependencies
 
 ## Role Variables
@@ -213,11 +218,7 @@ List any role dependencies or "None".
 
 ## Platform Notes
 
-### Raspberry Pi
-- Any Pi-specific considerations
-
-### Debian/Ubuntu
-- Any distro-specific considerations
+- Any distro-specific considerations (Debian vs Ubuntu)
 
 ## License
 
@@ -261,7 +262,6 @@ Store distro-specific values in `vars/`:
 vars/
 ├── Debian.yml
 ├── Ubuntu.yml
-├── Raspbian.yml
 └── default.yml
 ```
 
@@ -283,7 +283,7 @@ All roles MUST be idempotent:
 ## Testing
 
 Each role should have a test playbook in `tests/test.yml` that:
-- Can run on both Debian and Raspberry Pi OS
+- Can run on both Debian and Ubuntu
 - Uses molecule or a simple localhost test
 - Validates the role works correctly
 

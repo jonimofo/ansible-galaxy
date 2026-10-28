@@ -16,6 +16,11 @@ astronvim_neovim_version: "v0.12.6"
 # astronvim_download_dir: Parent of the private (mktemp) download directory
 astronvim_download_dir: "/tmp"
 
+# astronvim_neovim_arch_map: ansible_architecture -> Neovim release suffix
+astronvim_neovim_arch_map:
+  x86_64: x86_64
+  aarch64: arm64
+
 # astronvim_build_packages: Packages needed to clone the config and build plugins
 astronvim_build_packages:
   - git
@@ -25,8 +30,9 @@ astronvim_build_packages:
 # --- User Configuration ---
 
 # astronvim_users: List of users to configure AstroNvim for
-# Each user should have a 'name' key
+# Each user has a 'name' key and an optional 'home' (default /home/<name>)
 astronvim_users: []
 # Example:
 #   - name: "admin"
 #   - name: "developer"
+#     home: "/srv/developer"

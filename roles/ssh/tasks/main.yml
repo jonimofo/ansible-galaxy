@@ -51,7 +51,6 @@
   ansible.posix.authorized_key:
     user: "{{ item.name }}"
     key: "{{ item.pubkey }}"
-    path: "/home/{{ item.name }}/.ssh/authorized_keys"
     # exclusive: unlisted keys are removed from authorized_keys
     exclusive: "{{ ssh_exclusive_keys }}"
     manage_dir: true

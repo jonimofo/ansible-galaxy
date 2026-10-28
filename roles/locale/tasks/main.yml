@@ -6,7 +6,7 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Install locale packages
@@ -41,5 +41,6 @@
 - name: Ensure LANG in /etc/environment
   ansible.builtin.lineinfile:
     path: /etc/environment
+    regexp: '^LANG='
     line: "LANG={{ locale_name }}"
     state: present

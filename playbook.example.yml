@@ -8,35 +8,39 @@
         update_cache: true
         cache_valid_time: 3600
   roles:
-    - role: users
+    - role: jonimofo.infrastructure.users
       tags: "users"
 
-    - role: ssh
+    - role: jonimofo.infrastructure.ssh
       tags: "ssh"
 
-    - role: ufw
+    - role: jonimofo.infrastructure.ufw
       tags: "ufw"
+    - role: jonimofo.infrastructure.fail2ban
+      tags: "fail2ban"
+    - role: jonimofo.infrastructure.timezone
+      tags: "timezone"
 
-    - role: locale
+    - role: jonimofo.infrastructure.locale
       tags: "locale"
 
-    - role: packages
+    - role: jonimofo.infrastructure.packages
       tags: "packages"
 
-    - role: host
+    - role: jonimofo.infrastructure.host
       tags: "host"
 
-    - role: dotfiles
+    - role: jonimofo.infrastructure.dotfiles
       tags: "dotfiles"
 
-    - role: fzf
+    - role: jonimofo.infrastructure.fzf
       tags: "fzf"
 
-    - role: lazydocker
+    - role: jonimofo.infrastructure.lazydocker
       tags: "lazydocker"
 
 
-    - role: astronvim
+    - role: jonimofo.infrastructure.astronvim
       tags: "astronvim"
 
     # ANSIBLE GALAXY ROLES

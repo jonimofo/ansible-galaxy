@@ -6,7 +6,7 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Ensure git is installed
@@ -41,7 +41,7 @@
 - name: Render fzf.bash template for each user
   ansible.builtin.template:
     src: fzf.bash.j2
-    dest: "/home/{{ item.name }}/.fzf.bash"
+    dest: "{{ item.home | default('/home/' ~ item.name) }}/.fzf.bash"
     owner: "{{ item.name }}"
     group: "{{ item.name }}"
     mode: '0644'
@@ -52,10 +52,12 @@
 
 - name: Ensure .bashrc sources fzf.bash
   ansible.builtin.lineinfile:
-    path: "/home/{{ item.name }}/.bashrc"
+    path: "{{ item.home | default('/home/' ~ item.name) }}/.bashrc"
     line: '[ -f ~/.fzf.bash ] && source ~/.fzf.bash'
     create: true
-    mode: '0644'
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0644"
   loop: "{{ fzf_users }}"
   loop_control:
     label: "{{ item.name }}"

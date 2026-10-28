@@ -222,6 +222,8 @@ With `users_passwordless_sudo: false`:
 7. Removes users listed in `users_absent`
 8. Locks root account (optional, enabled by default, refuses if connected as root)
 
+With `users_passwordless_sudo: false` the role fails unless `ansible_become_password` is set, because it removes the NOPASSWD files cloud images rely on.
+
 ## License
 
 GPL-2.0-or-later

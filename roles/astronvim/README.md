@@ -29,6 +29,7 @@ All variables are defined in `defaults/main.yml`:
 | `astronvim_neovim_download_url` | GitHub releases URL | Base URL for downloads |
 | `astronvim_neovim_version` | `v0.12.6` | Neovim version to install |
 | `astronvim_download_dir` | `/tmp` | Parent of the private download directory (mktemp, root-only) |
+| `astronvim_neovim_arch_map` | `{x86_64, aarch64}` | Architecture to release suffix; unsupported architectures fail |
 | `astronvim_build_packages` | `[git, gcc, unzip]` | Packages needed to clone the config and build plugins |
 | `astronvim_users` | `[]` | List of users to configure |
 

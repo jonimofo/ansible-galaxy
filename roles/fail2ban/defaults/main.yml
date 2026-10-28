@@ -59,7 +59,7 @@ fail2ban_banaction: ufw
 fail2ban_jails:
   sshd:
     enabled: true
-    port: ssh
+    port: "{{ ssh_port | default('ssh') }}"  # follows the ssh role when set
     filter: sshd
   # Recidive jail - bans repeat offenders for longer
   recidive:

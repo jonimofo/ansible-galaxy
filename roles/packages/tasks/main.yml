@@ -50,6 +50,8 @@
     group: root
     mode: "0644"
   when: packages_needrestart_install | bool
+  # the package (and its conf.d) is not installed yet in check mode on a fresh host
+  ignore_errors: "{{ ansible_check_mode }}"
 
 # --- Nightly APT service and timer ---
 - name: Deploy APT update systemd service
@@ -78,6 +80,8 @@
     enabled: true
     state: started
     daemon_reload: true
+  # the unit file is not written yet in check mode on a fresh host
+  ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Disable and mask default APT systemd units
   ansible.builtin.systemd:
@@ -121,6 +125,8 @@
         name: unattended-upgrades
         enabled: true
         state: started
+      # the package is not installed yet in check mode on a fresh host
+      ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Disable unattended-upgrades when not configured
   when: not (packages_apt_update_unattended_upgrades | bool)
