@@ -67,3 +67,6 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | ssh | `ssh_password_authentication`, `ssh_pubkey_authentication`, `ssh_x11_forwarding`, `ssh_allow_agent_forwarding` as `"yes"`/`"no"` (QDV) | booleans | |
 | ssh | | `ssh_dropin_name`, `ssh_service_name`, `ssh_verify_port`, `ssh_pubkey_authentication` | new |
 | ssh | handler `Restart sshd` | `Reload sshd` | |
+| host | `host_hostname` default `""` | default `inventory_hostname` | |
+| host | | `host_dns_servers`, `host_dns_interface`, `host_dns_backup_servers`, `host_dns_fallback_servers`, `host_dns_manage_resolved` | new, DNS parts skipped when netplan / systemd-resolved are absent |
+| host | `host_dns_file_prefix` default `qdv` (QDV) | default `ansible` | **baf and scranton must set it** (`baf` / `qdv`) to keep their existing override files |
