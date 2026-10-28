@@ -12,12 +12,11 @@ Creates system users and configures sudo privileges on Debian-based systems.
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -30,6 +29,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `users_default_shell` | `/bin/bash` | Default shell for new users |
 | `users_default_create_home` | `true` | Create home directory by default |
+| `users_home_mode` | `"0750"` | Mode enforced on created homes (`""` to leave untouched) |
 
 ### Sudo Configuration
 
@@ -44,15 +44,19 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `users_list` | `[]` | List of users to create |
+| `users_absent` | `[]` | List of users to remove (`name`, optional `remove_home`, default `true`) |
 
 #### User Options
 
 | Option | Required | Description |
 |--------|----------|-------------|
 | `name` | Yes | Username |
-| `groups` | No | Comma-separated groups (e.g., `"sudo,docker"`) |
+| `groups` | No | Comma-separated groups (e.g., `"sudo,docker"`); missing groups are created |
+| `append` | No | Add to existing supplementary groups (default `true`) or replace them |
 | `shell` | No | Login shell (defaults to `users_default_shell`) |
 | `create_home` | No | Create home directory (defaults to `users_default_create_home`) |
+| `home` | No | Home directory path (`/nonexistent` for no-home accounts) |
+| `system` | No | Create as a system account (UID < 1000), applied only on creation |
 | `comment` | No | User description/GECOS field |
 | `uid` | No | Specific UID |
 
@@ -134,19 +138,7 @@ None.
 
 ## Platform Notes
 
-### Raspberry Pi OS
-
-Raspberry Pi OS is fully supported. Considerations:
-
-- **Default user:** The `pi` user is not modified by this role
-- **Groups:** Common groups: `sudo`, `gpio`, `i2c`, `spi`
-- **Cleanup:** Removes override files that bypass sudo configuration:
-  - `/etc/sudoers.d/010_pi-nopasswd`
-  - `/etc/sudoers.d/90-cloud-init-users`
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. Common groups:
+Debian and Ubuntu are supported. Leftover sudoers overrides from Raspberry Pi OS images and cloud-init (`010_pi-nopasswd`, `90-cloud-init-users`) are removed. Common groups:
 - `sudo` - Administrative privileges
 - `docker` - Docker access
 - `www-data` - Web server
@@ -220,13 +212,15 @@ With `users_passwordless_sudo: false`:
 ## What This Role Does
 
 1. Verifies Debian-based system
-2. Creates users from `users_list`
-3. Configures sudo group in `/etc/sudoers`:
+2. Creates every supplementary group referenced in `users_list`
+3. Creates users from `users_list` and enforces `users_home_mode` on their homes
+4. Configures sudo group in `/etc/sudoers`:
    - Passwordless sudo (optional)
    - Disable `su` command (optional)
-4. Validates sudoers before applying
-5. Removes sudoers.d override files (Pi OS, cloud-init)
-6. Locks root account (optional, enabled by default, refuses if connected as root)
+5. Validates sudoers before applying
+6. Removes sudoers.d override files (Pi OS images, cloud-init)
+7. Removes users listed in `users_absent`
+8. Locks root account (optional, enabled by default, refuses if connected as root)
 
 ## License
 

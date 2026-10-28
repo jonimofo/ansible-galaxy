@@ -51,3 +51,6 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | packages | `apt_update_unattended_origins` Debian list | per-distribution map `packages_apt_update_unattended_origins_map` | override the list directly if needed |
 | packages | | `packages_obsolete_paths` | new, removes the old fasd binary and man page |
 | packages | | `packages_needrestart_install` | new, default `true` |
+| users | | `users_home_mode` | new, default `"0750"`; existing homes are tightened from 0755. Set `""` to skip |
+| users | | `users_absent` | new, default `[]` |
+| users | user option | `home`, `system` | new optional per-user keys |
