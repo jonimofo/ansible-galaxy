@@ -22,3 +22,7 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | locale | `locale_env.LC_ALL` | removed from default | setting LC_ALL system-wide overrode per-user LC_*; set it in your own `locale_env` if wanted |
 | lazydocker | `lazydocker_download_dir` default `/tmp/ansible-lazydocker` | default `/tmp` | the role no longer creates or chmods the directory |
 | lazydocker | `lazydocker_arch_map.armv7l` | removed | 32-bit ARM dropped with Raspberry Pi support |
+| astronvim | `neovim_binary_path` | `astronvim_neovim_binary_path` | |
+| astronvim | `neovim_download_url` | `astronvim_neovim_download_url` | |
+| astronvim | `neovim_version` | `astronvim_neovim_version` | default bumped to v0.12.6 |
+| astronvim | | `astronvim_build_packages` | new, default `[git, gcc, unzip]` |

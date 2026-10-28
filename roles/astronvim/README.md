@@ -12,11 +12,10 @@ Installs Neovim and configures AstroNvim for specified users.
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
 - **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
@@ -26,9 +25,10 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `neovim_binary_path` | `/usr/local/bin/nvim` | Path for nvim binary |
-| `neovim_download_url` | GitHub releases URL | Base URL for downloads |
-| `neovim_version` | `v0.11.3` | Neovim version to install |
+| `astronvim_neovim_binary_path` | `/usr/local/bin/nvim` | Path for nvim binary |
+| `astronvim_neovim_download_url` | GitHub releases URL | Base URL for downloads |
+| `astronvim_neovim_version` | `v0.12.6` | Neovim version to install |
+| `astronvim_build_packages` | `[git, gcc, unzip]` | Packages needed to clone the config and build plugins |
 | `astronvim_users` | `[]` | List of users to configure |
 
 ### User Configuration
@@ -81,7 +81,7 @@ None.
   hosts: all
   become: true
   vars:
-    neovim_version: "v0.10.0"
+    astronvim_neovim_version: "v0.11.3"
     astronvim_users:
       - name: "admin"
   roles:
@@ -91,14 +91,15 @@ None.
 ## What This Role Does
 
 1. Verifies Debian-based system
-2. Installs git via apt
+2. Installs `astronvim_build_packages` (git, gcc, unzip) via apt
 3. Detects CPU architecture (x86_64 or aarch64)
 4. Downloads Neovim tarball from GitHub releases
-5. Extracts Neovim to `/usr/local/`
+5. Extracts Neovim to `/usr/local/` owned by root, and repairs ownership left by older runs
 6. For each user:
    - Backs up existing nvim configs (`.config/nvim`, `.local/share/nvim`, etc.)
    - Clones AstroNvim template to `~/.config/nvim`
    - Removes `.git` directory for personal customization
+   - Installs plugins headlessly (`nvim --headless "+Lazy! sync"`) so the next run is idempotent
 
 ## Post-Installation
 

@@ -4,14 +4,20 @@
 
 # --- Neovim Installation ---
 
-# neovim_binary_path: Path where nvim binary will be installed
-neovim_binary_path: "/usr/local/bin/nvim"
+# astronvim_neovim_binary_path: Path where nvim binary will be installed
+astronvim_neovim_binary_path: "/usr/local/bin/nvim"
 
-# neovim_download_url: Base URL for Neovim releases
-neovim_download_url: "https://github.com/neovim/neovim/releases/download"
+# astronvim_neovim_download_url: Base URL for Neovim releases
+astronvim_neovim_download_url: "https://github.com/neovim/neovim/releases/download"
 
-# neovim_version: Neovim version to install
-neovim_version: "v0.11.3"
+# astronvim_neovim_version: Neovim version to install
+astronvim_neovim_version: "v0.12.6"
+
+# astronvim_build_packages: Packages needed to clone the config and build plugins
+astronvim_build_packages:
+  - git
+  - gcc
+  - unzip
 
 # --- User Configuration ---
 
