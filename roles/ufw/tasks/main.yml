@@ -6,7 +6,7 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Ensure UFW is installed
@@ -60,3 +60,16 @@
 - name: Ensure UFW is {{ ufw_state }}
   community.general.ufw:
     state: "{{ ufw_state }}"
+
+# Post-check: a wrong rule set must fail the play, not lock us out silently
+- name: Verify port {{ ufw_verify_port }} is still reachable from the control node
+  ansible.builtin.wait_for:
+    port: "{{ ufw_verify_port | int }}"
+    host: "{{ ansible_host | default(inventory_hostname) }}"
+    timeout: 10
+  delegate_to: localhost
+  become: false
+  when:
+    - ufw_state == 'enabled'
+    - ufw_verify_port | int > 0
+    - ansible_connection | default('ssh') != 'local'

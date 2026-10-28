@@ -19,6 +19,10 @@ ufw_state: enabled
 # WARNING: Set to true only for initial setup - wipes ALL existing rules
 ufw_reset_before_configure: false
 
+# ufw_verify_port: After enabling, check this port still answers from the
+# control node (lockout guard). Set to 0 to skip. Set it to your SSH port.
+ufw_verify_port: 22
+
 # --- Network Settings ---
 
 # ufw_enable_ipv6: Enable IPv6 support in UFW

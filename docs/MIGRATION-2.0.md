@@ -58,3 +58,6 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | fail2ban | `fail2ban_ban_action` (QDV) | `fail2ban_banaction` | default `ufw` (QDV hardcoded `iptables-multiport`) |
 | fail2ban | `fail2ban_sshd_enabled`, `fail2ban_sshd_port`, `fail2ban_sshd_maxretry`, `fail2ban_sshd_bantime` (QDV) | `fail2ban_jails.sshd.{enabled,port,maxretry,bantime}` | the recidive jail is on by default too |
 | fail2ban | `fail2ban_maxretry` default 5 (QDV) | default 3 | bantime/findtime accept seconds or `1h`/`10m` |
+| ufw | `ufw_force_reset` (QDV) | `ufw_reset_before_configure` | |
+| ufw | `ufw_default_incoming`, `ufw_default_outgoing` (QDV) | `ufw_default_policies` list of `{direction, policy}` | defaults already deny incoming / allow outgoing |
+| ufw | | `ufw_verify_port` | new, default `22`; set to your SSH port or `0` |
