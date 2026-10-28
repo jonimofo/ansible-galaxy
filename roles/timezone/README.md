@@ -9,13 +9,12 @@ Configures the system timezone on Debian-based systems.
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Collections:** `community.general` (for `timezone` module)
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -24,7 +23,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `timezone_name` | `"Asia/Ho_Chi_Minh"` | IANA timezone identifier |
+| `timezone_name` | `"Europe/Paris"` | IANA timezone identifier |
 
 ## Dependencies
 
@@ -32,7 +31,7 @@ None.
 
 ## Example Playbook
 
-### Basic Usage (Default: Asia/Ho_Chi_Minh)
+### Basic Usage (Default: Europe/Paris)
 
 ```yaml
 - name: Configure timezone

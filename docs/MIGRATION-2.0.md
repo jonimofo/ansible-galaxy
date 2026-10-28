@@ -17,3 +17,4 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | Role | Old variable | New variable | Note |
 |---|---|---|---|
 | fasd | `fasd_*` | removed | role deleted, use `packages` + zoxide |
+| timezone | `timezone_name` default `Asia/Ho_Chi_Minh` | default `Europe/Paris` | variable name unchanged, only the default moved |
