@@ -8,11 +8,13 @@
 - The `fasd` role is removed. The `packages` role installs `zoxide` instead and removes a previously built `/usr/local/bin/fasd`.
 - Every role variable is prefixed with the role name (ansible-lint `var-naming[no-role-prefix]`). See the table below.
 - `packages`: unattended upgrades are enabled by default (`packages_apt_update_unattended_upgrades: true`).
-- `ssh`: `authorized_keys` is managed exclusively for each user in `ssh_allowed_users`, from public key files in `ssh_public_keys_dir`. Check the key files before the first run.
+- `ssh`: hardening moves from line edits in `sshd_config` to the drop-in `/etc/ssh/sshd_config.d/00-ansible.conf`. Keys in `ssh_users` can come inline (`pubkey`), from a file (`pubkey_file`) or from `ssh_public_keys_dir/<name>.pub`. `authorized_keys` stays exclusive by default: list the key you connect with.
+- `host`: optional DNS management (netplan + systemd-resolved), off unless `host_dns_servers` is set; the resolved drop-in with public backup servers is written wherever systemd-resolved exists.
+- `packages`: `needrestart` is installed in automatic mode; the nightly timer is restarted when its schedule changes.
 
 ## Variable renames
 
-Rows are added role by role during the port. Consumers rename these keys in `group_vars` and `host_vars`.
+Consumers rename these keys in `group_vars` and `host_vars`. Rows marked (QDV) apply to hosts that used the QDV copy of the roles.
 
 | Role | Old variable | New variable | Note |
 |---|---|---|---|
