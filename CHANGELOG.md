@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [2.0.1] - 2026-10-28
+
+### Fixed
+
+- **ssh**: the `Include /etc/ssh/sshd_config.d/*.conf` line is added to `sshd_config` when missing (hosts provisioned by the former QDV role had a fully templated file), instead of failing.
+
 ## [2.0.0] - 2026-10-28
 
 Merges the QDV role implementations into this collection, which becomes the single source of truth for all consumers. Breaking release: see [docs/MIGRATION-2.0.md](docs/MIGRATION-2.0.md) for the variable renames.

@@ -32,7 +32,7 @@ Each role has a README with every variable. Breaking changes between major versi
 ```yaml
 collections:
   - name: jonimofo.infrastructure
-    version: "2.0.0"
+    version: "2.0.1"
 ```
 
 ```bash
