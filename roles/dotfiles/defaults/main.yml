@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/dotfiles
 
@@ -40,5 +40,5 @@ dotfiles_user_configs:
 # to ssh repo URLs (user@host:path).
 dotfiles_verify_ssh_access: true
 
-# dotfiles_tmux_install: Install tmux, TPM, and plugins for users with .tmux.conf symlinked
+# dotfiles_tmux_install: Install tmux, TPM, and plugins for every user in dotfiles_user_configs
 dotfiles_tmux_install: false

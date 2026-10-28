@@ -1,8 +1,8 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 galaxy_info:
   author: jonimofo
-  description: Sets the system hostname and updates /etc/hosts on Debian-based systems.
+  description: Hostname, /etc/hosts, /tmp mode and optional DNS (netplan, systemd-resolved) on Debian-based systems.
   license: GPL-2.0-or-later
   min_ansible_version: "2.15"
   platforms:

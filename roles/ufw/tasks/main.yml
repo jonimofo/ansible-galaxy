@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/ufw
 
@@ -57,6 +57,25 @@
   community.general.ufw:
     logging: "{{ ufw_logging }}"
 
+# Lockout guard: never enable a deny-incoming firewall without a rule for
+# the port we verify (the SSH port). New sessions would be dropped while the
+# current one survives through conntrack, and the post-check could only
+# report the lockout.
+- name: Assert a rule allows port {{ ufw_verify_port }} before enabling
+  ansible.builtin.assert:
+    that: >-
+      (ufw_verify_port | string) in (ufw_rules | selectattr('rule', 'in', ['allow', 'limit'])
+                                      | selectattr('port', 'defined') | map(attribute='port')
+                                      | map('string') | list)
+      or 'OpenSSH' in (ufw_rules | selectattr('name', 'defined') | map(attribute='name') | list)
+    fail_msg: >-
+      ufw_rules has no allow/limit rule for port {{ ufw_verify_port }} (or the OpenSSH profile).
+      Add one, or set ufw_verify_port to 0 if this host really has no SSH.
+    quiet: true
+  when:
+    - ufw_state == 'enabled'
+    - ufw_verify_port | int > 0
+
 - name: Ensure UFW is {{ ufw_state }}
   community.general.ufw:
     state: "{{ ufw_state }}"
@@ -66,7 +85,7 @@
   ansible.builtin.wait_for:
     port: "{{ ufw_verify_port | int }}"
     host: "{{ ansible_host | default(inventory_hostname) }}"
-    timeout: 10
+    timeout: "{{ ufw_verify_timeout }}"
   delegate_to: localhost
   become: false
   when:

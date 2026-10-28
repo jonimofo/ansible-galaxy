@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 - name: Verify Debian-based system
   ansible.builtin.assert:
@@ -15,45 +15,65 @@
     name: "{{ astronvim_build_packages }}"
     state: present
 
+- name: Verify supported architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in astronvim_neovim_arch_map
+    fail_msg: >-
+      Unsupported architecture: {{ ansible_architecture }}.
+      Supported: {{ astronvim_neovim_arch_map.keys() | list }}
+    quiet: true
+
 - name: Determine Neovim archive name based on architecture
   ansible.builtin.set_fact:
-    astronvim_neovim_archive_name: >-
-      {{ 'nvim-linux-arm64.tar.gz'
-      if ansible_architecture == 'aarch64'
-      else 'nvim-linux-x86_64.tar.gz' }}
+    astronvim_neovim_archive_name: "nvim-linux-{{ astronvim_neovim_arch_map[ansible_architecture] }}.tar.gz"
 
 - name: Check if Neovim is already installed
   ansible.builtin.stat:
     path: "{{ astronvim_neovim_binary_path }}"
   register: astronvim_nvim_binary_stat
 
+# The archive is fetched into a fresh root-only directory (mktemp under
+# astronvim_download_dir): a predictable path in /tmp could be planted by a
+# local user and extracted as root into /usr/local.
 - name: Install Neovim {{ astronvim_neovim_version }}
   when: not astronvim_nvim_binary_stat.stat.exists
   block:
+    - name: Create a private download directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "{{ astronvim_download_dir }}"
+        suffix: neovim
+      register: _astronvim_tmp
+
     - name: Download Neovim tarball for version {{ astronvim_neovim_version }}
       ansible.builtin.get_url:
         url: "{{ astronvim_neovim_download_url }}/{{ astronvim_neovim_version }}/{{ astronvim_neovim_archive_name }}"
-        dest: "/tmp/{{ astronvim_neovim_archive_name }}"
+        dest: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         mode: "0644"
+        force: false
 
     - name: Extract Neovim archive into /usr/local/
       ansible.builtin.unarchive:
-        src: "/tmp/{{ astronvim_neovim_archive_name }}"
+        src: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         dest: "/usr/local/"
         # --no-same-owner: root would otherwise keep the UID stored in the
         # archive, which also applies to /usr/local/{bin,lib,share} themselves
         extra_opts: [--strip-components=1, --no-same-owner]
         remote_src: true
-
-    - name: Clean up downloaded tarball
+  always:
+    - name: Remove the private download directory
       ansible.builtin.file:
-        path: "/tmp/{{ astronvim_neovim_archive_name }}"
+        path: "{{ _astronvim_tmp.path }}"
         state: absent
+      when: _astronvim_tmp.path is defined
 
-# Older runs extracted with the archive owner: give those files back to root
+# Older runs extracted with the archive owner: give Neovim's files back to root
 - name: Ensure Neovim files in /usr/local belong to root
   ansible.builtin.command:
-    cmd: find /usr/local/bin /usr/local/lib /usr/local/share ! -user root -print -exec chown -h root:root {} +
+    cmd: >-
+      find {{ astronvim_neovim_binary_path }} /usr/local/lib/nvim /usr/local/share/nvim
+      ! -user root -print -exec chown -h root:root {} +
   register: astronvim_chown
   changed_when: astronvim_chown.stdout | length > 0
 
@@ -61,6 +81,8 @@
 
 - name: Configure AstroNvim for each user
   ansible.builtin.include_tasks: setup_user.yml
+  vars:
+    _astronvim_home: "{{ user.home | default('/home/' ~ user.name) }}"
   loop: "{{ astronvim_users }}"
   loop_control:
     loop_var: user

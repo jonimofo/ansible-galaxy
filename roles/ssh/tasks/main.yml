@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/ssh
 
@@ -10,6 +10,10 @@
     quiet: true
 
 # --- Step 1: resolve and validate public keys (on the control node) ---
+
+- name: Reset the resolved users list
+  ansible.builtin.set_fact:
+    _ssh_resolved_users: []
 
 - name: Resolve public key for each SSH user
   ansible.builtin.set_fact:
@@ -47,7 +51,6 @@
   ansible.posix.authorized_key:
     user: "{{ item.name }}"
     key: "{{ item.pubkey }}"
-    path: "/home/{{ item.name }}/.ssh/authorized_keys"
     # exclusive: unlisted keys are removed from authorized_keys
     exclusive: "{{ ssh_exclusive_keys }}"
     manage_dir: true
@@ -75,6 +78,26 @@
     fail_msg: "/etc/ssh/sshd_config has no 'Include /etc/ssh/sshd_config.d/*.conf' line; add it at the top first."
     quiet: true
 
+# Lockout guard 1: the user Ansible connects as must stay allowed.
+- name: Assert the connecting user stays allowed by AllowUsers
+  ansible.builtin.assert:
+    that: _ssh_connecting_user in (ssh_users | map(attribute='name') | list)
+    fail_msg: >-
+      AllowUsers would be '{{ ssh_users | map(attribute='name') | join(' ') }}' but Ansible connects as
+      '{{ _ssh_connecting_user }}'. Add that user to ssh_users or you will be locked out.
+    quiet: true
+  vars:
+    _ssh_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
+  when: ssh_users | length > 0
+
+- name: Assert root login stays possible when Ansible connects as root
+  ansible.builtin.assert:
+    that: not (_ssh_connecting_user == 'root' and ssh_permit_root_login == 'no')
+    fail_msg: "Ansible connects as root but ssh_permit_root_login is 'no': switch ansible_user to a sudo user first."
+    quiet: true
+  vars:
+    _ssh_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
+
 - name: Deploy sshd hardening drop-in
   ansible.builtin.template:
     src: sshd_hardening.conf.j2
@@ -101,9 +124,23 @@
   ansible.builtin.wait_for:
     port: "{{ ssh_port | int }}"
     host: "{{ ansible_host | default(inventory_hostname) }}"
-    timeout: 10
+    timeout: "{{ ssh_verify_timeout }}"
   delegate_to: localhost
   become: false
+  when:
+    - ssh_verify_port | bool
+    - ansible_connection | default('ssh') != 'local'
+
+# Lockout guard 2: an open port is not a working login. Drop the persistent
+# connection and open a fresh session with the new sshd configuration.
+- name: Reset the SSH connection to test the new configuration
+  ansible.builtin.meta: reset_connection
+  when:
+    - ssh_verify_port | bool
+    - ansible_connection | default('ssh') != 'local'
+
+- name: Verify a new SSH session can be opened
+  ansible.builtin.ping:
   when:
     - ssh_verify_port | bool
     - ansible_connection | default('ssh') != 'local'

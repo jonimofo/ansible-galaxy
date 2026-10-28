@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/ssh
 
@@ -11,8 +11,12 @@ ssh_dropin_name: 00-ansible.conf
 ssh_service_name: ssh
 
 # ssh_verify_port: After reloading sshd, check ssh_port still answers from the
-# control node (lockout guard). Skipped on local connections.
+# control node, then reset the connection and open a new session (lockout
+# guard). Skipped on local connections.
 ssh_verify_port: true
+
+# ssh_verify_timeout: Seconds to wait for ssh_port in the lockout guard
+ssh_verify_timeout: 10
 
 # --- SSH Daemon Settings ---
 

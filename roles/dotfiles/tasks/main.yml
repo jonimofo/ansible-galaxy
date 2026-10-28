@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/dotfiles
 
@@ -8,6 +8,10 @@
       - ansible_os_family == 'Debian'
     fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
+
+- name: Set the connecting user fact
+  ansible.builtin.set_fact:
+    _dotfiles_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
 
 - name: Ensure git is installed
   ansible.builtin.apt:
@@ -46,8 +50,8 @@
 - name: Look for an existing dotfiles clone for {{ item.user }}
   ansible.builtin.stat:
     path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/.git"
-  become: "{{ item.user != ansible_user }}"
-  become_user: "{{ item.user if item.user != ansible_user else omit }}"
+  become: "{{ item.user != _dotfiles_connecting_user }}"
+  become_user: "{{ item.user if item.user != _dotfiles_connecting_user else omit }}"
   loop: "{{ dotfiles_user_configs.users }}"
   loop_control:
     label: "{{ item.user }}"
@@ -59,8 +63,8 @@
 - name: Look for the shallow marker of the dotfiles clone for {{ item.item.user }}
   ansible.builtin.stat:
     path: "{{ item.stat.path }}/shallow"
-  become: "{{ item.item.user != ansible_user }}"
-  become_user: "{{ item.item.user if item.item.user != ansible_user else omit }}"
+  become: "{{ item.item.user != _dotfiles_connecting_user }}"
+  become_user: "{{ item.item.user if item.item.user != _dotfiles_connecting_user else omit }}"
   loop: "{{ dotfiles_clone_git.results }}"
   loop_control:
     label: "{{ item.item.user }}"
@@ -91,10 +95,10 @@
     force: true
     depth: 1
     single_branch: true
-  # Only use become when target user differs from ansible_user
+  # Only use become when target user differs from _dotfiles_connecting_user
   # This preserves SSH agent forwarding for the connecting user
-  become: "{{ item.user != ansible_user }}"
-  become_user: "{{ item.user if item.user != ansible_user else omit }}"
+  become: "{{ item.user != _dotfiles_connecting_user }}"
+  become_user: "{{ item.user if item.user != _dotfiles_connecting_user else omit }}"
   loop: "{{ dotfiles_user_configs.users }}"
   loop_control:
     label: "{{ item.user }}"
@@ -104,8 +108,8 @@
 - name: Check dotfiles sources exist in the clone
   ansible.builtin.stat:
     path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
-  become: "{{ item.0.user != ansible_user }}"
-  become_user: "{{ item.0.user if item.0.user != ansible_user else omit }}"
+  become: "{{ item.0.user != _dotfiles_connecting_user }}"
+  become_user: "{{ item.0.user if item.0.user != _dotfiles_connecting_user else omit }}"
   loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
   loop_control:
     label: "{{ user.user }}:{{ file.src }}"

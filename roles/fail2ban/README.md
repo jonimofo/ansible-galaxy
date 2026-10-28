@@ -56,7 +56,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `fail2ban_jails` | sshd + recidive | Dictionary of jails |
+| `fail2ban_jails` | sshd + recidive | Dictionary of jails; the sshd jail port follows `ssh_port` when set |
 
 #### Jail Options
 

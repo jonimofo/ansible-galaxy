@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/host
 
@@ -62,6 +62,15 @@
     _host_has_netplan: "{{ _host_dns_tools.results[0].stat.exists }}"
     _host_has_resolved: "{{ _host_dns_tools.results[1].stat.exists }}"
 
+- name: Assert netplan is present when primary DNS servers are set
+  ansible.builtin.assert:
+    that: _host_has_netplan
+    fail_msg: >-
+      host_dns_servers is set but netplan is not installed on {{ inventory_hostname }}.
+      Install netplan.io or leave host_dns_servers empty.
+    quiet: true
+  when: host_dns_servers | length > 0
+
 - name: Configure primary DNS servers (netplan)
   when:
     - host_dns_servers | length > 0
@@ -94,15 +103,6 @@
         group: root
         mode: "0600"
       notify: Apply netplan
-
-- name: Assert netplan is present when primary DNS servers are set
-  ansible.builtin.assert:
-    that: _host_has_netplan
-    fail_msg: >-
-      host_dns_servers is set but netplan is not installed on {{ inventory_hostname }}.
-      Install netplan.io or leave host_dns_servers empty.
-    quiet: true
-  when: host_dns_servers | length > 0
 
 - name: Configure backup and fallback DNS servers (systemd-resolved)
   when:

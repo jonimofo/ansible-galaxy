@@ -27,7 +27,7 @@ All variables are defined in `defaults/main.yml`:
 | `locale_packages` | `[locales]` | Packages required for locale management |
 | `locale_name` | `"en_US.UTF-8"` | Locale to generate and set as default |
 | `locale_additional` | `[]` | Additional locales to generate (not set as default) |
-| `locale_env` | `{LANG, LANGUAGE}` | Environment variables for `/etc/default/locale` |
+| `locale_env` | `{LANG, LANGUAGE}` derived from `locale_name` | Environment variables for `/etc/default/locale` |
 
 ### Default locale_env
 
@@ -88,13 +88,12 @@ When SSH forwards locale settings from your local machine, the remote needs thos
 ## What This Role Does
 
 1. Verifies Debian-based system
-2. Updates apt cache (with retries)
-3. Installs locale packages
-4. Generates specified locale using `locale_gen`
-5. Generates additional locales if specified
-6. Writes locale environment to `/etc/default/locale`
-7. Runs `dpkg-reconfigure locales` if config changed
-8. Ensures `LANG` is set in `/etc/environment`
+2. Installs locale packages
+3. Generates specified locale using `locale_gen`
+4. Generates additional locales if specified
+5. Writes locale environment to `/etc/default/locale`
+6. Runs `dpkg-reconfigure locales` if config changed
+7. Ensures `LANG` is set in `/etc/environment`
 
 ## License
 

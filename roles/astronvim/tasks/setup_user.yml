@@ -1,14 +1,15 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 - name: "Check if AstroNvim is already installed for {{ user.name }}"
   ansible.builtin.stat:
-    path: "/home/{{ user.name }}/.local/share/nvim/lazy/lazy.nvim"
+    path: "{{ _astronvim_home }}/.local/share/nvim/lazy/lazy.nvim"
   register: astronvim_install_stat
   become: true
   become_user: "{{ user.name }}"
 
 - name: "Check for existing directories to backup for {{ user.name }}"
   ansible.builtin.stat:
-    path: "/home/{{ user.name }}/{{ item }}"
+    path: "{{ _astronvim_home }}/{{ item }}"
   loop:
     - ".config/nvim"
     - ".local/share/nvim"
@@ -35,13 +36,13 @@
     - name: "Clone AstroNvim template"
       ansible.builtin.git:
         repo: "https://github.com/AstroNvim/template"
-        dest: "/home/{{ user.name }}/.config/nvim"
+        dest: "{{ _astronvim_home }}/.config/nvim"
         version: main
         depth: 1
 
     - name: "Remove .git directory from AstroNvim clone"
       ansible.builtin.file:
-        path: "/home/{{ user.name }}/.config/nvim/.git"
+        path: "{{ _astronvim_home }}/.config/nvim/.git"
         state: absent
 
     # Plugins are otherwise installed on first launch: until then lazy.nvim is
@@ -49,5 +50,5 @@
     - name: "Install AstroNvim plugins"
       ansible.builtin.command:
         cmd: nvim --headless "+Lazy! sync" +qa
-        chdir: "/home/{{ user.name }}"
-        creates: "/home/{{ user.name }}/.local/share/nvim/lazy/lazy.nvim"
+        chdir: "{{ _astronvim_home }}"
+        creates: "{{ _astronvim_home }}/.local/share/nvim/lazy/lazy.nvim"

@@ -85,7 +85,7 @@ ignore:
     reason: "False positive · geerlingguy.docker is a dependency, not this role"
   - check: C5
     role: packages
-    reason: "False positive · apt_update_packages_to_install is a list, _install suffix is coincidental"
+    reason: "False positive · packages_apt_update_packages_to_install is a list, _install suffix is coincidental"
   - check: E5
     role: ssh
     reason: "False positive · sshd_config keys contain 'password' but no secrets are handled"

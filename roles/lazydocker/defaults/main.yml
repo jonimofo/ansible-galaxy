@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # Default variables for lazydocker role
 
@@ -8,9 +8,12 @@ lazydocker_version: "0.25.2"
 # lazydocker_install_path: Path where the binary will be installed
 lazydocker_install_path: "/usr/local/bin"
 
-# lazydocker_download_dir: Directory the archive is downloaded to.
-# The role never creates or chmods this directory, so /tmp is safe.
+# lazydocker_download_dir: Parent of the private (mktemp) download directory.
+# The role never chmods this directory, so /tmp is safe.
 lazydocker_download_dir: "/tmp"
+
+# lazydocker_download_url: Base URL of the GitHub releases
+lazydocker_download_url: "https://github.com/jesseduffield/lazydocker/releases/download"
 
 # lazydocker_arch_map: Architecture mappings (ansible_architecture -> release suffix)
 lazydocker_arch_map:

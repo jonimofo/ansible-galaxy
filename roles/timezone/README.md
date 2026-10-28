@@ -53,6 +53,11 @@ None.
     - role: jonimofo.infrastructure.timezone
 ```
 
+## What This Role Does
+
+1. Verifies Debian-based system
+2. Sets the timezone with `community.general.timezone`
+
 ## License
 
 GPL-2.0-or-later

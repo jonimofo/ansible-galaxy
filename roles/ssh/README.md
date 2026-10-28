@@ -30,7 +30,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `ssh_dropin_name` | `00-ansible.conf` | Drop-in file name in `/etc/ssh/sshd_config.d` |
 | `ssh_service_name` | `ssh` | Service to reload |
-| `ssh_verify_port` | `true` | After the reload, check `ssh_port` answers from the control node |
+| `ssh_verify_port` | `true` | After the reload, check `ssh_port` answers, then reset the connection and open a new session |
+| `ssh_verify_timeout` | `10` | Seconds to wait for `ssh_port` in that check |
 
 ### SSH Daemon Settings
 
@@ -148,9 +149,10 @@ None.
 
 1. Keys are validated on the control node before `authorized_keys` is touched.
 2. The drop-in is validated with `sshd -t` before it is written.
-3. sshd is reloaded immediately (handlers are flushed) and `ssh_port` is checked from the control node. A failed check fails the play while your current session is still open.
-4. With `ssh_exclusive_keys: true`, any key not in `ssh_users` is removed. Make sure the key you connect with is listed.
-5. Changing `ssh_port` also needs a firewall rule; with the `ufw` role set `ufw_verify_port` to the same value.
+3. Before writing, the role asserts that the user Ansible connects as is in `ssh_users` (and that root login stays allowed when connecting as root).
+4. sshd is reloaded immediately (handlers are flushed), `ssh_port` is checked from the control node, then the persistent connection is reset and a new session is opened. A failed login fails the play.
+5. With `ssh_exclusive_keys: true`, any key not in `ssh_users` is removed. Make sure the key you connect with is listed.
+6. Changing `ssh_port` also needs a firewall rule; with the `ufw` role set `ufw_verify_port` to the same value.
 
 ### Why a drop-in
 
@@ -161,9 +163,9 @@ Debian 12+ and Ubuntu 22.04+ ship `sshd_config` with `Include /etc/ssh/sshd_conf
 1. Verifies Debian-based system
 2. Resolves and validates each user's public key on the control node
 3. Writes `authorized_keys` (exclusive by default)
-4. Asserts `sshd_config` includes `sshd_config.d` (shipped by the openssh-server package), deploys the validated hardening drop-in
+4. Asserts `sshd_config` includes `sshd_config.d` and that the connecting user stays allowed, deploys the validated hardening drop-in
 5. Sets `StrictHostKeyChecking` in the client `ssh_config`
-6. Reloads sshd now and verifies `ssh_port` from the control node
+6. Reloads sshd now, verifies `ssh_port` from the control node, resets the connection and opens a new session
 
 ## License
 

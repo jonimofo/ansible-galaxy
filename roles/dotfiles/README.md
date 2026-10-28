@@ -155,11 +155,11 @@ None.
 
 ## What This Role Does
 
-1. Verifies Debian-based system
-2. Installs git via apt
-3. Clones dotfiles repository to each user's home
-4. Creates parent directories for symlink destinations
-5. Creates symlinks from repo files to home directory
+1. Verifies Debian-based system and installs git
+2. For an ssh repo URL, checks the forwarded agent and the repo host (`dotfiles_verify_ssh_access`)
+3. Removes an older full clone, then clones or updates the repo shallow and single-branch in each user's home
+4. Fails if a listed source is missing from the clone
+5. Creates parent directories and symlinks from repo files to the home directory
 6. Optionally installs tmux, clones TPM, and installs tmux plugins
 
 ## License

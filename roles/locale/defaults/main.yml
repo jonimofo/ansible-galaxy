@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/locale
 
@@ -20,7 +20,7 @@ locale_additional: []
 #   - "fr_FR.UTF-8"
 #   - "en_GB.UTF-8"
 
-# locale_env: Environment variables for /etc/default/locale
+# locale_env: Environment variables for /etc/default/locale (follow locale_name)
 locale_env:
-  LANG: "en_US.UTF-8"
-  LANGUAGE: "en_US:en"
+  LANG: "{{ locale_name }}"
+  LANGUAGE: "{{ locale_name.split('.')[0] }}:{{ locale_name.split('_')[0] }}"

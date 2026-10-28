@@ -21,6 +21,8 @@ Supported: Debian bookworm/trixie, Ubuntu jammy/noble/resolute, x86_64 and aarch
 | `lazydocker` | lazydocker binary |
 | `astronvim` | Neovim and AstroNvim per user |
 
+`roles/brave_students_profile` is an internal, unsupported helper and not part of the published API.
+
 Each role has a README with every variable. Breaking changes between major versions are listed in [docs/MIGRATION-2.0.md](docs/MIGRATION-2.0.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Install

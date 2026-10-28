@@ -27,7 +27,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `lazydocker_version` | `0.25.2` | Version to install |
 | `lazydocker_install_path` | `/usr/local/bin` | Binary installation path |
-| `lazydocker_download_dir` | `/tmp` | Directory the archive is downloaded to (never created or chmodded by the role) |
+| `lazydocker_download_dir` | `/tmp` | Parent of the private download directory (mktemp, root-only) |
+| `lazydocker_download_url` | GitHub releases URL | Base URL for downloads |
 | `lazydocker_arch_map` | `{x86_64, aarch64}` | Architecture mappings |
 
 ## Dependencies
@@ -74,7 +75,7 @@ None. However, Docker should be installed for lazydocker to be useful.
 1. Verifies Debian-based system
 2. Verifies supported architecture
 3. Constructs download URL based on version and architecture
-4. Downloads lazydocker tarball from GitHub releases (only if the binary is missing)
+4. Downloads the tarball into a private root-only directory (only if the binary is missing)
 5. Extracts only the `lazydocker` binary to the installation path, owned by root
 6. Sets executable permissions and root ownership
 7. Cleans up the downloaded archive and any LICENSE/README left by older runs
