@@ -8,8 +8,8 @@ Scope: All roles in jonimofo.infrastructure collection
 - [x] Every role has: defaults/, tasks/, meta/, README.md
 - [x] handlers/main.yml present where services are managed
 - [x] tests/test.yml and tests/inventory present for all roles
-- [x] No unnecessary empty files — removed 12 empty vars/main.yml boilerplate files
-- [x] `brave_students_profile` is not a proper role — tracked in TODO.md, excluded from audits
+- [x] No unnecessary empty files, removed 12 empty vars/main.yml boilerplate files
+- [x] `brave_students_profile` is not a proper role, tracked in TODO.md, excluded from audits
 
 ## 2. Task Quality
 
@@ -81,4 +81,4 @@ Scope: All roles in jonimofo.infrastructure collection
 - [x] Handlers defined for all service-managing roles (ssh, ufw, fail2ban, packages, locale)
 - [x] Handler names are descriptive and unique
 - [x] Handlers use appropriate actions (restart sshd, reload ufw, restart fail2ban, reload systemd)
-- [x] 7 roles have empty handler files (boilerplate, no services to manage — harmless)
+- [x] 7 roles have empty handler files (boilerplate, no services to manage, harmless)

@@ -11,12 +11,11 @@ Installs fzf (fuzzy finder) from source and configures shell integration for spe
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -26,6 +25,7 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `fzf_repo_url` | `https://github.com/junegunn/fzf.git` | Git repository URL |
+| `fzf_version` | `v0.74.5` | Git tag of fzf to install |
 | `fzf_install_path` | `/opt/fzf` | Directory where fzf is cloned |
 | `fzf_users` | `[]` | List of users to configure |
 | `fzf_update_bashrc` | `true` | Default for adding source line to .bashrc |

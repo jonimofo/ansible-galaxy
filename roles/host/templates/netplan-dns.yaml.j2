@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+# DNS override: replaces only the 'nameservers' key of the interface,
+# installer files (IP/routes) are left untouched (netplan lexical merge).
+network:
+  version: 2
+  ethernets:
+    {{ host_dns_interface }}:
+      nameservers:
+        addresses:
+{% for server in host_dns_servers %}
+          - {{ server }}
+{% endfor %}

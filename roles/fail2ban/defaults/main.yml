@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/fail2ban
 
@@ -46,6 +46,7 @@ fail2ban_allowipv6: false
 # WARNING: Be careful not to lock yourself out
 fail2ban_ignoreip:
   - 127.0.0.1/8
+  - ::1
 
 # fail2ban_banaction: Action to use for banning (ufw, iptables, iptables-multiport)
 # Using 'ufw' since this collection uses UFW for firewall management
@@ -58,7 +59,7 @@ fail2ban_banaction: ufw
 fail2ban_jails:
   sshd:
     enabled: true
-    port: ssh
+    port: "{{ ssh_port | default('ssh') }}"  # follows the ssh role when set
     filter: sshd
   # Recidive jail - bans repeat offenders for longer
   recidive:
@@ -86,10 +87,3 @@ fail2ban_jails:
 #   enabled: true
 #   port: http,https
 #   filter: apache-auth
-#
-# TODO
-# traefik-auth:
-#   enabled: true
-#   port: http,https
-#   filter: traefik-auth
-#   logpath: /var/log/traefik/access.log

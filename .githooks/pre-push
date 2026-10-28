@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Refuse direct pushes to main/develop: those branches only change through
+# a merged pull request (feat/* or fix/* branch, PR to develop, PR to main).
+set -euo pipefail
+
+protected="main develop"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+    branch="${remote_ref#refs/heads/}"
+    for p in $protected; do
+        if [ "$branch" = "$p" ]; then
+            echo "Direct push to '$p' is not allowed." >&2
+            echo "Push a feat/* or fix/* branch and open a pull request." >&2
+            exit 1
+        fi
+    done
+done
+
+exit 0

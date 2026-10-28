@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/host
 
@@ -6,7 +6,7 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Verify host_hostname is set
@@ -14,13 +14,16 @@
     that:
       - host_hostname | length > 0
     fail_msg: "host_hostname must be defined and not empty"
+    quiet: true
 
 - name: Ensure /tmp has correct permissions
   ansible.builtin.file:
     path: /tmp
-    mode: '1777'
+    mode: "1777"
     owner: root
     group: root
+
+# --- Hostname ---
 
 - name: Set short hostname fact
   ansible.builtin.set_fact:
@@ -39,4 +42,86 @@
     line: "127.0.1.1 {{ host_hostname }} {{ _host_short }}"
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
+
+# --- DNS: primary servers per interface (netplan override), backup and
+# fallback servers at the systemd-resolved level. Each part is skipped when
+# the tool is not installed, so the role stays safe on Debian hosts that use
+# ifupdown/NetworkManager and no systemd-resolved.
+
+- name: Check for netplan and systemd-resolved
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /usr/sbin/netplan
+    - /usr/lib/systemd/systemd-resolved
+  register: _host_dns_tools
+
+- name: Set DNS tooling facts
+  ansible.builtin.set_fact:
+    _host_has_netplan: "{{ _host_dns_tools.results[0].stat.exists }}"
+    _host_has_resolved: "{{ _host_dns_tools.results[1].stat.exists }}"
+
+- name: Assert netplan is present when primary DNS servers are set
+  ansible.builtin.assert:
+    that: _host_has_netplan
+    fail_msg: >-
+      host_dns_servers is set but netplan is not installed on {{ inventory_hostname }}.
+      Install netplan.io or leave host_dns_servers empty.
+    quiet: true
+  when: host_dns_servers | length > 0
+
+- name: Configure primary DNS servers (netplan)
+  when:
+    - host_dns_servers | length > 0
+    - _host_has_netplan
+  block:
+    - name: Find legacy netplan files (everything but our DNS override)
+      ansible.builtin.find:
+        paths: /etc/netplan
+        patterns: "*.yaml"
+        excludes: "99-{{ host_dns_file_prefix }}-dns.yaml"
+      register: _host_netplan_legacy
+
+    # Netplan concatenates list values across files instead of overriding them:
+    # legacy nameservers must be removed so our override file stays the only DNS source.
+    - name: Remove nameservers from legacy netplan files
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^(?P<i>[ \t]*)nameservers:\n(?:(?P=i)[ \t]+\S.*\n?)*'
+        replace: ""
+      loop: "{{ _host_netplan_legacy.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      notify: Apply netplan
+
+    - name: Configure primary DNS servers (netplan override)
+      ansible.builtin.template:
+        src: netplan-dns.yaml.j2
+        dest: "/etc/netplan/99-{{ host_dns_file_prefix }}-dns.yaml"
+        owner: root
+        group: root
+        mode: "0600"
+      notify: Apply netplan
+
+- name: Configure backup and fallback DNS servers (systemd-resolved)
+  when:
+    - host_dns_manage_resolved | bool
+    - _host_has_resolved
+  block:
+    - name: Create systemd-resolved drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure backup and fallback DNS servers (systemd-resolved drop-in)
+      ansible.builtin.template:
+        src: resolved-dns.conf.j2
+        dest: "/etc/systemd/resolved.conf.d/10-{{ host_dns_file_prefix }}-dns.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart systemd-resolved

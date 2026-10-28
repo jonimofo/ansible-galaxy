@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # Tmux: install tmux, TPM, and plugins
 
@@ -33,5 +33,5 @@
     user_home: "{{ item.home | default('/home/' + item.user) }}"
   environment:
     TMUX_PLUGIN_MANAGER_PATH: "{{ user_home }}/.tmux/plugins"
-  register: tpm_install
-  changed_when: "'Installing' in tpm_install.stdout"
+  register: dotfiles_tpm_install
+  changed_when: "'Installing' in dotfiles_tpm_install.stdout"

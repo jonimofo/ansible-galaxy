@@ -13,12 +13,11 @@ Installs and configures Fail2Ban to protect services from brute-force attacks on
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -42,8 +41,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `fail2ban_backend` | `systemd` | Log backend (`systemd`, `auto`, `pyinotify`) |
 | `fail2ban_allowipv6` | `false` | Enable IPv6 support |
-| `fail2ban_ignoreip` | `['127.0.0.1/8']` | IPs/networks to never ban |
-| `fail2ban_banaction` | `iptables-multiport` | Ban action (`ufw`, `iptables-multiport`) |
+| `fail2ban_ignoreip` | `['127.0.0.1/8', '::1']` | IPs/networks to never ban |
+| `fail2ban_banaction` | `ufw` | Ban action (`ufw`, `iptables-multiport`); `ufw` expects the ufw role or an enabled ufw |
 
 ### Package Settings
 
@@ -57,7 +56,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `fail2ban_jails` | sshd + recidive | Dictionary of jails |
+| `fail2ban_jails` | sshd + recidive | Dictionary of jails; the sshd jail port follows `ssh_port` when set |
 
 #### Jail Options
 
@@ -168,16 +167,7 @@ None.
 
 ## Platform Notes
 
-### Raspberry Pi OS
-
-Raspberry Pi OS is fully supported. Considerations:
-
-- **Log location:** Uses systemd journal by default (`backend: systemd`)
-- **Performance:** Fail2ban has minimal CPU impact on Pi
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. The role uses the systemd backend by default.
+Debian and Ubuntu are supported. The role uses the systemd journal backend by default.
 
 ## Security Considerations
 

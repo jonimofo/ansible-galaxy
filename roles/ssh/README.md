@@ -1,29 +1,37 @@
 # Ansible Role: ssh
 
-Hardens OpenSSH server configuration and manages user access with public key authentication on Debian-based systems.
+Hardens the OpenSSH server through a drop-in in `/etc/ssh/sshd_config.d/`, manages `authorized_keys` and `AllowUsers`, and verifies the server is still reachable afterwards.
 
 ## Features
 
-- Comprehensive SSH server hardening
-- Configurable security settings (all options exposed as variables)
-- Public key management with `AllowUsers` whitelist
-- Optional exclusive key management (remove unmanaged keys)
-- Automatic config validation before applying
+- Hardening written to `/etc/ssh/sshd_config.d/00-ansible.conf`: sorted first, so it wins over the stock `sshd_config` and over cloud-init's `50-cloud-init.conf`, while distro defaults stay in place
+- `authorized_keys` per user, exclusive by default, from inline keys, `.pub` files, or a keys directory
+- Public keys validated on the control node before anything is written
+- `AllowUsers` restricted to the managed users
+- Config validated with `sshd -t` before it is written, sshd reloaded (not restarted), then the SSH port is checked from the control node
 
 ## Requirements
 
-- **Ansible version:** 2.12+
-- **Collections:** `ansible.posix` (install with `ansible-galaxy collection install ansible.posix`)
-- **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+- **Ansible version:** 2.15+
+- **Collections:** `ansible.posix` (for `authorized_key`)
+- **Supported OS:** Debian-based systems with `Include /etc/ssh/sshd_config.d/*.conf` in `sshd_config`
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
 
 All variables are defined in `defaults/main.yml`:
+
+### Where the hardening lands
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ssh_dropin_name` | `00-ansible.conf` | Drop-in file name in `/etc/ssh/sshd_config.d` |
+| `ssh_service_name` | `ssh` | Service to reload |
+| `ssh_verify_port` | `true` | After the reload, check `ssh_port` answers, then reset the connection and open a new session |
+| `ssh_verify_timeout` | `10` | Seconds to wait for `ssh_port` in that check |
 
 ### SSH Daemon Settings
 
@@ -31,6 +39,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `ssh_port` | `22` | SSH daemon listening port |
 | `ssh_permit_root_login` | `"no"` | Allow root login (`yes`, `no`, `prohibit-password`, `forced-commands-only`) |
+| `ssh_pubkey_authentication` | `true` | Allow public key authentication |
 | `ssh_password_authentication` | `false` | Allow password-based authentication |
 | `ssh_permit_empty_passwords` | `false` | Allow empty passwords |
 | `ssh_max_auth_tries` | `3` | Maximum authentication attempts per connection |
@@ -41,7 +50,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ssh_allow_agent_forwarding` | `false` | Allow SSH agent forwarding |
+| `ssh_allow_agent_forwarding` | `false` | Allow SSH agent forwarding (the `dotfiles` role needs it) |
 | `ssh_allow_tcp_forwarding` | `false` | Allow TCP port forwarding |
 | `ssh_x11_forwarding` | `false` | Allow X11 forwarding |
 
@@ -56,14 +65,15 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ssh_users` | `[]` | List of users with SSH access (see below) |
-| `ssh_exclusive_keys` | `true` | Remove unmanaged keys from authorized_keys |
+| `ssh_users` | `[]` | Users allowed to SSH with their public keys (see below) |
+| `ssh_public_keys_dir` | `""` | Directory on the control node with one `<name>.pub` per user without `pubkey`/`pubkey_file` |
+| `ssh_exclusive_keys` | `true` | Remove unmanaged keys from `authorized_keys` |
 
 ### Additional Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ssh_strict_host_key_checking` | `"ask"` | Client StrictHostKeyChecking (`yes`, `no`, `ask`) |
+| `ssh_strict_host_key_checking` | `"ask"` | Client `StrictHostKeyChecking` in `/etc/ssh/ssh_config` (`yes`, `no`, `ask`) |
 | `ssh_print_motd` | `false` | Display /etc/motd on login |
 | `ssh_print_last_log` | `true` | Display last login info |
 | `ssh_use_dns` | `false` | DNS lookup for connecting hosts |
@@ -71,145 +81,91 @@ All variables are defined in `defaults/main.yml`:
 
 ### ssh_users Structure
 
-```yaml
-ssh_users:
-  - name: "alice"
-    pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... alice@example.com"
-  - name: "bob"
-    pubkey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ... bob@workstation"
-```
+Each entry needs `name` and one key source, resolved in this order:
+
+| Key | Description |
+|-----|-------------|
+| **pubkey** | Inline public key, one or several lines |
+| **pubkey_file** | Path on the control node to a `.pub` file |
+| (none) | `<ssh_public_keys_dir>/<name>.pub`, when `ssh_public_keys_dir` is set |
+
+Keys are checked before anything is written: non-empty, not the `REPLACE_WITH_REAL_PUBLIC_KEY` placeholder, and starting with a known key type.
 
 ## Dependencies
 
-- `ansible.posix` collection
+None.
 
 ## Example Playbook
 
-### Basic Usage
+### Inline keys
 
 ```yaml
-- name: Harden SSH and configure user access
+- name: Harden SSH
   hosts: all
   become: true
   vars:
+    ssh_allow_agent_forwarding: true
     ssh_users:
       - name: "admin"
-        pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... admin@laptop"
+        pubkey: "ssh-ed25519 AAAA... admin@laptop"
   roles:
     - role: jonimofo.infrastructure.ssh
 ```
 
-### High Security Configuration
+### Keys from a per-inventory directory
 
 ```yaml
-- name: Maximum SSH hardening
-  hosts: production
+- name: Harden SSH with project keys
+  hosts: all
+  become: true
+  vars:
+    ssh_public_keys_dir: "{{ inventory_dir }}/files/ssh"   # admin.pub, deploy.pub
+    ssh_users:
+      - name: "admin"
+      - name: "deploy"
+  roles:
+    - role: jonimofo.infrastructure.ssh
+```
+
+### Custom port
+
+```yaml
+- name: SSH on port 2222
+  hosts: all
   become: true
   vars:
     ssh_port: 2222
-    ssh_permit_root_login: "no"
-    ssh_password_authentication: false
-    ssh_max_auth_tries: 2
-    ssh_login_grace_time: 30
-    ssh_max_sessions: 1
-    ssh_allow_agent_forwarding: false
-    ssh_allow_tcp_forwarding: false
-    ssh_x11_forwarding: false
-    ssh_client_alive_interval: 180
-    ssh_client_alive_count_max: 2
-    ssh_exclusive_keys: true
+    ufw_verify_port: 2222   # if you also use the ufw role
     ssh_users:
-      - name: "deploy"
-        pubkey: "ssh-ed25519 AAAAC3..."
-  roles:
-    - role: jonimofo.infrastructure.ssh
-```
-
-### Allow Root with Key Only
-
-```yaml
-- name: Allow root access with key only
-  hosts: servers
-  become: true
-  vars:
-    ssh_permit_root_login: "prohibit-password"
-    ssh_users:
-      - name: "root"
-        pubkey: "ssh-ed25519 AAAAC3..."
       - name: "admin"
-        pubkey: "ssh-ed25519 AAAAC3..."
+        pubkey_file: "files/admin.pub"
   roles:
     - role: jonimofo.infrastructure.ssh
 ```
-
-## Platform Notes
-
-### Raspberry Pi OS
-
-Raspberry Pi OS is fully supported. Considerations:
-
-- **Headless setup:** Ensure you have SSH access configured before running (add `ssh` file to boot partition)
-- **Default user:** The default `pi` user should be in `ssh_users` or you may lock yourself out
-- **Port change:** If changing `ssh_port`, ensure your firewall allows the new port first
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. The SSH service is named `ssh` on Debian-based systems (not `sshd`).
 
 ## Security Considerations
 
-### Default Security Posture
-
-This role applies secure defaults:
-
-- **Password authentication disabled** - Keys only
-- **Root login disabled** - Use sudo instead
-- **Empty passwords disabled** - No weak auth
-- **All forwarding disabled** - Reduced attack surface
-- **Low auth tries** - Brute-force mitigation
-- **Keep-alive enabled** - Detect dead connections
-- **DNS lookup disabled** - Faster connections, no DNS leak
-
-### Recommendations
-
-1. **Always use Ed25519 keys** - Strongest and fastest
-2. **Keep `ssh_exclusive_keys: true`** - Removes unauthorized keys (default)
-3. **Change default port** - Reduces automated attacks (not security, obscurity)
-4. **Use with fail2ban** - Ban repeated failures
-5. **Use with ufw** - Firewall the SSH port
-
 ### Lockout Prevention
 
-Before running this role:
+1. Keys are validated on the control node before `authorized_keys` is touched.
+2. The drop-in is validated with `sshd -t` before it is written.
+3. Before writing, the role asserts that the user Ansible connects as is in `ssh_users` (and that root login stays allowed when connecting as root).
+4. sshd is reloaded immediately (handlers are flushed), `ssh_port` is checked from the control node, then the persistent connection is reset and a new session is opened. A failed login fails the play.
+5. With `ssh_exclusive_keys: true`, any key not in `ssh_users` is removed. Make sure the key you connect with is listed.
+6. Changing `ssh_port` also needs a firewall rule; with the `ufw` role set `ufw_verify_port` to the same value.
 
-1. Ensure your public key is in `ssh_users`
-2. Test SSH key authentication manually first
-3. Have console/physical access as backup
-4. Consider keeping a session open while testing
+### Why a drop-in
 
-### What This Role Hardens
-
-| Setting | Value | Security Benefit |
-|---------|-------|------------------|
-| PasswordAuthentication | no | Prevents password brute-force |
-| PermitRootLogin | no | Forces use of sudo, audit trail |
-| PermitEmptyPasswords | no | No weak authentication |
-| MaxAuthTries | 3 | Limits brute-force attempts |
-| X11Forwarding | no | Reduces attack surface |
-| AllowTcpForwarding | no | Prevents tunnel abuse |
-| AllowAgentForwarding | no | Prevents key theft |
-| UseDNS | no | Prevents DNS-based attacks |
-| AllowUsers | (list) | Whitelist-only access |
+Debian 12+ and Ubuntu 22.04+ ship `sshd_config` with `Include /etc/ssh/sshd_config.d/*.conf` at the top, and sshd keeps the first value it reads. Cloud images add `50-cloud-init.conf` there with `PasswordAuthentication yes`. A `00-` drop-in is read before both, so it wins without rewriting the stock file.
 
 ## What This Role Does
 
 1. Verifies Debian-based system
-2. Configures `/etc/ssh/ssh_config` client settings
-3. Hardens `/etc/ssh/sshd_config` with all security options
-4. Validates config before applying (`sshd -t`)
-5. Configures `AllowUsers` whitelist from `ssh_users`
-6. Deploys public keys to user `authorized_keys`
-7. Restarts SSH service to apply changes
+2. Resolves and validates each user's public key on the control node
+3. Writes `authorized_keys` (exclusive by default)
+4. Asserts `sshd_config` includes `sshd_config.d` and that the connecting user stays allowed, deploys the validated hardening drop-in
+5. Sets `StrictHostKeyChecking` in the client `ssh_config`
+6. Reloads sshd now, verifies `ssh_port` from the control node, resets the connection and opens a new session
 
 ## License
 

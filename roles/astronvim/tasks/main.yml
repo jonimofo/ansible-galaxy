@@ -1,66 +1,88 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
-# tasks file for roles/astronvim
-
 - name: Verify Debian-based system
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
-- name: Ensure git is installed
+# --- Install Neovim ---
+
+# git: clones the AstroNvim template. gcc: nvim-treesitter compiles its parsers. unzip: mason extracts its tools.
+- name: Install Neovim plugin build dependencies
   ansible.builtin.apt:
-    name: git
+    name: "{{ astronvim_build_packages }}"
     state: present
 
-# ---------------------------------------------------------------------------
-# STAGE 1: INSTALL NEOVIM
-# Auto-detects CPU architecture (x86_64 vs ARM)
-# ---------------------------------------------------------------------------
+- name: Verify supported architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in astronvim_neovim_arch_map
+    fail_msg: >-
+      Unsupported architecture: {{ ansible_architecture }}.
+      Supported: {{ astronvim_neovim_arch_map.keys() | list }}
+    quiet: true
+
 - name: Determine Neovim archive name based on architecture
   ansible.builtin.set_fact:
-    neovim_archive_name: >-
-      {{ 'nvim-linux-arm64.tar.gz'
-      if ansible_architecture == 'aarch64'
-      else 'nvim-linux-x86_64.tar.gz' }}
-
-- name: Display detected architecture and selected archive
-  ansible.builtin.debug:
-    msg: "Detected architecture '{{ ansible_architecture }}', using archive '{{ neovim_archive_name }}'."
-    verbosity: 1
+    astronvim_neovim_archive_name: "nvim-linux-{{ astronvim_neovim_arch_map[ansible_architecture] }}.tar.gz"
 
 - name: Check if Neovim is already installed
   ansible.builtin.stat:
-    path: "{{ neovim_binary_path }}"
-  register: nvim_binary_stat
+    path: "{{ astronvim_neovim_binary_path }}"
+  register: astronvim_nvim_binary_stat
 
-- name: Install Neovim {{ neovim_version }}
-  when: not nvim_binary_stat.stat.exists
+# The archive is fetched into a fresh root-only directory (mktemp under
+# astronvim_download_dir): a predictable path in /tmp could be planted by a
+# local user and extracted as root into /usr/local.
+- name: Install Neovim {{ astronvim_neovim_version }}
+  when: not astronvim_nvim_binary_stat.stat.exists
   block:
-    - name: Download Neovim {{ neovim_version }} tarball
+    - name: Create a private download directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "{{ astronvim_download_dir }}"
+        suffix: neovim
+      register: _astronvim_tmp
+
+    - name: Download Neovim tarball for version {{ astronvim_neovim_version }}
       ansible.builtin.get_url:
-        url: "{{ neovim_download_url }}/{{ neovim_version }}/{{ neovim_archive_name }}"
-        dest: "/tmp/{{ neovim_archive_name }}"
-        mode: '0644'
+        url: "{{ astronvim_neovim_download_url }}/{{ astronvim_neovim_version }}/{{ astronvim_neovim_archive_name }}"
+        dest: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
+        mode: "0644"
+        force: false
 
     - name: Extract Neovim archive into /usr/local/
       ansible.builtin.unarchive:
-        src: "/tmp/{{ neovim_archive_name }}"
+        src: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         dest: "/usr/local/"
-        extra_opts: [--strip-components=1]
+        # --no-same-owner: root would otherwise keep the UID stored in the
+        # archive, which also applies to /usr/local/{bin,lib,share} themselves
+        extra_opts: [--strip-components=1, --no-same-owner]
         remote_src: true
-
-    - name: Clean up downloaded tarball
+  always:
+    - name: Remove the private download directory
       ansible.builtin.file:
-        path: "/tmp/{{ neovim_archive_name }}"
+        path: "{{ _astronvim_tmp.path }}"
         state: absent
+      when: _astronvim_tmp.path is defined
 
-# ---------------------------------------------------------------------------
-# STAGE 2: CONFIGURE ASTRONVIM
-# ---------------------------------------------------------------------------
+# Older runs extracted with the archive owner: give Neovim's files back to root
+- name: Ensure Neovim files in /usr/local belong to root
+  ansible.builtin.command:
+    cmd: >-
+      find {{ astronvim_neovim_binary_path }} /usr/local/lib/nvim /usr/local/share/nvim
+      ! -user root -print -exec chown -h root:root {} +
+  register: astronvim_chown
+  changed_when: astronvim_chown.stdout | length > 0
+
+# --- Configure AstroNvim per user ---
+
 - name: Configure AstroNvim for each user
   ansible.builtin.include_tasks: setup_user.yml
+  vars:
+    _astronvim_home: "{{ user.home | default('/home/' ~ user.name) }}"
   loop: "{{ astronvim_users }}"
   loop_control:
     loop_var: user

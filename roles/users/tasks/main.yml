@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/users
 
@@ -6,8 +6,29 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
+
+# ansible.builtin.user fails on a missing supplementary group (e.g. docker
+# before the docker role ran): create every group referenced in users_list.
+# System groups, like the ones the packages would create themselves.
+- name: Ensure supplementary groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    system: true
+    state: present
+  loop: "{{ _users_groups }}"
+  vars:
+    # groups may be a comma-separated string or a list; empty entries are dropped
+    _users_groups: >-
+      {%- set out = [] -%}
+      {%- for g in users_list | selectattr('groups', 'defined') | map(attribute='groups') -%}
+        {%- set items = g if (g is sequence and g is not string) else (g | string).split(',') -%}
+        {%- for i in items if (i | trim) | length > 0 -%}
+          {%- set _ = out.append(i | trim) -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ out | unique | list }}
 
 - name: Create users
   ansible.builtin.user:
@@ -16,13 +37,15 @@
     # Default append=true so supplementary groups declared here are ADDED
     # to any existing membership rather than replacing it. Required for
     # multi-role setups where other roles (e.g. geerlingguy.docker) also
-    # manage group membership for the same user — otherwise this role
+    # manage group membership for the same user, otherwise this role
     # strips those groups on every run and the two roles oscillate.
     # Opt into replace semantics per-user with `append: false`.
     append: "{{ item.append | default(true) }}"
     shell: "{{ item.shell | default(users_default_shell) }}"
     state: present
     create_home: "{{ item.create_home | default(users_default_create_home) }}"
+    home: "{{ item.home | default(omit) }}"
+    system: "{{ item.system | default(omit) }}"
     comment: "{{ item.comment | default(omit) }}"
     uid: "{{ item.uid | default(omit) }}"
   loop: "{{ users_list }}"
@@ -30,15 +53,29 @@
     label: "{{ item.name }}"
   when: users_list | length > 0
 
-- name: Warn if disabling passwordless sudo without ansible_become_password
-  ansible.builtin.debug:
-    msg: >-
-      Disabling passwordless sudo but ansible_become_password is not set.
-      Ensure ansible_become_password is configured in your inventory or
-      use --ask-become-pass (-K) on the next run, or you will be locked out.
+- name: Restrict home directory access
+  ansible.builtin.file:
+    path: "{{ item.home | default('/home/' + item.name) }}"
+    state: directory
+    mode: "{{ users_home_mode }}"
+  loop: "{{ users_list }}"
+  loop_control:
+    label: "{{ item.name }}"
   when:
-    - not users_passwordless_sudo
-    - ansible_become_password is not defined or ansible_become_password == ''
+    - users_home_mode | length > 0
+    - item.create_home | default(users_default_create_home)
+
+# Lockout guard: cloud images grant NOPASSWD through sudoers.d files that this
+# role removes below. Without a become password, password-required sudo would
+# leave no way to become root.
+- name: Assert a become password is set when passwordless sudo is disabled
+  ansible.builtin.assert:
+    that: ansible_become_password is defined and ansible_become_password | length > 0
+    fail_msg: >-
+      users_passwordless_sudo is false but ansible_become_password is not set.
+      Set it in the inventory or run with --ask-become-pass (-K), or you will be locked out.
+    quiet: true
+  when: not users_passwordless_sudo
 
 - name: Configure sudo group privileges
   ansible.builtin.lineinfile:
@@ -46,7 +83,7 @@
     regexp: '^%sudo'
     line: "{{ _sudo_line }}"
     state: present
-    validate: 'visudo -cf %s'
+    validate: "visudo -cf %s"
   vars:
     _sudo_nopasswd: "{{ users_passwordless_sudo | ternary('NOPASSWD: ', '') }}"
     # Block both /bin/su and /usr/bin/su (location varies by distro)
@@ -62,18 +99,30 @@
   loop:
     - /etc/sudoers.d/010_pi-nopasswd
     - /etc/sudoers.d/90-cloud-init-users
-  # Ignore errors if files don't exist
-  failed_when: false
+
+- name: Remove absent users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    state: absent
+    remove: "{{ item.remove_home | default(true) }}"
+  loop: "{{ users_absent }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: users_absent | length > 0
 
 - name: Warn if skipping root lock (connected as root)
   ansible.builtin.debug:
     msg: >-
       Skipping root account lock because Ansible is connected as root.
       Switch ansible_user to a non-root user with sudo access to enable this.
-  when: users_lock_root and ansible_user == 'root'
+  when: users_lock_root and _users_connecting_user == 'root'
+  vars:
+    _users_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
 
 - name: Lock root account
   ansible.builtin.user:
     name: root
     password_lock: true
-  when: users_lock_root and ansible_user != 'root'
+  when: users_lock_root and _users_connecting_user != 'root'
+  vars:
+    _users_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"

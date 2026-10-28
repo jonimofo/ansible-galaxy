@@ -13,13 +13,12 @@ Installs and configures the Uncomplicated Firewall (UFW) on Debian-based systems
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Collections:** `community.general` (install with `ansible-galaxy collection install community.general`)
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -32,6 +31,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `ufw_state` | `enabled` | Final UFW state (`enabled`, `disabled`, `reset`) |
 | `ufw_reset_before_configure` | `false` | Reset UFW before applying rules (wipes all rules!) |
+| `ufw_verify_port` | `ssh_port`, else `22` | Port that must have an allow/limit rule before enabling, then verified from the control node (`0` to skip) |
+| `ufw_verify_timeout` | `10` | Seconds to wait for `ufw_verify_port` in that check |
 | `ufw_logging` | `"on"` | Logging level (`on`, `off`, `low`, `medium`, `high`, `full`) |
 
 ### Network Settings
@@ -175,17 +176,7 @@ ufw_default_policies:
 
 ## Platform Notes
 
-### Raspberry Pi OS
-
-Raspberry Pi OS is fully supported. Considerations:
-
-- **Headless Pi:** Ensure SSH rule is configured before enabling UFW
-- **GPIO/I2C services:** May need rules for local services on specific ports
-- **Default interface:** Usually `eth0` (Ethernet) or `wlan0` (WiFi)
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. UFW is a frontend for iptables and works identically across all Debian-based distributions.
+Debian and Ubuntu are supported. UFW is a frontend for iptables/nftables and works identically on both.
 
 ## Security Considerations
 
@@ -249,7 +240,8 @@ With default policies:
 5. Sets default policies (deny incoming, allow outgoing)
 6. Configures firewall rules from `ufw_rules`
 7. Sets logging level
-8. Enables UFW
+8. Asserts a rule allows `ufw_verify_port`, then enables UFW
+9. Verifies `ufw_verify_port` still answers from the control node
 
 ## License
 

@@ -1,35 +1,38 @@
 # Ansible Role: host
 
-Sets the system hostname and updates `/etc/hosts` on Debian-based systems.
+Sets the hostname, keeps `/etc/hosts` and `/tmp` sane, and optionally manages DNS servers through netplan and systemd-resolved.
 
 ## Features
 
-- Sets transient and permanent hostname
-- Updates `/etc/hosts` with proper Debian convention (127.0.1.1)
-- Supports FQDN and short hostname
-- Auto-derives short hostname from FQDN
-- Ensures `/tmp` has correct permissions (1777)
+- Sets the system hostname and the `127.0.1.1` line of `/etc/hosts`
+- Enforces `1777` on `/tmp` (SSH agent forwarding sockets live there)
+- Primary DNS servers per interface via a netplan override, when netplan is installed
+- Backup and fallback DNS servers via a systemd-resolved drop-in, when systemd-resolved is installed
+- Netplan config validated with `netplan generate` before `netplan apply`
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
 
 All variables are defined in `defaults/main.yml`:
 
-| Variable | Default | Required | Description |
-|----------|---------|----------|-------------|
-| `host_hostname` | `""` | **Yes** | The hostname to set (FQDN or short) |
-| `host_short_hostname` | (derived) | No | Short hostname for /etc/hosts |
-
-If `host_short_hostname` is not set, it's automatically derived from `host_hostname` (part before first dot).
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `host_hostname` | `inventory_hostname` | The hostname to set (FQDN or short) |
+| `host_short_hostname` | (derived) | Short hostname for `/etc/hosts`, part before the first dot by default |
+| `host_dns_file_prefix` | `ansible` | Prefix of the files written: `/etc/netplan/99-<prefix>-dns.yaml`, `/etc/systemd/resolved.conf.d/10-<prefix>-dns.conf` |
+| `host_dns_servers` | `[]` | Primary DNS servers set on `host_dns_interface` via netplan. Empty leaves netplan untouched |
+| `host_dns_interface` | default-route interface | Interface carrying the primary DNS servers |
+| `host_dns_manage_resolved` | `true` | Write the systemd-resolved drop-in (backup and fallback servers) |
+| `host_dns_backup_servers` | `[8.8.8.8, 8.8.4.4]` | Servers queried when the primaries are unreachable |
+| `host_dns_fallback_servers` | `[1.1.1.1, 1.0.0.1]` | Last-resort servers, used only if nothing else is configured |
 
 ## Dependencies
 
@@ -37,84 +40,47 @@ None.
 
 ## Example Playbook
 
-### Basic Usage
+### Hostname only
 
 ```yaml
-- name: Configure hostname
-  hosts: servers
+- name: Configure host
+  hosts: all
   become: true
   vars:
-    host_hostname: "webserver01.example.com"
+    host_hostname: "server.example.com"
   roles:
     - role: jonimofo.infrastructure.host
 ```
 
-### With Explicit Short Hostname
+### With an internal DNS server (Ubuntu, netplan)
 
 ```yaml
-- name: Configure hostname with custom short name
-  hosts: servers
+- name: Configure host with internal DNS
+  hosts: all
   become: true
   vars:
-    host_hostname: "webserver01.prod.example.com"
-    host_short_hostname: "web01"
-  roles:
-    - role: jonimofo.infrastructure.host
-```
-
-### Short Hostname Only
-
-```yaml
-- name: Configure simple hostname
-  hosts: raspberry_pis
-  become: true
-  vars:
-    host_hostname: "piserver"
+    host_dns_file_prefix: "acme"
+    host_dns_servers:
+      - 10.33.0.26
   roles:
     - role: jonimofo.infrastructure.host
 ```
 
 ## Platform Notes
 
-### Raspberry Pi OS
-
-Raspberry Pi OS is fully supported. The role follows Debian conventions:
-
-- Sets hostname via `hostnamectl`
-- Updates `/etc/hosts` with 127.0.1.1 mapping
-
-**Note:** Raspberry Pi OS uses `raspberrypi` as default hostname. This role will change it.
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. The role follows the Debian convention of mapping the hostname to `127.0.1.1` (not `127.0.0.1` which is reserved for `localhost`).
+- **Ubuntu** ships netplan and systemd-resolved: both DNS parts apply.
+- **Debian** usually has neither: the resolved part is skipped, and the role fails if `host_dns_servers` is set without netplan. Install `netplan.io` and `systemd-resolved` to opt in.
+- Netplan concatenates `nameservers` across files instead of overriding them, so the role removes the `nameservers` block from every other netplan file before writing its own override.
+- If you rename `host_dns_file_prefix` on a host that already has an override, delete the old `99-<old>-dns.yaml` and `10-<old>-dns.conf` first.
 
 ## What This Role Does
 
-1. Verifies Debian-based system
-2. Validates `host_hostname` is set
-3. Ensures `/tmp` has correct permissions (1777)
-4. Derives short hostname if not provided
-5. Sets hostname using `hostnamectl`
-6. Updates `/etc/hosts`:
-   ```
-   127.0.1.1 webserver01.example.com webserver01
-   ```
-
-## Result
-
-After running with `host_hostname: "server.example.com"`:
-
-**`/etc/hostname`:**
-```
-server.example.com
-```
-
-**`/etc/hosts`:**
-```
-127.0.0.1 localhost
-127.0.1.1 server.example.com server
-```
+1. Verifies Debian-based system and that `host_hostname` is set
+2. Enforces `1777` on `/tmp`
+3. Sets the hostname and the `127.0.1.1` line in `/etc/hosts`
+4. Detects netplan and systemd-resolved
+5. (netplan present, `host_dns_servers` set) strips legacy `nameservers`, writes the override, validates and applies netplan
+6. (systemd-resolved present) writes the backup/fallback drop-in and restarts systemd-resolved
 
 ## License
 

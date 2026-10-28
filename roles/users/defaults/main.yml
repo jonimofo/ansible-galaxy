@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/users
 
@@ -9,6 +9,10 @@ users_default_shell: /bin/bash
 
 # users_default_create_home: Create home directory by default
 users_default_create_home: true
+
+# users_home_mode: Mode enforced on the home directories of users in users_list
+# (0750: no access for other users). Set to "" to leave home modes untouched.
+users_home_mode: "0750"
 
 # --- Sudo Configuration ---
 
@@ -30,12 +34,15 @@ users_lock_root: true
 # users_list: List of users to create
 # Each user can have:
 #   name: (required) username
-#   groups: comma-separated groups (e.g., "sudo,docker")
+#   groups: comma-separated groups (e.g., "sudo,docker"); missing groups are created
+#   append: add to existing supplementary groups (default true) or replace them
 #   shell: login shell (defaults to users_default_shell)
 #   create_home: true/false (defaults to users_default_create_home)
+#   home: home directory path (omit to let useradd decide; /nonexistent for no-home accounts)
+#   system: true/false, create as a system account (UID < 1000), applied only on creation
 #   comment: user description/GECOS field
 #   uid: specific UID (optional)
-users_list: []  # users_list: list of users to create (see above)
+users_list: []  # users_list: list of users to create (see fields above)
 # Example:
 # users_list:
 #   - name: "admin"
@@ -47,3 +54,15 @@ users_list: []  # users_list: list of users to create (see above)
 #   - name: "service_app"
 #     shell: "/usr/sbin/nologin"
 #     create_home: false
+#     home: "/nonexistent"
+#     system: true
+
+# users_absent: List of users to remove
+#   name: (required) username
+#   remove_home: delete the home directory (default true)
+users_absent: []
+# Example:
+# users_absent:
+#   - name: "old_user"
+#   - name: "temp_user"
+#     remove_home: false

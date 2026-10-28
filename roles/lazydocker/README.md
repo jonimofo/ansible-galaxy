@@ -5,18 +5,17 @@ Installs lazydocker, a terminal UI for Docker and Docker Compose.
 ## Features
 
 - Downloads pre-compiled binary from GitHub releases
-- Auto-detects CPU architecture (x86_64, aarch64, armv7l)
+- Auto-detects CPU architecture (x86_64, aarch64)
 - Idempotent - skips download if binary exists
 - Cleans up downloaded archive after installation
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 - **Docker:** Must be installed separately (lazydocker requires Docker to be useful)
 
@@ -26,10 +25,11 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `lazydocker_version` | `0.24.3` | Version to install |
+| `lazydocker_version` | `0.25.2` | Version to install |
 | `lazydocker_install_path` | `/usr/local/bin` | Binary installation path |
-| `lazydocker_download_dir` | `/tmp` | Temp directory for download |
-| `lazydocker_arch_map` | `{x86_64, aarch64, armv7l}` | Architecture mappings |
+| `lazydocker_download_dir` | `/tmp` | Parent of the private download directory (mktemp, root-only) |
+| `lazydocker_download_url` | GitHub releases URL | Base URL for downloads |
+| `lazydocker_arch_map` | `{x86_64, aarch64}` | Architecture mappings |
 
 ## Dependencies
 
@@ -75,10 +75,10 @@ None. However, Docker should be installed for lazydocker to be useful.
 1. Verifies Debian-based system
 2. Verifies supported architecture
 3. Constructs download URL based on version and architecture
-4. Downloads lazydocker tarball from GitHub releases
-5. Extracts binary to installation path
-6. Sets executable permissions
-7. Cleans up downloaded archive
+4. Downloads the tarball into a private root-only directory (only if the binary is missing)
+5. Extracts only the `lazydocker` binary to the installation path, owned by root
+6. Sets executable permissions and root ownership
+7. Cleans up the downloaded archive and any LICENSE/README left by older runs
 
 ## Usage
 

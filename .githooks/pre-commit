@@ -3,11 +3,18 @@ set -euo pipefail
 
 echo "Running pre-commit checks..."
 
-# Use project venv binaries directly
-VENV_BIN="$(git rev-parse --show-toplevel)/.venv/bin"
+ROOT="$(git rev-parse --show-toplevel)"
+VENV_BIN="$ROOT/.venv/bin"
 
 if [ ! -d "$VENV_BIN" ]; then
     echo "Error: .venv not found. Run 'make setup' first." >&2
+    exit 1
+fi
+
+echo "  em-dashes..."
+if ! python3 -I "$ROOT/scripts/em-dashes.py" --staged --check --quiet >/dev/null; then
+    echo "Em-dashes found in added lines. Fix with: python3 scripts/em-dashes.py --staged --apply" >&2
+    echo "(then re-stage the files). Commit aborted." >&2
     exit 1
 fi
 

@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for roles/ufw
 
@@ -18,6 +18,14 @@ ufw_state: enabled
 # ufw_reset_before_configure: Reset UFW before applying rules
 # WARNING: Set to true only for initial setup - wipes ALL existing rules
 ufw_reset_before_configure: false
+
+# ufw_verify_port: Port that must have an allow/limit rule before UFW is
+# enabled, and that is checked from the control node afterwards (lockout
+# guard). Follows ssh_port when the ssh role's variable is set. 0 to skip.
+ufw_verify_port: "{{ ssh_port | default(22) }}"
+
+# ufw_verify_timeout: Seconds to wait for ufw_verify_port in the lockout guard
+ufw_verify_timeout: 10
 
 # --- Network Settings ---
 

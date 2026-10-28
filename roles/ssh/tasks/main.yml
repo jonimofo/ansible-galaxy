@@ -1,4 +1,4 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # tasks file for roles/ssh
 
@@ -6,11 +6,141 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
-- name: Include SSH configuration tasks
-  ansible.builtin.include_tasks: configure_ssh.yml
+# --- Step 1: resolve and validate public keys (on the control node) ---
 
-- name: Include user management tasks
-  ansible.builtin.include_tasks: manage_users.yml
+- name: Reset the resolved users list
+  ansible.builtin.set_fact:
+    _ssh_resolved_users: []
+
+- name: Resolve public key for each SSH user
+  ansible.builtin.set_fact:
+    _ssh_resolved_users: >-
+      {{ _ssh_resolved_users | default([]) + [item | combine({'pubkey': _key})] }}
+  vars:
+    _key_file: >-
+      {{ item.pubkey_file
+         | default(ssh_public_keys_dir ~ '/' ~ item.name ~ '.pub' if ssh_public_keys_dir | length > 0 else '') }}
+    # default() would evaluate the lookup eagerly; an if chain keeps it lazy
+    _key: >-
+      {{ item.pubkey if item.pubkey is defined
+         else (lookup('ansible.builtin.file', _key_file) if _key_file | length > 0 else '') }}
+  loop: "{{ ssh_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Assert every SSH user has a real public key
+  ansible.builtin.assert:
+    that:
+      - item.pubkey | trim | length > 0
+      - "'REPLACE_WITH_REAL_PUBLIC_KEY' not in item.pubkey"
+      - item.pubkey is search('^(ssh-ed25519|ssh-rsa|ecdsa-sha2|sk-ssh-ed25519|sk-ecdsa-sha2)', multiline=True)
+    fail_msg: >-
+      No usable public key for '{{ item.name }}'. Give it as `pubkey`, as
+      `pubkey_file`, or as {{ ssh_public_keys_dir | default('ssh_public_keys_dir') }}/{{ item.name }}.pub.
+    quiet: true
+  loop: "{{ _ssh_resolved_users | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# --- Step 2: authorized_keys ---
+
+- name: Deploy authorized keys for SSH users
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.pubkey }}"
+    # exclusive: unlisted keys are removed from authorized_keys
+    exclusive: "{{ ssh_exclusive_keys }}"
+    manage_dir: true
+  loop: "{{ _ssh_resolved_users | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# --- Step 3: sshd hardening as a drop-in ---
+# sshd_config on Debian 12+/Ubuntu 22.04+ starts with
+# "Include /etc/ssh/sshd_config.d/*.conf" and the first value wins, so a
+# drop-in sorted first (00-) overrides both the stock file and cloud-init's
+# 50-cloud-init.conf, while every distro default stays in place.
+
+- name: Check sshd_config includes sshd_config.d
+  ansible.builtin.command:
+    cmd: grep -Eq '^\s*Include\s+/etc/ssh/sshd_config\.d/\*\.conf' /etc/ssh/sshd_config
+  register: ssh_include_check
+  changed_when: false
+  failed_when: ssh_include_check.rc not in [0, 1]
+  check_mode: false
+
+- name: Assert sshd_config includes sshd_config.d
+  ansible.builtin.assert:
+    that: ssh_include_check.rc == 0
+    fail_msg: "/etc/ssh/sshd_config has no 'Include /etc/ssh/sshd_config.d/*.conf' line; add it at the top first."
+    quiet: true
+
+# Lockout guard 1: the user Ansible connects as must stay allowed.
+- name: Assert the connecting user stays allowed by AllowUsers
+  ansible.builtin.assert:
+    that: _ssh_connecting_user in (ssh_users | map(attribute='name') | list)
+    fail_msg: >-
+      AllowUsers would be '{{ ssh_users | map(attribute='name') | join(' ') }}' but Ansible connects as
+      '{{ _ssh_connecting_user }}'. Add that user to ssh_users or you will be locked out.
+    quiet: true
+  vars:
+    _ssh_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
+  when: ssh_users | length > 0
+
+- name: Assert root login stays possible when Ansible connects as root
+  ansible.builtin.assert:
+    that: not (_ssh_connecting_user == 'root' and ssh_permit_root_login == 'no')
+    fail_msg: "Ansible connects as root but ssh_permit_root_login is 'no': switch ansible_user to a sudo user first."
+    quiet: true
+  vars:
+    _ssh_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
+
+- name: Deploy sshd hardening drop-in
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: "/etc/ssh/sshd_config.d/{{ ssh_dropin_name }}"
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Reload sshd
+
+- name: Update ssh_config for strict host key checking
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/ssh_config
+    regexp: '^#?\s*StrictHostKeyChecking'
+    line: "    StrictHostKeyChecking {{ ssh_strict_host_key_checking }}"
+    state: present
+
+# --- Step 4: apply now and verify we are not locked out ---
+
+- name: Flush handlers to apply the sshd reload now
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify SSH port {{ ssh_port }} is still reachable from the control node
+  ansible.builtin.wait_for:
+    port: "{{ ssh_port | int }}"
+    host: "{{ ansible_host | default(inventory_hostname) }}"
+    timeout: "{{ ssh_verify_timeout }}"
+  delegate_to: localhost
+  become: false
+  when:
+    - ssh_verify_port | bool
+    - ansible_connection | default('ssh') != 'local'
+
+# Lockout guard 2: an open port is not a working login. Drop the persistent
+# connection and open a fresh session with the new sshd configuration.
+- name: Reset the SSH connection to test the new configuration
+  ansible.builtin.meta: reset_connection
+  when:
+    - ssh_verify_port | bool
+    - ansible_connection | default('ssh') != 'local'
+
+- name: Verify a new SSH session can be opened
+  ansible.builtin.ping:
+  when:
+    - ssh_verify_port | bool
+    - ansible_connection | default('ssh') != 'local'

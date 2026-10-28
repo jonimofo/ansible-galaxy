@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: MIT-0
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Comprehensive audit tool for Ansible collections.
 
 Checks roles against security best practices, Ansible conventions,
@@ -1043,7 +1043,7 @@ def check_git_pinning(ctx: RoleContext) -> list[CheckResult]:
             name = task.get("name", "")
             repo = args.get("repo", "")
             ver_display = version or "(none)"
-            issues.append(f"{tf.name}: {name} — version: {ver_display} ({repo})")
+            issues.append(f"{tf.name}: {name} · version: {ver_display} ({repo})")
     if issues:
         return [CheckResult("E7", "Git version pinning", Status.WARN,
                             f"{len(issues)} git clone(s) with unpinned version",
@@ -1099,7 +1099,7 @@ def check_become_overuse(ctx: RoleContext) -> list[CheckResult]:
     ratio = with_become / total
     if ratio > 0.8 and with_become > 3:
         return [CheckResult("E10", "become overuse", Status.INFO,
-                            f"{with_become}/{total} tasks have become: true — consider play-level become")]
+                            f"{with_become}/{total} tasks have become: true · consider play-level become")]
     return [CheckResult("E10", "become usage", Status.PASS, "become: used appropriately")]
 
 
@@ -1399,7 +1399,7 @@ def check_arch_handling(ctx: RoleContext) -> list[CheckResult]:
 
 @register_check("J1", "command/shell have idempotency guards", "J", Severity.WARN)
 def check_idempotency_guards(ctx: RoleContext) -> list[CheckResult]:
-    # Delegates to D2 logic — but also checks for when: conditions
+    # Delegates to D2 logic · but also checks for when: conditions
     issues = []
     for tf, task in _all_tasks(ctx):
         module = get_task_module(task)
@@ -1505,7 +1505,7 @@ class AuditRunner:
         checks = self._get_checks()
 
         col_label = f"{COLLECTION_NAMESPACE}.{COLLECTION_NAME}" if COLLECTION_NAMESPACE else "Ansible Collection"
-        print(f"{Color.BOLD}Ansible Collection Audit — {col_label}{Color.RESET}")
+        print(f"{Color.BOLD}Ansible Collection Audit · {col_label}{Color.RESET}")
         print(f"Date: {date.today()}")
         cat_label = f" (category {self.category})" if self.category else ""
         print(f"Checks: {len(checks)}{cat_label}")

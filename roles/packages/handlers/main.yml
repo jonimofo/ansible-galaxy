@@ -1,6 +1,13 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # handlers file for roles/packages
 - name: Reload systemd
   ansible.builtin.systemd:
+    daemon_reload: true
+
+# A changed timer unit is only picked up by the running timer after a restart
+- name: Restart apt update timer
+  ansible.builtin.systemd:
+    name: "{{ packages_apt_update_timer_unit }}"
+    state: restarted
     daemon_reload: true
