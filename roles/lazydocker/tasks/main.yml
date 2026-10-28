@@ -37,6 +37,7 @@
           lazydocker_version }}/{{ _lazydocker_archive }}
         dest: "{{ lazydocker_download_dir }}/{{ _lazydocker_archive }}"
         mode: "0644"
+        force: false
 
     - name: Extract lazydocker binary
       ansible.builtin.unarchive:
