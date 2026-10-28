@@ -61,3 +61,9 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | ufw | `ufw_force_reset` (QDV) | `ufw_reset_before_configure` | |
 | ufw | `ufw_default_incoming`, `ufw_default_outgoing` (QDV) | `ufw_default_policies` list of `{direction, policy}` | defaults already deny incoming / allow outgoing |
 | ufw | | `ufw_verify_port` | new, default `22`; set to your SSH port or `0` |
+| ssh | line edits in `/etc/ssh/sshd_config` | drop-in `/etc/ssh/sshd_config.d/00-ansible.conf` | old edited lines stay in the stock file and agree with the drop-in |
+| ssh | `ssh_allowed_users` list of names (QDV) | `ssh_users` list of `{name}` | keys read from `ssh_public_keys_dir/<name>.pub` |
+| ssh | `ssh_public_keys_dir` default `role_path/files` (QDV) | default `""` | set it per inventory, e.g. `"{{ inventory_dir }}/files/ssh"` |
+| ssh | `ssh_password_authentication`, `ssh_pubkey_authentication`, `ssh_x11_forwarding`, `ssh_allow_agent_forwarding` as `"yes"`/`"no"` (QDV) | booleans | |
+| ssh | | `ssh_dropin_name`, `ssh_service_name`, `ssh_verify_port`, `ssh_pubkey_authentication` | new |
+| ssh | handler `Restart sshd` | `Reload sshd` | |

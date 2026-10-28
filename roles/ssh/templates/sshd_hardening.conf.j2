@@ -1,0 +1,33 @@
+{{ ansible_managed | comment }}
+# Sorted first in sshd_config.d so these values win (first value wins in sshd).
+
+# Port and authentication
+Port {{ ssh_port }}
+PermitRootLogin {{ ssh_permit_root_login }}
+PubkeyAuthentication {{ ssh_pubkey_authentication | ternary('yes', 'no') }}
+PasswordAuthentication {{ ssh_password_authentication | ternary('yes', 'no') }}
+PermitEmptyPasswords {{ ssh_permit_empty_passwords | ternary('yes', 'no') }}
+KbdInteractiveAuthentication no
+MaxAuthTries {{ ssh_max_auth_tries }}
+LoginGraceTime {{ ssh_login_grace_time }}
+MaxSessions {{ ssh_max_sessions }}
+{% if ssh_users | length > 0 %}
+
+# Access control
+AllowUsers {{ ssh_users | map(attribute='name') | join(' ') }}
+{% endif %}
+
+# Forwarding
+AllowAgentForwarding {{ ssh_allow_agent_forwarding | ternary('yes', 'no') }}
+AllowTcpForwarding {{ ssh_allow_tcp_forwarding | ternary('yes', 'no') }}
+X11Forwarding {{ ssh_x11_forwarding | ternary('yes', 'no') }}
+
+# Keep-alive
+ClientAliveInterval {{ ssh_client_alive_interval }}
+ClientAliveCountMax {{ ssh_client_alive_count_max }}
+
+# Display and misc
+PrintMotd {{ ssh_print_motd | ternary('yes', 'no') }}
+PrintLastLog {{ ssh_print_last_log | ternary('yes', 'no') }}
+UseDNS {{ ssh_use_dns | ternary('yes', 'no') }}
+AcceptEnv {{ ssh_accept_env }}
