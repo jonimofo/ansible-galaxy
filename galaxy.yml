@@ -10,7 +10,7 @@ namespace: jonimofo
 name: infrastructure
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 1.1.0
+version: 2.0.0
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -50,6 +50,7 @@ tags:
 # range specifiers can be set and are separated by ','
 dependencies:
   ansible.posix: ">=1.5.0"
+  community.general: ">=8.0.0"
 
 # The URL of the originating SCM repository
 repository: https://github.com/jonimofo/ansible-galaxy
@@ -70,6 +71,8 @@ issues: http://example.com/issue/tracker
 build_ignore:
   - .venv
   - .githooks
+  - scripts
+  - docs
   - .yamllint
   - .ansible-lint
   - .ansible

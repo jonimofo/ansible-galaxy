@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+[Resolve]
+# Empty assignment first: DNS= is cumulative across config files, this
+# resets whatever was hand-edited in /etc/systemd/resolved.conf.
+DNS=
+DNS={{ host_dns_backup_servers | join(' ') }}
+FallbackDNS={{ host_dns_fallback_servers | join(' ') }}

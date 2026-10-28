@@ -46,6 +46,7 @@ fail2ban_allowipv6: false
 # WARNING: Be careful not to lock yourself out
 fail2ban_ignoreip:
   - 127.0.0.1/8
+  - ::1
 
 # fail2ban_banaction: Action to use for banning (ufw, iptables, iptables-multiport)
 # Using 'ufw' since this collection uses UFW for firewall management

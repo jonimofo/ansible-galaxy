@@ -2,7 +2,9 @@
 ---
 # handlers file for roles/ssh
 
-- name: Restart sshd
+# The drop-in is validated with sshd -t before it is written; reload is
+# enough to apply it and keeps existing sessions.
+- name: Reload sshd
   ansible.builtin.service:
-    name: ssh
-    state: restarted
+    name: "{{ ssh_service_name }}"
+    state: reloaded

@@ -1,0 +1,19 @@
+{{ ansible_managed | comment }}
+[Unit]
+{% if packages_apt_update_unattended_upgrades | bool %}
+Description=Run apt-get update, security upgrades (unattended-upgrade), autoremove and autoclean
+{% else %}
+Description=Run apt-get update, full-upgrade, autoremove and autoclean
+{% endif %}
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=DEBIAN_FRONTEND=noninteractive
+{% if packages_apt_update_unattended_upgrades | bool %}
+ExecStart=/bin/sh -c "/usr/bin/apt-get update && /usr/bin/unattended-upgrade && /usr/bin/apt-get autoremove -y && /usr/bin/apt-get autoclean"
+{% else %}
+ExecStart=/bin/sh -c "/usr/bin/apt-get update && /usr/bin/apt-get full-upgrade -y && /usr/bin/apt-get autoremove -y && /usr/bin/apt-get autoclean"
+{% endif %}
+User=root

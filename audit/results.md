@@ -13,31 +13,31 @@ minor improvements, not critical issues.
 
 - **yamllint**: All project files pass (0 errors, 0 warnings)
 - **ansible-lint**: Passed at `production` profile (0 failures, 0 warnings)
-- **Note**: `make lint` was failing because `.yamllint` scanned `.venv/` — fixed below
+- **Note**: `make lint` was failing because `.yamllint` scanned `.venv/` : fixed below
 
 ## Findings
 
 ### Fixed
 
-1. **`.yamllint` missing `.venv/` ignore** — `make lint` scanned thousands of third-party
+1. **`.yamllint` missing `.venv/` ignore** : `make lint` scanned thousands of third-party
    YAML files in `.venv/`, causing false failures. Added `.venv/` and `audit/` to ignore list.
 
-2. **`galaxy.yml` empty `build_ignore`** — `.venv/`, `audit/`, `.githooks/`, `Makefile`,
+2. **`galaxy.yml` empty `build_ignore`** : `.venv/`, `audit/`, `.githooks/`, `Makefile`,
    `TODO.md`, and other dev files would be included in collection build artifacts.
    Populated `build_ignore` with appropriate patterns.
 
-3. **Inconsistent licenses in meta/main.yml** — `packages`, `ssh`, and `ufw` had
+3. **Inconsistent licenses in meta/main.yml** : `packages`, `ssh`, and `ufw` had
    `license: MIT` while all other roles and `galaxy.yml` use `GPL-2.0-or-later`.
    Updated all three to `GPL-2.0-or-later` for consistency.
 
-4. **Removed `gui_apps` role** — Deleted per user request.
+4. **Removed `gui_apps` role** : Deleted per user request.
 
-5. **Removed 12 empty `vars/main.yml` files** — Boilerplate from `ansible-galaxy init`
+5. **Removed 12 empty `vars/main.yml` files** : Boilerplate from `ansible-galaxy init`
    with no actual content. All variables are properly defined in `defaults/main.yml`.
 
 ### Deferred (Tracked in TODO.md)
 
-6. **`brave_students_profile` is not a proper Ansible role** — It contains only
+6. **`brave_students_profile` is not a proper Ansible role** : It contains only
    `student_profile.json` and `brave_steps.md` with no tasks, defaults, or meta. It's
    effectively a documentation/config snippet, not executable. Excluded from audits.
 
@@ -61,7 +61,7 @@ minor improvements, not critical issues.
 
 ## Manual Audit Tracking
 
-Items that require human judgment — update this table when performing manual reviews.
+Items that require human judgment, update this table when performing manual reviews.
 
 | Role | Last Reviewed | Secure Defaults | Idempotent | Permissions | Docs Quality |
 |------|--------------|----------------|------------|-------------|-------------|

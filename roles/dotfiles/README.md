@@ -4,7 +4,9 @@ Clones a dotfiles Git repository and creates symlinks to user home directories.
 
 ## Features
 
-- Clones dotfiles repo per-user with configurable branch/version
+- Clones dotfiles repo per-user with configurable branch/version (shallow, single branch)
+- Checks SSH agent forwarding and repo access before cloning over SSH
+- Fails early when a listed source file is missing from the repo
 - Creates parent directories as needed
 - Symlinks specified files to home directory
 - Supports multiple users with different file mappings
@@ -13,12 +15,11 @@ Clones a dotfiles Git repository and creates symlinks to user home directories.
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -27,7 +28,8 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `dotfiles_user_configs` | `[]` | Configuration dict (see below) |
+| `dotfiles_user_configs` | `{repo: '', version: main, clone_dir: .dotfiles, users: []}` | Configuration dict (see below) |
+| `dotfiles_verify_ssh_access` | `true` | Check the forwarded SSH agent and repo host before cloning over SSH |
 | `dotfiles_tmux_install` | `false` | Install tmux, TPM, and plugins for all users |
 
 ### Configuration Structure
@@ -35,7 +37,7 @@ All variables are defined in `defaults/main.yml`:
 ```yaml
 dotfiles_user_configs:
   repo: 'git@github.com:user/dotfiles.git'  # Git repository URL (required)
-  version: 'main'                            # Branch, tag, or commit
+  version: 'main'                            # Branch, tag, or commit (shallow, single-branch clone)
   clone_dir: '.dotfiles'                     # Clone destination in home
   users:                                     # List of users to configure
     - user: 'username'                       # Username (required)

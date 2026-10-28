@@ -4,8 +4,40 @@
 
 # host_hostname: The system hostname to set (REQUIRED)
 # Can be FQDN (server.example.com) or short name (server)
-host_hostname: ""
+host_hostname: "{{ inventory_hostname }}"
 
 # host_short_hostname: Short hostname for /etc/hosts
 # If not set, derived from host_hostname (part before first dot)
 # host_short_hostname: ""
+
+# --- DNS (netplan + systemd-resolved) ---
+# Each part is skipped when its tool is missing on the host.
+
+# host_dns_file_prefix: prefix of the files written by this role
+# (/etc/netplan/99-<prefix>-dns.yaml, /etc/systemd/resolved.conf.d/10-<prefix>-dns.conf)
+host_dns_file_prefix: "ansible"
+
+# host_dns_servers: primary DNS server(s), declared on host_dns_interface via a
+# netplan override file. Empty: netplan is left untouched (DNS from the
+# installer / DHCP). Set it per network in inventory (group_vars or host_vars).
+host_dns_servers: []
+
+# host_dns_interface: interface carrying the primary DNS servers
+# (auto-detected from facts: interface carrying the default route)
+host_dns_interface: "{{ ansible_default_ipv4.interface | default('eth0') }}"
+
+# host_dns_manage_resolved: write the systemd-resolved drop-in with the backup
+# and fallback servers below (only when systemd-resolved is installed)
+host_dns_manage_resolved: true
+
+# host_dns_backup_servers: backup DNS servers, declared globally in a
+# systemd-resolved drop-in (queried when primaries are unreachable)
+host_dns_backup_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+
+# host_dns_fallback_servers: last-resort servers, only used by systemd-resolved
+# if no other DNS server is configured at all
+host_dns_fallback_servers:
+  - 1.1.1.1
+  - 1.0.0.1

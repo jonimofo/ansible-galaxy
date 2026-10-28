@@ -6,86 +6,115 @@
   ansible.builtin.assert:
     that:
       - ansible_os_family == 'Debian'
-    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu, Raspberry Pi OS)"
+    fail_msg: "This role only supports Debian-based systems (Debian, Ubuntu)"
     quiet: true
 
 - name: Install required packages
-  ansible.builtin.package:
-    name: "{{ apt_update_packages_to_install }}"
+  ansible.builtin.apt:
+    name: "{{ packages_apt_update_packages_to_install }}"
     state: present
+  when: packages_apt_update_packages_to_install | length > 0
 
-- name: Remove unused dependencies
+- name: Remove obsolete files from tools installed outside apt
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ packages_obsolete_paths }}"
+
+- name: Remove unused dependencies (apt autoremove)
   ansible.builtin.apt:
     autoremove: true
+  # Destructive op, opt-in only. Default off so the role stays idempotent
+  # on a converged host. Enable with: -e packages_run_cleanup=true
   when: packages_run_cleanup | bool
 
-- name: Clean package cache
+- name: Clean apt package cache (autoclean)
   ansible.builtin.apt:
     autoclean: true
   when: packages_run_cleanup | bool
 
-- name: Deploy APT update systemd service
+# --- needrestart ---
+- name: Install needrestart
+  ansible.builtin.apt:
+    name: needrestart
+    state: present
+  when: packages_needrestart_install | bool
+
+- name: Configure needrestart to restart services automatically
   ansible.builtin.copy:
-    src: files/apt_update.service
-    dest: "{{ apt_update_service_dest }}"
+    content: |
+      # Ansible managed - do not edit manually
+      $nrconf{restart} = 'a';
+    dest: /etc/needrestart/conf.d/50-ansible-auto.conf
     owner: root
     group: root
-    mode: "{{ apt_update_service_mode }}"
+    mode: "0644"
+  when: packages_needrestart_install | bool
+
+# --- Nightly APT service and timer ---
+- name: Deploy APT update systemd service
+  ansible.builtin.template:
+    src: apt_update.service.j2
+    dest: "{{ packages_apt_update_service_dest }}"
+    owner: root
+    group: root
+    mode: "{{ packages_apt_update_service_mode }}"
   notify: Reload systemd
 
 - name: Deploy APT update systemd timer
   ansible.builtin.template:
-    src: templates/apt_update.timer.j2
-    dest: "{{ apt_update_timer_dest }}"
+    src: apt_update.timer.j2
+    dest: "{{ packages_apt_update_timer_dest }}"
     owner: root
     group: root
-    mode: "{{ apt_update_timer_mode }}"
-  notify: Reload systemd
+    mode: "{{ packages_apt_update_timer_mode }}"
+  notify:
+    - Reload systemd
+    - Restart apt update timer
 
 - name: Enable and start APT update timer
   ansible.builtin.systemd:
-    name: "{{ apt_update_timer_unit }}"
+    name: "{{ packages_apt_update_timer_unit }}"
     enabled: true
     state: started
+    daemon_reload: true
 
-- name: Disable and mask default APT timers/services
+- name: Disable and mask default APT systemd units
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: false
     state: stopped
     masked: true
-  loop: "{{ apt_update_disable_units }}"
+  loop: "{{ packages_apt_update_disable_units }}"
   notify: Reload systemd
 
 # --- Security: Unattended Upgrades ---
 - name: Configure unattended-upgrades
-  when: apt_update_unattended_upgrades | bool
+  when: packages_apt_update_unattended_upgrades | bool
   tags:
     - security
     - unattended-upgrades
   block:
     - name: Install unattended-upgrades package
       ansible.builtin.apt:
-        name:
-          - unattended-upgrades
-          - apt-listchanges
+        name: unattended-upgrades
         state: present
 
     - name: Deploy unattended-upgrades configuration
       ansible.builtin.template:
-        src: templates/50unattended-upgrades.j2
+        src: 50unattended-upgrades.j2
         dest: /etc/apt/apt.conf.d/50unattended-upgrades
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Deploy auto-upgrades configuration
       ansible.builtin.template:
-        src: templates/20auto-upgrades.j2
+        src: 20auto-upgrades.j2
         dest: /etc/apt/apt.conf.d/20auto-upgrades
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Enable unattended-upgrades service
       ansible.builtin.systemd:
@@ -94,7 +123,7 @@
         state: started
 
 - name: Disable unattended-upgrades when not configured
-  when: not (apt_update_unattended_upgrades | bool)
+  when: not (packages_apt_update_unattended_upgrades | bool)
   tags:
     - security
     - unattended-upgrades

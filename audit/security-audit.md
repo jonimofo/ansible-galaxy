@@ -55,7 +55,7 @@ Scope: All roles in jonimofo.infrastructure collection
 
 ## 6. File Permissions
 
-- [x] /tmp has sticky bit (1777) — set in host role
+- [x] /tmp has sticky bit (1777), set in host role
 - [x] Config files have appropriate permissions (0644 for service/timer units)
 - [x] Sensitive config files (sudoers, sshd_config) validated before write
 - [x] Downloaded binaries set to 0755 (lazydocker)

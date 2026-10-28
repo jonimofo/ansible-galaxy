@@ -7,17 +7,15 @@ Configures the system locale on Debian-based systems.
 - Installs locale packages
 - Generates specified locale
 - Sets locale as system default in `/etc/default/locale` and `/etc/environment`
-- Optional reboot after locale changes
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Collections:** `community.general` (for `locale_gen` module)
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
@@ -29,8 +27,7 @@ All variables are defined in `defaults/main.yml`:
 | `locale_packages` | `[locales]` | Packages required for locale management |
 | `locale_name` | `"en_US.UTF-8"` | Locale to generate and set as default |
 | `locale_additional` | `[]` | Additional locales to generate (not set as default) |
-| `locale_env` | `{LANG, LANGUAGE, LC_ALL}` | Environment variables for `/etc/default/locale` |
-| `locale_reboot` | `false` | Reboot after locale change (disabled by default) |
+| `locale_env` | `{LANG, LANGUAGE}` | Environment variables for `/etc/default/locale` |
 
 ### Default locale_env
 
@@ -38,7 +35,6 @@ All variables are defined in `defaults/main.yml`:
 locale_env:
   LANG: "en_US.UTF-8"
   LANGUAGE: "en_US:en"
-  LC_ALL: "en_US.UTF-8"
 ```
 
 ## Dependencies
@@ -68,7 +64,6 @@ None.
     locale_env:
       LANG: "de_DE.UTF-8"
       LANGUAGE: "de_DE:de"
-      LC_ALL: "de_DE.UTF-8"
   roles:
     - role: jonimofo.infrastructure.locale
 ```
@@ -90,18 +85,6 @@ When SSH forwards locale settings from your local machine, the remote needs thos
     - role: jonimofo.infrastructure.locale
 ```
 
-### With Reboot Enabled
-
-```yaml
-- name: Configure locale with reboot
-  hosts: all
-  become: true
-  vars:
-    locale_reboot: true
-  roles:
-    - role: jonimofo.infrastructure.locale
-```
-
 ## What This Role Does
 
 1. Verifies Debian-based system
@@ -112,7 +95,6 @@ When SSH forwards locale settings from your local machine, the remote needs thos
 6. Writes locale environment to `/etc/default/locale`
 7. Runs `dpkg-reconfigure locales` if config changed
 8. Ensures `LANG` is set in `/etc/environment`
-9. Optionally reboots if `locale_reboot: true` and changes were made
 
 ## License
 

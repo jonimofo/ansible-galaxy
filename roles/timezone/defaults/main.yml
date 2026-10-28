@@ -4,4 +4,4 @@
 
 # timezone_name: System timezone (IANA timezone identifier)
 # See: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-timezone_name: "Asia/Ho_Chi_Minh"
+timezone_name: "Europe/Paris"

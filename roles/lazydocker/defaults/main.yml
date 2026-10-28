@@ -2,22 +2,17 @@
 ---
 # Default variables for lazydocker role
 
-# lazydocker_version: Version of lazydocker to install
-lazydocker_version: "0.24.3"
+# lazydocker_version: Version to install from GitHub releases
+lazydocker_version: "0.25.2"
 
 # lazydocker_install_path: Path where the binary will be installed
 lazydocker_install_path: "/usr/local/bin"
 
-# lazydocker_download_dir: Directory to download the archive.
-# IMPORTANT: must be a role-owned subdirectory, NEVER a shared system
-# directory like /tmp directly. The "Ensure download directory exists"
-# task below will chmod whatever path this points at to mode 0755, which
-# on /tmp would strip the sticky bit (1777 -> 0755) and break SSH agent
-# forwarding for non-root users. Keep this as a subdir under /tmp.
-lazydocker_download_dir: "/tmp/ansible-lazydocker"
+# lazydocker_download_dir: Directory the archive is downloaded to.
+# The role never creates or chmods this directory, so /tmp is safe.
+lazydocker_download_dir: "/tmp"
 
 # lazydocker_arch_map: Architecture mappings (ansible_architecture -> release suffix)
 lazydocker_arch_map:
   x86_64: Linux_x86_64
   aarch64: Linux_arm64
-  armv7l: Linux_armv7

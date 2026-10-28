@@ -31,7 +31,6 @@
   ansible.builtin.command:
     cmd: "{{ fzf_install_path }}/install --bin"
     creates: "{{ fzf_install_path }}/bin/fzf"
-  when: not fzf_installed.stat.exists
 
 - name: Create symlink in /usr/local/bin
   ansible.builtin.file:
