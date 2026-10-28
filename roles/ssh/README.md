@@ -14,7 +14,7 @@ Hardens the OpenSSH server through a drop-in in `/etc/ssh/sshd_config.d/`, manag
 
 - **Ansible version:** 2.15+
 - **Collections:** `ansible.posix` (for `authorized_key`)
-- **Supported OS:** Debian-based systems with `Include /etc/ssh/sshd_config.d/*.conf` in `sshd_config`
+- **Supported OS:** Debian-based systems (the `Include /etc/ssh/sshd_config.d/*.conf` line is added to `sshd_config` if missing)
   - Debian (bookworm, trixie)
   - Ubuntu (jammy, noble, resolute)
 - **Supported architectures:** x86_64, aarch64
@@ -163,7 +163,7 @@ Debian 12+ and Ubuntu 22.04+ ship `sshd_config` with `Include /etc/ssh/sshd_conf
 1. Verifies Debian-based system
 2. Resolves and validates each user's public key on the control node
 3. Writes `authorized_keys` (exclusive by default)
-4. Asserts `sshd_config` includes `sshd_config.d` and that the connecting user stays allowed, deploys the validated hardening drop-in
+4. Ensures `sshd_config` includes `sshd_config.d` (added at the top if a previous tool removed it), asserts the connecting user stays allowed, deploys the validated hardening drop-in
 5. Sets `StrictHostKeyChecking` in the client `ssh_config`
 6. Reloads sshd now, verifies `ssh_port` from the control node, resets the connection and opens a new session
 

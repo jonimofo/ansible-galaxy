@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Refuse direct pushes to main/develop: those branches only change through
 # a merged pull request (feat/* or fix/* branch, PR to develop, PR to main).
+# The gitlab remote is a read-only mirror of origin, fed by the release
+# script after the PR is merged, so pushes to it are allowed.
 set -euo pipefail
 
+remote="$1"
 protected="main develop"
+
+if [ "$remote" = "gitlab" ]; then
+    exit 0
+fi
 
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
     branch="${remote_ref#refs/heads/}"
