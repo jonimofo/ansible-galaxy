@@ -32,8 +32,10 @@
     content: |
       {% for key, val in locale_env.items() %}{{ key }}={{ val }}
       {% endfor %}
-    mode: '0644'
-  register: locale_file
+    mode: "0644"
+    # /etc/default/locale is a symlink to /etc/locale.conf on Debian/Ubuntu;
+    # follow it so we update the real file and report idempotence correctly.
+    follow: true
   notify: Reconfigure locales
 
 - name: Ensure LANG in /etc/environment
@@ -41,11 +43,3 @@
     path: /etc/environment
     line: "LANG={{ locale_name }}"
     state: present
-
-- name: Reboot if locale updated
-  ansible.builtin.reboot:
-    msg: "Rebooting to apply locale settings"
-    pre_reboot_delay: 60
-    post_reboot_delay: 60
-    test_command: locale | grep '{{ locale_name }}'
-  when: locale_reboot and locale_file.changed

@@ -24,10 +24,3 @@ locale_additional: []
 locale_env:
   LANG: "en_US.UTF-8"
   LANGUAGE: "en_US:en"
-  LC_ALL: "en_US.UTF-8"
-
-# --- Reboot Settings ---
-
-# locale_reboot: Reboot after locale change
-# Set to true if you want automatic reboot after changes
-locale_reboot: false

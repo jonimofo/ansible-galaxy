@@ -18,3 +18,5 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 |---|---|---|---|
 | fasd | `fasd_*` | removed | role deleted, use `packages` + zoxide |
 | timezone | `timezone_name` default `Asia/Ho_Chi_Minh` | default `Europe/Paris` | variable name unchanged, only the default moved |
+| locale | `locale_reboot` | removed | reboot task deleted, reboot manually if needed |
+| locale | `locale_env.LC_ALL` | removed from default | setting LC_ALL system-wide overrode per-user LC_*; set it in your own `locale_env` if wanted |
