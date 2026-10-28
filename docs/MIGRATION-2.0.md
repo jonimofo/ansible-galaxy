@@ -26,3 +26,6 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | astronvim | `neovim_download_url` | `astronvim_neovim_download_url` | |
 | astronvim | `neovim_version` | `astronvim_neovim_version` | default bumped to v0.12.6 |
 | astronvim | | `astronvim_build_packages` | new, default `[git, gcc, unzip]` |
+| dotfiles | | `dotfiles_verify_ssh_access` | new, default `true`; set `false` to skip the agent and host checks |
+| dotfiles | `dotfiles_user_configs` default `[]` | default dict with `users: []` | the role is a no-op when unconfigured instead of failing |
+| dotfiles | clone depth | shallow, single branch | an existing full clone is removed and re-cloned once |
