@@ -29,3 +29,25 @@ Rows are added role by role during the port. Consumers rename these keys in `gro
 | dotfiles | | `dotfiles_verify_ssh_access` | new, default `true`; set `false` to skip the agent and host checks |
 | dotfiles | `dotfiles_user_configs` default `[]` | default dict with `users: []` | the role is a no-op when unconfigured instead of failing |
 | dotfiles | clone depth | shallow, single branch | an existing full clone is removed and re-cloned once |
+| packages | `apt_update_disable_units` | `packages_apt_update_disable_units` | |
+| packages | `apt_update_service_dest` | `packages_apt_update_service_dest` | |
+| packages | `apt_update_service_mode` | `packages_apt_update_service_mode` | |
+| packages | `apt_update_timer_dest` | `packages_apt_update_timer_dest` | |
+| packages | `apt_update_timer_mode` | `packages_apt_update_timer_mode` | |
+| packages | `apt_update_timer_on_calendar` | `packages_apt_update_timer_on_calendar` | |
+| packages | `apt_update_timer_persistent` | `packages_apt_update_timer_persistent` | |
+| packages | `apt_update_timer_unit` | `packages_apt_update_timer_unit` | |
+| packages | `apt_update_packages_to_install` | `packages_apt_update_packages_to_install` | |
+| packages | `apt_update_unattended_upgrades` | `packages_apt_update_unattended_upgrades` | |
+| packages | `apt_update_unattended_origins` | `packages_apt_update_unattended_origins` | |
+| packages | `apt_update_unattended_blacklist` | `packages_apt_update_unattended_blacklist` | |
+| packages | `apt_update_unattended_autofix` | `packages_apt_update_unattended_autofix` | |
+| packages | `apt_update_unattended_remove_unused` | `packages_apt_update_unattended_remove_unused` | |
+| packages | `apt_update_unattended_reboot` | `packages_apt_update_unattended_reboot` | |
+| packages | `apt_update_unattended_reboot_time` | `packages_apt_update_unattended_reboot_time` | |
+| packages | `apt_update_unattended_mail` | `packages_apt_update_unattended_mail` | |
+| packages | `apt_update_unattended_mail_on_error` | `packages_apt_update_unattended_mail_on_error` | |
+| packages | `apt_update_unattended_upgrades` default `false` | `packages_apt_update_unattended_upgrades` default `true` | nightly service now runs `unattended-upgrade` (security only); set `false` to keep the old nightly `full-upgrade` |
+| packages | `apt_update_unattended_origins` Debian list | per-distribution map `packages_apt_update_unattended_origins_map` | override the list directly if needed |
+| packages | | `packages_obsolete_paths` | new, removes the old fasd binary and man page |
+| packages | | `packages_needrestart_install` | new, default `true` |

@@ -24,9 +24,6 @@ exclude_roles:
 variable_prefix_overrides:
   astronvim:
     - astronvim_
-    - neovim_
-  packages:
-    - apt_update_
 
 # --- README required sections (case-insensitive match against headings) ---
 required_readme_sections:

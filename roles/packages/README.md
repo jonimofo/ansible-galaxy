@@ -1,61 +1,72 @@
 # Ansible Role: packages
 
-Installs APT packages and manages system updates via a custom systemd timer on Debian-based systems. Optionally configures automatic security updates via `unattended-upgrades`.
+Installs APT packages and manages nightly updates via a custom systemd timer on Debian-based systems. By default the nightly run applies security patches only, through `unattended-upgrades`.
 
 ## Features
 
 - Installs a configurable list of packages
-- Replaces default `apt-daily` services with a custom systemd timer
-- Configurable update schedule
-- Automatic cache cleanup and autoremove
-- **Security:** Optional automatic security updates via `unattended-upgrades`
+- Removes leftovers of tools once installed outside apt (fasd)
+- Replaces the stock `apt-daily` timers with one timer at a fixed time
+- Nightly security patches via `unattended-upgrades` (default), or a full upgrade
+- `needrestart` in automatic mode so patched services are restarted
+- Opt-in `autoremove` and `autoclean`
 
 ## Requirements
 
-- **Ansible version:** 2.12+
+- **Ansible version:** 2.15+
 - **Supported OS:** Debian-based systems only
-  - Debian (bullseye, bookworm, trixie)
-  - Ubuntu (focal, jammy, noble)
-  - Raspberry Pi OS
-- **Supported architectures:** x86_64, aarch64, armv7l
+  - Debian (bookworm, trixie)
+  - Ubuntu (jammy, noble, resolute)
+- **Supported architectures:** x86_64, aarch64
 - **Privileges:** Requires `become: true`
 
 ## Role Variables
 
 All variables are defined in `defaults/main.yml`:
 
-### Package Management
+### Packages
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `apt_update_packages_to_install` | `[]` | List of packages to install |
+| `packages_apt_update_packages_to_install` | `[]` | List of packages to install |
+| `packages_obsolete_paths` | fasd binary and man page | Files to remove, left by tools once installed outside apt |
+| `packages_run_cleanup` | `false` | Run `autoremove` and `autoclean` (opt-in, `-e packages_run_cleanup=true`) |
+| `packages_needrestart_install` | `true` | Install `needrestart` in automatic restart mode |
 
-### Custom Update Timer
+### Nightly Update Timer
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `apt_update_timer_on_calendar` | `'*-*-* 03:00:00'` | Systemd OnCalendar schedule for updates |
-| `apt_update_timer_persistent` | `true` | Persist timer state across reboots |
-| `apt_update_disable_units` | `[apt-daily.timer, ...]` | Default systemd units to disable/mask |
-| `apt_update_service_dest` | `/etc/systemd/system/apt_update.service` | Path for custom service unit |
-| `apt_update_timer_dest` | `/etc/systemd/system/apt_update.timer` | Path for custom timer unit |
-| `apt_update_service_mode` | `'0644'` | File mode for service unit |
-| `apt_update_timer_mode` | `'0644'` | File mode for timer unit |
-| `apt_update_timer_unit` | `apt_update.timer` | Name of timer unit to enable |
+| `packages_apt_update_timer_on_calendar` | `'*-*-* 03:00:00'` | Systemd OnCalendar schedule |
+| `packages_apt_update_timer_persistent` | `true` | Run at next boot if the time was missed |
+| `packages_apt_update_disable_units` | `[apt-daily.timer, ...]` | Stock units to disable and mask |
+| `packages_apt_update_service_dest` | `/etc/systemd/system/apt_update.service` | Path of the service unit |
+| `packages_apt_update_timer_dest` | `/etc/systemd/system/apt_update.timer` | Path of the timer unit |
+| `packages_apt_update_service_mode` | `'0644'` | File mode of the service unit |
+| `packages_apt_update_timer_mode` | `'0644'` | File mode of the timer unit |
+| `packages_apt_update_timer_unit` | `apt_update.timer` | Name of the timer unit |
+
+What the nightly service runs depends on `packages_apt_update_unattended_upgrades`:
+
+| Value | Nightly command |
+|-------|-----------------|
+| **true** (default) | `apt-get update && unattended-upgrade && apt-get autoremove -y && apt-get autoclean` |
+| **false** | `apt-get update && apt-get full-upgrade -y && apt-get autoremove -y && apt-get autoclean` |
 
 ### Security: Unattended Upgrades
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `apt_update_unattended_upgrades` | `false` | Enable automatic security updates |
-| `apt_update_unattended_origins` | Debian security | Package origins to auto-upgrade |
-| `apt_update_unattended_blacklist` | `[]` | Packages to never auto-upgrade |
-| `apt_update_unattended_autofix` | `true` | Attempt to fix interrupted dpkg |
-| `apt_update_unattended_remove_unused` | `true` | Auto-remove unused dependencies |
-| `apt_update_unattended_reboot` | `false` | Auto-reboot if required (use with caution) |
-| `apt_update_unattended_reboot_time` | `"02:00"` | Time to reboot if auto-reboot enabled |
-| `apt_update_unattended_mail` | `""` | Email for upgrade notifications (empty = disabled) |
-| `apt_update_unattended_mail_on_error` | `true` | Only send mail on errors |
+| `packages_apt_update_unattended_upgrades` | `true` | Install and configure `unattended-upgrades` |
+| `packages_apt_update_unattended_origins` | per distribution | `Origins-Pattern` entries, picked from `packages_apt_update_unattended_origins_map` by `ansible_distribution` |
+| `packages_apt_update_unattended_origins_map` | Debian-Security / Ubuntu security | Default origins per distribution |
+| `packages_apt_update_unattended_blacklist` | `[]` | Packages to never auto-upgrade (e.g. `docker-ce`) |
+| `packages_apt_update_unattended_autofix` | `true` | Attempt to fix interrupted dpkg |
+| `packages_apt_update_unattended_remove_unused` | `true` | Auto-remove unused dependencies and kernels |
+| `packages_apt_update_unattended_reboot` | `false` | Auto-reboot if required (use with caution) |
+| `packages_apt_update_unattended_reboot_time` | `"02:00"` | Time to reboot if auto-reboot enabled |
+| `packages_apt_update_unattended_mail` | `""` | Email for upgrade notifications (empty = disabled) |
+| `packages_apt_update_unattended_mail_on_error` | `true` | Only send mail on errors |
 
 ## Dependencies
 
@@ -63,44 +74,35 @@ None.
 
 ## Example Playbook
 
-### Basic Usage
+### Server (security patches nightly, default)
 
 ```yaml
 - name: Configure packages on servers
   hosts: all
   become: true
   vars:
-    apt_update_packages_to_install:
-      - curl
-      - vim
-      - git
-      - htop
-      - tmux
-      - zsh
-      - jq
-    apt_update_timer_on_calendar: '*-*-* 04:00:00'
-  roles:
-    - role: jonimofo.infrastructure.packages
-```
-
-### With Automatic Security Updates (Recommended)
-
-```yaml
-- name: Configure packages with security updates
-  hosts: all
-  become: true
-  vars:
-    apt_update_packages_to_install:
+    packages_apt_update_packages_to_install:
       - curl
       - vim
       - git
       - ufw
       - fail2ban
-    apt_update_unattended_upgrades: true
-    apt_update_unattended_remove_unused: true
-    apt_update_unattended_blacklist:
-      - linux-image
-      - linux-headers
+      - zoxide
+    packages_apt_update_unattended_blacklist:
+      - docker-ce
+  roles:
+    - role: jonimofo.infrastructure.packages
+```
+
+### Laptop (full upgrade nightly)
+
+```yaml
+- name: Configure packages on a laptop
+  hosts: laptops
+  become: true
+  vars:
+    packages_apt_update_unattended_upgrades: false
+    packages_apt_update_timer_on_calendar: '*-*-* 12:00:00'
   roles:
     - role: jonimofo.infrastructure.packages
 ```
@@ -112,12 +114,9 @@ None.
   hosts: all
   become: true
   vars:
-    apt_update_packages_to_install:
-      - curl
+    packages_apt_update_packages_to_install:
       - mailutils
-    apt_update_unattended_upgrades: true
-    apt_update_unattended_mail: "admin@example.com"
-    apt_update_unattended_mail_on_error: true
+    packages_apt_update_unattended_mail: "admin@example.com"
   roles:
     - role: jonimofo.infrastructure.packages
 ```
@@ -128,58 +127,22 @@ None.
 - `security` - Unattended-upgrades tasks only
 - `unattended-upgrades` - Unattended-upgrades tasks only
 
-Run only security tasks:
-```bash
-ansible-playbook playbook.yml --tags="security"
-```
+## Good Practices
 
-## Platform Notes
-
-### Raspberry Pi OS
-
-Raspberry Pi OS (based on Debian) is fully supported. The role works identically on:
-- Raspberry Pi OS (32-bit, armv7l)
-- Raspberry Pi OS (64-bit, aarch64)
-
-All packages in Debian repositories are available. Some package names may differ between architectures (e.g., architecture-specific packages).
-
-**Note:** Automatic reboots (`apt_update_unattended_reboot: true`) should be used with caution on headless Pi systems.
-
-### Debian / Ubuntu
-
-Standard Debian and Ubuntu installations are fully supported. The custom systemd timer replaces the default apt-daily services to give you control over update timing.
-
-## Security Considerations
-
-### Why Enable Unattended Upgrades?
-
-- **Security patches are applied automatically** - Reduces window of vulnerability
-- **No manual intervention required** - Critical for unattended servers
-- **Configurable scope** - Only security updates by default
-
-### Recommendations
-
-1. **Enable unattended-upgrades** on all production systems
-2. **Blacklist kernel packages** if you need to control reboot timing
-3. **Enable email notifications** for visibility into updates
-4. **Disable auto-reboot** unless you have proper monitoring
-
-### What Gets Updated?
-
-By default, only packages from security origins:
-- `origin=Debian,codename=${distro_codename}-security`
-- `origin=Debian,codename=${distro_codename}`
+1. Keep the nightly run on security patches (the default) for servers. Run full upgrades yourself, from Ansible, in a window you chose.
+2. Decide the reboot policy. A security kernel update leaves `/var/run/reboot-required`; nothing reboots unless `packages_apt_update_unattended_reboot` is set.
+3. Blacklist packages managed elsewhere (`docker-ce`) if you do not want them restarted at night.
+4. Watch `/var/log/unattended-upgrades/` or set `packages_apt_update_unattended_mail`.
 
 ## What This Role Does
 
 1. Verifies Debian-based system
-2. Updates APT cache if stale
-3. Installs specified packages
-4. Runs `autoremove` and `autoclean`
-5. Deploys custom `apt_update.service` and `apt_update.timer`
-6. Enables and starts the custom timer
-7. Disables and masks default `apt-daily*` units
-8. (Optional) Configures `unattended-upgrades` for automatic security updates
+2. Installs the listed packages and removes obsolete fasd files
+3. (Opt-in) Runs `autoremove` and `autoclean`
+4. Installs and configures `needrestart` in automatic mode
+5. Deploys `apt_update.service` and `apt_update.timer`, enables the timer and restarts it when its schedule changes
+6. Disables and masks the stock `apt-daily*` units
+7. Installs and configures `unattended-upgrades` (or disables it when turned off)
 
 ## License
 
