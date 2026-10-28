@@ -35,8 +35,6 @@
     - role: lazydocker
       tags: "lazydocker"
 
-    - role: fasd
-      tags: "fasd"
 
     - role: astronvim
       tags: "astronvim"
