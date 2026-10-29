@@ -25,7 +25,7 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `fzf_repo_url` | `https://github.com/junegunn/fzf.git` | Git repository URL |
-| `fzf_version` | `v0.74.5` | Git tag of fzf to install |
+| `fzf_version` | `v0.74.5` | Git tag of fzf to install. Changing it checks out the new tag and reinstalls the binary |
 | `fzf_install_path` | `/opt/fzf` | Directory where fzf is cloned |
 | `fzf_users` | `[]` | List of users to configure |
 | `fzf_update_bashrc` | `true` | Default for adding source line to .bashrc |
