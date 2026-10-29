@@ -25,7 +25,7 @@ All variables are defined in `defaults/main.yml`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `lazydocker_version` | `0.25.2` | Version to install |
+| `lazydocker_version` | `0.25.2` | Version to install. A different installed version is replaced on the next run |
 | `lazydocker_install_path` | `/usr/local/bin` | Binary installation path |
 | `lazydocker_download_dir` | `/tmp` | Parent of the private download directory (mktemp, root-only) |
 | `lazydocker_download_url` | GitHub releases URL | Base URL for downloads |

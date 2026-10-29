@@ -2,6 +2,14 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [2.0.3] - 2026-10-29
+
+### Fixed
+
+- **lazydocker**: the binary is reinstalled when its version differs from `lazydocker_version`, instead of only when missing. A host kept 0.24.1, which fails against Docker 29.
+- **astronvim**: Neovim is reinstalled when `nvim --version` differs from `astronvim_neovim_version`. The previous `/usr/local/lib/nvim` and `/usr/local/share/nvim` are removed first.
+- **fzf**: the checkout follows `fzf_version` and the binary is reinstalled when the tag changes.
+
 ## [2.0.2] - 2026-10-29
 
 ### Fixed

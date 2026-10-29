@@ -33,11 +33,30 @@
     path: "{{ astronvim_neovim_binary_path }}"
   register: astronvim_nvim_binary_stat
 
+- name: Read the installed Neovim version
+  ansible.builtin.command:
+    cmd: "{{ astronvim_neovim_binary_path }} --version"
+  register: _astronvim_nvim_version_output
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: astronvim_nvim_binary_stat.stat.exists
+
+# A missing binary or a version other than the pin triggers a (re)install.
+# The first line reads "NVIM v0.12.6".
+- name: Decide whether Neovim needs installing
+  ansible.builtin.set_fact:
+    _astronvim_nvim_needs_install: >-
+      {{ not astronvim_nvim_binary_stat.stat.exists
+         or (_astronvim_nvim_version_output.stdout | default('')
+             | regex_findall('^NVIM +(\S+)', multiline=true) | first | default(''))
+            != astronvim_neovim_version }}
+
 # The archive is fetched into a fresh root-only directory (mktemp under
 # astronvim_download_dir): a predictable path in /tmp could be planted by a
 # local user and extracted as root into /usr/local.
 - name: Install Neovim {{ astronvim_neovim_version }}
-  when: not astronvim_nvim_binary_stat.stat.exists
+  when: _astronvim_nvim_needs_install | bool
   block:
     - name: Create a private download directory
       ansible.builtin.tempfile:
@@ -52,6 +71,17 @@
         dest: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
         mode: "0644"
         force: false
+
+    # The archive extracts over /usr/local: drop the previous runtime so files
+    # removed upstream do not linger next to the new version
+    - name: Remove the previous Neovim runtime
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /usr/local/lib/nvim
+        - /usr/local/share/nvim
+      when: astronvim_nvim_binary_stat.stat.exists
 
     - name: Extract Neovim archive into /usr/local/
       ansible.builtin.unarchive:
