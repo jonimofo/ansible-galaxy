@@ -48,12 +48,15 @@
 - name: Download and install lazydocker
   when: _lazydocker_needs_install | bool
   block:
+    # Runs in check mode too: without a real directory the download task has
+    # no path to template. The always section removes it.
     - name: Create a private download directory
       ansible.builtin.tempfile:
         state: directory
         path: "{{ lazydocker_download_dir }}"
         suffix: lazydocker
       register: _lazydocker_tmp
+      check_mode: false
 
     - name: Download lazydocker archive
       ansible.builtin.get_url:
