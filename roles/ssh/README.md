@@ -7,7 +7,7 @@ Hardens the OpenSSH server through a drop-in in `/etc/ssh/sshd_config.d/`, manag
 - Hardening written to `/etc/ssh/sshd_config.d/00-ansible.conf`: sorted first, so it wins over the stock `sshd_config` and over cloud-init's `50-cloud-init.conf`, while distro defaults stay in place
 - `authorized_keys` per user, exclusive by default, from inline keys, `.pub` files, or a keys directory
 - Public keys validated on the control node before anything is written
-- `AllowUsers` restricted to the managed users
+- `AllowUsers` restricted to the managed users, plus `ssh_allow_users_extra` for accounts keyed elsewhere
 - Config validated with `sshd -t` before it is written, sshd reloaded (not restarted), then the SSH port is checked from the control node
 
 ## Requirements
@@ -66,6 +66,7 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ssh_users` | `[]` | Users allowed to SSH with their public keys (see below) |
+| `ssh_allow_users_extra` | `[]` | User names added to `AllowUsers` without managing their account or `authorized_keys` (see below) |
 | `ssh_public_keys_dir` | `""` | Directory on the control node with one `<name>.pub` per user without `pubkey`/`pubkey_file` |
 | `ssh_exclusive_keys` | `true` | Remove unmanaged keys from `authorized_keys` |
 
@@ -90,6 +91,17 @@ Each entry needs `name` and one key source, resolved in this order:
 | (none) | `<ssh_public_keys_dir>/<name>.pub`, when `ssh_public_keys_dir` is set |
 
 Keys are checked before anything is written: non-empty, not the `REPLACE_WITH_REAL_PUBLIC_KEY` placeholder, and starting with a known key type.
+
+### ssh_allow_users_extra
+
+Plain user names appended to `AllowUsers` after the `ssh_users` names, without duplicates. The role does not create these accounts nor touch their `authorized_keys`: use it for an account keyed by another role, such as an application `deploy` user. Each entry must be a non-empty name without spaces.
+
+```yaml
+ssh_users:
+  - name: "admin"
+ssh_allow_users_extra:
+  - "deploy"   # AllowUsers admin deploy
+```
 
 ## Dependencies
 
@@ -149,7 +161,7 @@ None.
 
 1. Keys are validated on the control node before `authorized_keys` is touched.
 2. The drop-in is validated with `sshd -t` before it is written.
-3. Before writing, the role asserts that the user Ansible connects as is in `ssh_users` (and that root login stays allowed when connecting as root).
+3. Before writing, the role asserts that the user Ansible connects as is in `ssh_users` or `ssh_allow_users_extra` (and that root login stays allowed when connecting as root).
 4. sshd is reloaded immediately (handlers are flushed), `ssh_port` is checked from the control node, then the persistent connection is reset and a new session is opened. A failed login fails the play.
 5. With `ssh_exclusive_keys: true`, any key not in `ssh_users` is removed. Make sure the key you connect with is listed.
 6. Changing `ssh_port` also needs a firewall rule; with the `ufw` role set `ufw_verify_port` to the same value.
