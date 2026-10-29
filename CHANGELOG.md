@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [2.0.4] - 2026-10-29
+
+### Fixed
+
+- astronvim, lazydocker: the private download directory is created in check mode too, so `--check` no longer fails on a host that needs an upgrade.
+
 ## [2.0.3] - 2026-10-29
 
 ### Fixed

@@ -58,12 +58,15 @@
 - name: Install Neovim {{ astronvim_neovim_version }}
   when: _astronvim_nvim_needs_install | bool
   block:
+    # Runs in check mode too: without a real directory the download task has
+    # no path to template. The always section removes it.
     - name: Create a private download directory
       ansible.builtin.tempfile:
         state: directory
         path: "{{ astronvim_download_dir }}"
         suffix: neovim
       register: _astronvim_tmp
+      check_mode: false
 
     - name: Download Neovim tarball for version {{ astronvim_neovim_version }}
       ansible.builtin.get_url:
