@@ -30,6 +30,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `packages_apt_update_packages_to_install` | `[]` | List of packages to install |
 | `packages_obsolete_paths` | fasd binary and man page | Files to remove, left by tools once installed outside apt |
+| `packages_apt_cache_valid_time` | `3600` | Seconds the apt cache stays valid before the install task refreshes it |
 | `packages_run_cleanup` | `false` | Run `autoremove` and `autoclean` (opt-in, `-e packages_run_cleanup=true`) |
 | `packages_needrestart_install` | `true` | Install `needrestart` in automatic restart mode |
 
@@ -39,6 +40,8 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `packages_apt_update_timer_on_calendar` | `'*-*-* 03:00:00'` | Systemd OnCalendar schedule |
 | `packages_apt_update_timer_persistent` | `true` | Run at next boot if the time was missed |
+| `packages_apt_update_timer_randomized_delay_sec` | `"15m"` | Random delay per run, spreads a fleet over the mirror |
+| `packages_apt_update_service_timeout_stop_sec` | `900` | Seconds systemd waits on stop, so dpkg is not killed mid-upgrade |
 | `packages_apt_update_disable_units` | `[apt-daily.timer, ...]` | Stock units to disable and mask |
 | `packages_apt_update_service_dest` | `/etc/systemd/system/apt_update.service` | Path of the service unit |
 | `packages_apt_update_timer_dest` | `/etc/systemd/system/apt_update.timer` | Path of the timer unit |
@@ -51,7 +54,9 @@ What the nightly service runs depends on `packages_apt_update_unattended_upgrade
 | Value | Nightly command |
 |-------|-----------------|
 | **true** (default) | `apt-get update && unattended-upgrade && apt-get autoremove -y && apt-get autoclean` |
-| **false** | `apt-get update && apt-get full-upgrade -y && apt-get autoremove -y && apt-get autoclean` |
+| **false** | `apt-get update && apt-get full-upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && apt-get autoremove -y && apt-get autoclean` |
+
+The full-upgrade path keeps the local version of a modified config file and takes the package default otherwise, so a conffile prompt never blocks the run. The service uses `KillMode=process` and `TimeoutStopSec`, like the stock `apt-daily-upgrade.service`: stopping it, at shutdown for example, does not kill dpkg mid-upgrade. The timer adds a random delay of up to `packages_apt_update_timer_randomized_delay_sec`.
 
 ### Security: Unattended Upgrades
 
@@ -64,7 +69,7 @@ What the nightly service runs depends on `packages_apt_update_unattended_upgrade
 | `packages_apt_update_unattended_autofix` | `true` | Attempt to fix interrupted dpkg |
 | `packages_apt_update_unattended_remove_unused` | `true` | Auto-remove unused dependencies and kernels |
 | `packages_apt_update_unattended_reboot` | `false` | Auto-reboot if required (use with caution) |
-| `packages_apt_update_unattended_reboot_time` | `"02:00"` | Time to reboot if auto-reboot enabled |
+| `packages_apt_update_unattended_reboot_time` | `"03:30"` | Time to reboot if auto-reboot enabled, after the 03:00 run |
 | `packages_apt_update_unattended_mail` | `""` | Email for upgrade notifications (empty = disabled) |
 | `packages_apt_update_unattended_mail_on_error` | `true` | Only send mail on errors |
 
@@ -141,7 +146,7 @@ None.
 3. (Opt-in) Runs `autoremove` and `autoclean`
 4. Installs and configures `needrestart` in automatic mode
 5. Deploys `apt_update.service` and `apt_update.timer`, enables the timer and restarts it when its schedule changes
-6. Disables and masks the stock `apt-daily*` units
+6. Disables and masks the stock `apt-daily*` units, removes a `20auto-upgrades` left by an older version of this role and leaves a stock one untouched
 7. Installs and configures `unattended-upgrades` (or disables it when turned off)
 
 ## License
