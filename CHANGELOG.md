@@ -2,6 +2,20 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [2.0.2] - 2026-10-29
+
+### Fixed
+
+- **packages**: stopping `apt_update.service` no longer kills dpkg mid-upgrade (`KillMode=process`, `TimeoutStopSec`, new `packages_apt_update_service_timeout_stop_sec`).
+- **packages**: the full-upgrade path passes `--force-confdef --force-confold` to dpkg, so a conffile prompt no longer blocks the nightly run.
+- **packages**: the install task refreshes the apt cache when older than `packages_apt_cache_valid_time`, so a fresh host no longer fails on stale lists.
+
+### Changed
+
+- **packages**: `20auto-upgrades` is no longer deployed, its keys are only read by the masked `apt.systemd.daily`. A copy deployed by this role is removed, a stock one is left untouched.
+- **packages**: `packages_apt_update_unattended_reboot_time` defaults to `03:30`, after the nightly run.
+- **packages**: the timer has a `RandomizedDelaySec` of 15 minutes, new `packages_apt_update_timer_randomized_delay_sec`.
+
 ## [2.0.1] - 2026-10-28
 
 ### Fixed
