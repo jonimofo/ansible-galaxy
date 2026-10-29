@@ -25,11 +25,28 @@
     path: "{{ lazydocker_install_path }}/lazydocker"
   register: lazydocker_binary
 
+- name: Read the installed lazydocker version
+  ansible.builtin.command:
+    cmd: "{{ lazydocker_install_path }}/lazydocker --version"
+  register: _lazydocker_version_output
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: lazydocker_binary.stat.exists
+
+# A missing binary or a version other than the pin triggers a (re)install
+- name: Decide whether lazydocker needs installing
+  ansible.builtin.set_fact:
+    _lazydocker_needs_install: >-
+      {{ not lazydocker_binary.stat.exists
+         or (_lazydocker_version_output.stdout | default('')
+             | regex_findall('Version: *(\S+)') | first | default('')) != lazydocker_version }}
+
 # The archive is fetched into a fresh root-only directory (mktemp under
 # lazydocker_download_dir): a predictable path in /tmp could be planted by a
 # local user and extracted as root.
 - name: Download and install lazydocker
-  when: not lazydocker_binary.stat.exists
+  when: _lazydocker_needs_install | bool
   block:
     - name: Create a private download directory
       ansible.builtin.tempfile:

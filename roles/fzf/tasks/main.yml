@@ -19,18 +19,23 @@
     path: "{{ fzf_install_path }}/bin/fzf"
   register: fzf_installed
 
-- name: Clone fzf repository
+# force: the install script leaves bin/fzf untracked only, but a local edit
+# must not block checking out a new pin
+- name: Check out fzf at the pinned version
   ansible.builtin.git:
     repo: "{{ fzf_repo_url }}"
     dest: "{{ fzf_install_path }}"
     version: "{{ fzf_version }}"
-    update: false
-  when: not fzf_installed.stat.exists
+    update: true
+    force: true
+  register: fzf_checkout
 
+# The install script downloads the binary matching the checked-out tag
 - name: Install fzf
   ansible.builtin.command:
     cmd: "{{ fzf_install_path }}/install --bin"
-    creates: "{{ fzf_install_path }}/bin/fzf"
+  when: fzf_checkout.changed or not fzf_installed.stat.exists
+  changed_when: true
 
 - name: Create symlink in /usr/local/bin
   ansible.builtin.file:
