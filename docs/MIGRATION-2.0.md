@@ -31,7 +31,7 @@ Consumers rename these keys in `group_vars` and `host_vars`. Rows marked (QDV) a
 | dotfiles | | `dotfiles_verify_ssh_access` | new, default `true`; set `false` to skip the agent and host checks |
 | dotfiles | `dotfiles_user_configs` default `[]` | default dict with `users: []` | the role is a no-op when unconfigured instead of failing |
 | dotfiles | clone depth | shallow, single branch | an existing full clone is removed and re-cloned once |
-| packages | `apt_update_cache_valid_time` | removed | refresh the apt cache once in `pre_tasks` |
+| packages | `apt_update_cache_valid_time` | `packages_apt_cache_valid_time` | default `3600`, used by the install task since 2.0.2 |
 | packages | `apt_update_disable_units` | `packages_apt_update_disable_units` | |
 | packages | `apt_update_service_dest` | `packages_apt_update_service_dest` | |
 | packages | `apt_update_service_mode` | `packages_apt_update_service_mode` | |
