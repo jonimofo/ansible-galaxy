@@ -23,6 +23,10 @@ packages_apt_update_packages_to_install: []
 # - tmux
 # - zoxide
 
+# packages_apt_cache_valid_time: Seconds the apt cache stays valid before the install
+# task refreshes it, so a fresh host installs from current lists without a refresh on every run.
+packages_apt_cache_valid_time: 3600
+
 # packages_obsolete_paths: Files left by tools once installed outside apt, removed.
 # fasd was built from source by a former role and is replaced by zoxide.
 packages_obsolete_paths:
@@ -53,10 +57,16 @@ packages_apt_update_disable_units:
   - apt-daily-upgrade.service
 packages_apt_update_service_dest: /etc/systemd/system/apt_update.service  # path of the service unit
 packages_apt_update_service_mode: "0644"  # file mode of the service unit
+# packages_apt_update_service_timeout_stop_sec: Seconds systemd waits when stopping the unit.
+# Stopping the unit must not kill dpkg mid-upgrade, same as the stock apt-daily-upgrade.service.
+packages_apt_update_service_timeout_stop_sec: 900
 packages_apt_update_timer_dest: /etc/systemd/system/apt_update.timer  # path of the timer unit
 packages_apt_update_timer_mode: "0644"  # file mode of the timer unit
 packages_apt_update_timer_on_calendar: "*-*-* 03:00:00"  # systemd OnCalendar schedule
 packages_apt_update_timer_persistent: true  # run at next boot if the time was missed
+# packages_apt_update_timer_randomized_delay_sec: Random delay added to each run.
+# Spreads a fleet over the mirror, keeps the run inside the maintenance window.
+packages_apt_update_timer_randomized_delay_sec: "15m"
 packages_apt_update_timer_unit: apt_update.timer  # name of the timer unit to enable
 
 # --- Unattended upgrades (security patches only) ---
@@ -92,8 +102,9 @@ packages_apt_update_unattended_remove_unused: true
 # packages_apt_update_unattended_reboot: Auto-reboot when a patch requires it (use with caution)
 packages_apt_update_unattended_reboot: false
 
-# packages_apt_update_unattended_reboot_time: Time to reboot if auto-reboot enabled
-packages_apt_update_unattended_reboot_time: "02:00"
+# packages_apt_update_unattended_reboot_time: Time to reboot if auto-reboot enabled.
+# After the 03:00 run, so a reboot does not wait 23 hours.
+packages_apt_update_unattended_reboot_time: "03:30"
 
 # packages_apt_update_unattended_mail: Email address for upgrade notifications (empty = disabled)
 packages_apt_update_unattended_mail: ""

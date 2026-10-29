@@ -5,6 +5,7 @@ Description=Run apt update & upgrade daily
 [Timer]
 OnCalendar={{ packages_apt_update_timer_on_calendar }}
 Persistent={{ packages_apt_update_timer_persistent | ternary('true','false') }}
+RandomizedDelaySec={{ packages_apt_update_timer_randomized_delay_sec }}
 
 [Install]
 WantedBy=timers.target

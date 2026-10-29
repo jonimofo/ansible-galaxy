@@ -13,6 +13,8 @@
   ansible.builtin.apt:
     name: "{{ packages_apt_update_packages_to_install }}"
     state: present
+    update_cache: true
+    cache_valid_time: "{{ packages_apt_cache_valid_time }}"
   when: packages_apt_update_packages_to_install | length > 0
 
 - name: Remove obsolete files from tools installed outside apt
@@ -92,6 +94,21 @@
   loop: "{{ packages_apt_update_disable_units }}"
   notify: Reload systemd
 
+# APT::Periodic keys are only read by apt.systemd.daily, masked above. Only the
+# file deployed by an older version of this role is removed: Ubuntu ships its own.
+- name: Check for a role-deployed 20auto-upgrades
+  ansible.builtin.command: grep -q 'Ansible managed' /etc/apt/apt.conf.d/20auto-upgrades
+  register: packages_auto_upgrades_managed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Remove role-deployed 20auto-upgrades
+  ansible.builtin.file:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    state: absent
+  when: packages_auto_upgrades_managed.rc == 0
+
 # --- Security: Unattended Upgrades ---
 - name: Configure unattended-upgrades
   when: packages_apt_update_unattended_upgrades | bool
@@ -108,14 +125,6 @@
       ansible.builtin.template:
         src: 50unattended-upgrades.j2
         dest: /etc/apt/apt.conf.d/50unattended-upgrades
-        owner: root
-        group: root
-        mode: "0644"
-
-    - name: Deploy auto-upgrades configuration
-      ansible.builtin.template:
-        src: 20auto-upgrades.j2
-        dest: /etc/apt/apt.conf.d/20auto-upgrades
         owner: root
         group: root
         mode: "0644"

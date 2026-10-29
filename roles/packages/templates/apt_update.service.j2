@@ -14,6 +14,10 @@ Environment=DEBIAN_FRONTEND=noninteractive
 {% if packages_apt_update_unattended_upgrades | bool %}
 ExecStart=/bin/sh -c "/usr/bin/apt-get update && /usr/bin/unattended-upgrade && /usr/bin/apt-get autoremove -y && /usr/bin/apt-get autoclean"
 {% else %}
-ExecStart=/bin/sh -c "/usr/bin/apt-get update && /usr/bin/apt-get full-upgrade -y && /usr/bin/apt-get autoremove -y && /usr/bin/apt-get autoclean"
+# DEBIAN_FRONTEND does not cover dpkg conffile prompts
+ExecStart=/bin/sh -c "/usr/bin/apt-get update && /usr/bin/apt-get full-upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && /usr/bin/apt-get autoremove -y && /usr/bin/apt-get autoclean"
 {% endif %}
 User=root
+# Stopping the unit must not kill dpkg mid-upgrade
+KillMode=process
+TimeoutStopSec={{ packages_apt_update_service_timeout_stop_sec }}
