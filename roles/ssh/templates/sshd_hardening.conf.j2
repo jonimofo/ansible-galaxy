@@ -11,10 +11,10 @@ KbdInteractiveAuthentication no
 MaxAuthTries {{ ssh_max_auth_tries }}
 LoginGraceTime {{ ssh_login_grace_time }}
 MaxSessions {{ ssh_max_sessions }}
-{% if ssh_users | length > 0 %}
+{% if _ssh_allow_users | length > 0 %}
 
 # Access control
-AllowUsers {{ ssh_users | map(attribute='name') | join(' ') }}
+AllowUsers {{ _ssh_allow_users | join(' ') }}
 {% endif %}
 
 # Forwarding

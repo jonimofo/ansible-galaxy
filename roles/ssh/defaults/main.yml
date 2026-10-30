@@ -86,6 +86,21 @@ ssh_users: []
 #     pubkey_file: "{{ inventory_dir }}/files/ssh/bob.pub"
 #   - name: "deploy"   # read from ssh_public_keys_dir/deploy.pub
 
+# ssh_allow_users_extra: User names added to AllowUsers without managing their
+# account or authorized_keys (keys are managed elsewhere, e.g. by an
+# application role). Names already in ssh_users are not repeated.
+ssh_allow_users_extra: []
+# Example:
+# ssh_allow_users_extra:
+#   - "deploy"
+
+# ssh_clean_legacy_access_lists: Remove AllowUsers, DenyUsers, AllowGroups and
+# DenyGroups lines from the main /etc/ssh/sshd_config. These options add up in
+# sshd instead of first value wins, so a list left by an older role keeps
+# granting access next to the drop-in. Skipped when the role renders no
+# AllowUsers (ssh_users and ssh_allow_users_extra both empty).
+ssh_clean_legacy_access_lists: true
+
 # ssh_public_keys_dir: Directory on the control node holding one <name>.pub per
 # user without pubkey/pubkey_file. Empty disables the lookup.
 ssh_public_keys_dir: ""
