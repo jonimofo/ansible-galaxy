@@ -109,6 +109,21 @@
   vars:
     _ssh_connecting_user: "{{ ansible_user | default(lookup('ansible.builtin.env', 'USER')) }}"
 
+# Access lists are cumulative in sshd (not first value wins): AllowUsers left
+# in the main file by an older role still grant access next to the drop-in.
+# Only unindented lines match, so an indented line inside a Match block stays.
+# Skipped when the drop-in has no AllowUsers, which would open SSH to all users.
+- name: Remove legacy access lists from sshd_config
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^(AllowUsers|DenyUsers|AllowGroups|DenyGroups)\s'
+    state: absent
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Reload sshd
+  when:
+    - ssh_clean_legacy_access_lists | bool
+    - _ssh_allow_users | length > 0
+
 - name: Deploy sshd hardening drop-in
   ansible.builtin.template:
     src: sshd_hardening.conf.j2

@@ -8,6 +8,10 @@ All notable changes to this collection are documented here. The format follows [
 
 - **ssh**: `ssh_allow_users_extra` lists user names added to `AllowUsers` without managing their account or `authorized_keys`, for an account keyed by another role. Defaults to `[]`, so `AllowUsers` is unchanged for existing playbooks.
 
+### Fixed
+
+- **ssh** (security, #21): `AllowUsers`, `DenyUsers`, `AllowGroups` and `DenyGroups` lines left in the main `sshd_config` by the older role are removed. These options are cumulative in sshd, so a user removed from `ssh_users` stayed allowed. Opt out with `ssh_clean_legacy_access_lists: false`; skipped when the role renders no `AllowUsers`.
+
 ## [2.0.4] - 2026-10-29
 
 ### Fixed

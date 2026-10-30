@@ -94,6 +94,13 @@ ssh_allow_users_extra: []
 # ssh_allow_users_extra:
 #   - "deploy"
 
+# ssh_clean_legacy_access_lists: Remove AllowUsers, DenyUsers, AllowGroups and
+# DenyGroups lines from the main /etc/ssh/sshd_config. These options add up in
+# sshd instead of first value wins, so a list left by an older role keeps
+# granting access next to the drop-in. Skipped when the role renders no
+# AllowUsers (ssh_users and ssh_allow_users_extra both empty).
+ssh_clean_legacy_access_lists: true
+
 # ssh_public_keys_dir: Directory on the control node holding one <name>.pub per
 # user without pubkey/pubkey_file. Empty disables the lookup.
 ssh_public_keys_dir: ""

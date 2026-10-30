@@ -67,6 +67,7 @@ All variables are defined in `defaults/main.yml`:
 |----------|---------|-------------|
 | `ssh_users` | `[]` | Users allowed to SSH with their public keys (see below) |
 | `ssh_allow_users_extra` | `[]` | User names added to `AllowUsers` without managing their account or `authorized_keys` (see below) |
+| `ssh_clean_legacy_access_lists` | `true` | Remove `AllowUsers`, `DenyUsers`, `AllowGroups`, `DenyGroups` lines from the main `sshd_config` (see Legacy access lists) |
 | `ssh_public_keys_dir` | `""` | Directory on the control node with one `<name>.pub` per user without `pubkey`/`pubkey_file` |
 | `ssh_exclusive_keys` | `true` | Remove unmanaged keys from `authorized_keys` |
 
@@ -165,6 +166,14 @@ None.
 4. sshd is reloaded immediately (handlers are flushed), `ssh_port` is checked from the control node, then the persistent connection is reset and a new session is opened. A failed login fails the play.
 5. With `ssh_exclusive_keys: true`, any key not in `ssh_users` is removed. Make sure the key you connect with is listed.
 6. Changing `ssh_port` also needs a firewall rule; with the `ufw` role set `ufw_verify_port` to the same value.
+
+### Legacy access lists
+
+`AllowUsers`, `DenyUsers`, `AllowGroups` and `DenyGroups` are cumulative in sshd: unlike other options, the first value does not win, every line counts. A host configured by the older role keeps `AllowUsers ...` in `/etc/ssh/sshd_config`, so a user removed from `ssh_users` would stay allowed. The role removes these lines from the main file (validated with `sshd -t`, sshd reloaded), so the effective `AllowUsers` is exactly the drop-in list.
+
+- Only unindented lines are removed; an indented line inside a `Match` block is kept.
+- Skipped when `ssh_users` and `ssh_allow_users_extra` are both empty: the drop-in then has no `AllowUsers`, and removing the legacy line would open SSH to every user.
+- Set `ssh_clean_legacy_access_lists: false` to keep the main file untouched.
 
 ### Why a drop-in
 
