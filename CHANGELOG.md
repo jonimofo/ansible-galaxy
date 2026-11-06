@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+### Fixed
+
+- **fail2ban** (#33): the `recidive` jail banned through `nftables`, outside ufw, whatever `fail2ban_banaction` said: upstream `jail.conf` sets `[recidive] banaction = %(banaction_allports)s` and Debian maps it to `nftables`. New `fail2ban_banaction_allports` (default `ufw`) is rendered in `[DEFAULT]`, so recidive and the other all-ports jails follow it. On the next apply fail2ban restarts and recidive bans appear in `ufw status`.
+
 ## [2.1.2] - 2026-11-06
 
 ### Added

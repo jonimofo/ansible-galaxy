@@ -4,7 +4,8 @@
 # sets logpath must set its own file backend, or fail2ban ignores the file and
 # the jail never bans (recidive did). Checks the role defaults and every yaml
 # example of the README, then renders jail.local from the defaults into a temp
-# dir. Needs no fail2ban and no network: run with `make test`.
+# dir. When fail2ban is installed, also resolves the jails with fail2ban-client
+# -d. Needs no network: run with `make test`.
 
 - name: Test the fail2ban jails
   hosts: localhost
@@ -12,6 +13,8 @@
   gather_facts: false
   vars:
     test_role_dir: "{{ playbook_dir | dirname }}"
+    # Installed fail2ban config, used to resolve the jails when present
+    test_fail2ban_conf_dir: /etc/fail2ban
     test_readme_plays: >-
       {{ lookup('ansible.builtin.file', test_role_dir + '/README.md')
          | regex_findall('(?s)```yaml\n(.*?)```')
@@ -89,6 +92,65 @@
             recidive_section: >-
               {{ (lookup('ansible.builtin.file', test_tmp.path + '/jail.local')
                   | regex_search('\[recidive\][^\[]*')) | default('', true) }}
+
+        # Upstream jail.conf sets [recidive] banaction = %(banaction_allports)s:
+        # without banaction_allports in [DEFAULT], recidive bans outside ufw (#33)
+        - name: Assert the rendered DEFAULT section sets the all-ports ban action
+          ansible.builtin.assert:
+            that: default_section is search('banaction_allports = ' + fail2ban_banaction_allports)
+            fail_msg: "Rendered [DEFAULT] section: {{ default_section }}"
+            quiet: true
+          vars:
+            default_section: >-
+              {{ (lookup('ansible.builtin.file', test_tmp.path + '/jail.local')
+                  | regex_search('\[DEFAULT\][^\[]*')) | default('', true) }}
+
+        - name: Look for an installed fail2ban to resolve the jails with
+          ansible.builtin.stat:
+            path: "{{ test_fail2ban_conf_dir }}/jail.conf"
+          register: test_fail2ban_conf
+
+        - name: Resolve the jails with fail2ban-client, when installed
+          when: test_fail2ban_conf.stat.exists
+          block:
+            - name: Copy the installed fail2ban config
+              ansible.builtin.copy:
+                src: "{{ test_fail2ban_conf_dir }}/"
+                dest: "{{ test_tmp.path }}/conf/"
+                remote_src: true
+                mode: preserve
+
+            - name: Render jail.local into the copied config
+              ansible.builtin.template:
+                src: "{{ test_role_dir }}/templates/jail.local.j2"
+                dest: "{{ test_tmp.path }}/conf/jail.local"
+                mode: "0644"
+
+            - name: Dump the configuration fail2ban would load
+              ansible.builtin.command:
+                argv:
+                  - fail2ban-client
+                  - -c
+                  - "{{ test_tmp.path }}/conf"
+                  - -p
+                  - "{{ test_tmp.path }}/fail2ban.pid"
+                  - -s
+                  - "{{ test_tmp.path }}/fail2ban.sock"
+                  - -d
+              changed_when: false
+              register: test_fail2ban_dump
+
+            - name: Assert recidive and sshd ban through the role's actions
+              ansible.builtin.assert:
+                that:
+                  - expected_recidive in test_fail2ban_dump.stdout
+                  - expected_sshd in test_fail2ban_dump.stdout
+                fail_msg: >-
+                  Resolved actions: {{ test_fail2ban_dump.stdout_lines | select('search', 'addaction') | list }}
+                quiet: true
+              vars:
+                expected_recidive: "['set', 'recidive', 'addaction', '{{ fail2ban_banaction_allports }}']"
+                expected_sshd: "['set', 'sshd', 'addaction', '{{ fail2ban_banaction }}']"
       always:
         - name: Remove the temp dir
           ansible.builtin.file:
