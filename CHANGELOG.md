@@ -2,6 +2,16 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [2.1.1] - 2026-11-06
+
+### Removed
+
+- `roles/brave_students_profile`: an unsupported browser profile snippet with no tasks, never part of the published API.
+
+### Fixed
+
+- **dotfiles** (security, #6): the SSH access check passes the repo host to `ssh` as an argument list after `--`, and fails unless the host part of an scp-like repo URL (`user@host:path`) is a plain `user@host`, so an ssh option in `dotfiles_user_configs.repo` is never run. An `ssh://` URL with a port is no longer checked against port 22. The missing-sources error no longer prints `user:token@` from an https repo URL.
+
 ## [2.1.0] - 2026-10-29
 
 ### Added

@@ -21,8 +21,6 @@ Supported: Debian bookworm/trixie, Ubuntu jammy/noble/resolute, x86_64 and aarch
 | `lazydocker` | lazydocker binary |
 | `astronvim` | Neovim and AstroNvim per user |
 
-`roles/brave_students_profile` is an internal, unsupported helper and not part of the published API.
-
 Each role has a README with every variable. Breaking changes between major versions are listed in [docs/MIGRATION-2.0.md](docs/MIGRATION-2.0.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
@@ -73,6 +71,7 @@ Variables go in the consumer's `group_vars` and `host_vars`, one file per role. 
 make setup    # venv, dependencies, git hooks
 make lint     # yamllint + ansible-lint (production profile)
 make audit    # audit/audit.py: structure, security, idempotency checks on every role
+make test     # regression playbooks roles/*/tests/test_*.yml on localhost
 ```
 
 Branches: `feat/*` or `fix/*` from `develop`, PR to `develop`, `develop` promoted to `main` with a merge commit and a `vX.Y.Z` tag, then `ansible-galaxy collection build` and `publish`. Direct pushes to `main` and `develop` are rejected by the pre-push hook. Commits follow the Angular convention, no em-dashes in added lines.

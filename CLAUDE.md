@@ -287,6 +287,8 @@ Each role should have a test playbook in `tests/test.yml` that:
 - Uses molecule or a simple localhost test
 - Validates the role works correctly
 
+Regression tests for a role's logic go in `roles/<role>/tests/test_*.yml`: they run on localhost without network, include the role's task files with `include_role` and `tasks_from`, and run with `make test`. A security fix ships one.
+
 ## Security Best Practices
 
 When reviewing or creating roles, always apply security best practices and suggest improvements based on the role's context.
