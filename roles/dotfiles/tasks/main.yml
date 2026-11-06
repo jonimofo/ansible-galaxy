@@ -18,30 +18,8 @@
     name: git
     state: present
 
-# The clone runs as the connecting user (no become) so the forwarded SSH agent
-# is used. Fail early and clearly when the agent or the remote is not reachable.
-- name: Verify SSH agent forwarding is working
-  ansible.builtin.command:
-    cmd: ssh-add -l
-  become: false
-  changed_when: false
-  register: dotfiles_ssh_agent_check
-  failed_when: dotfiles_ssh_agent_check.rc != 0
-  when:
-    - dotfiles_verify_ssh_access | bool
-    - dotfiles_user_configs.users | length > 0
-    - dotfiles_user_configs.repo is match('^[^@]+@[^:]+:')
-
-- name: Verify SSH access to the dotfiles remote via forwarded agent
-  ansible.builtin.command:
-    cmd: "ssh -o StrictHostKeyChecking=accept-new -T {{ dotfiles_remote_host }}"
-  become: false
-  changed_when: false
-  vars:
-    dotfiles_remote_host: "{{ dotfiles_user_configs.repo | regex_replace('^([^@]+@[^:]+):.*$', '\\1') }}"
-  register: dotfiles_remote_ssh_check
-  # GitHub and GitLab answer a greeting with rc 1 when there is no shell
-  failed_when: dotfiles_remote_ssh_check.rc not in [0, 1]
+- name: Include SSH access checks
+  ansible.builtin.include_tasks: verify_ssh.yml
   when:
     - dotfiles_verify_ssh_access | bool
     - dotfiles_user_configs.users | length > 0
@@ -105,30 +83,8 @@
   vars:
     user_home: "{{ item.home | default('/home/' + item.user) }}"
 
-- name: Check dotfiles sources exist in the clone
-  ansible.builtin.stat:
-    path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
-  become: "{{ item.0.user != _dotfiles_connecting_user }}"
-  become_user: "{{ item.0.user if item.0.user != _dotfiles_connecting_user else omit }}"
-  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
-  loop_control:
-    label: "{{ user.user }}:{{ file.src }}"
-  vars:
-    user: "{{ item.0 }}"
-    file: "{{ item.1 }}"
-    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
-  register: dotfiles_src_stat
-
-- name: Fail on dotfiles missing from the repo
-  ansible.builtin.assert:
-    that: missing | length == 0
-    fail_msg: >-
-      Missing from version '{{ dotfiles_user_configs.version }}' of
-      {{ dotfiles_user_configs.repo }}: {{ missing | join(', ') }}
-    quiet: true
-  vars:
-    missing: "{{ dotfiles_src_stat.results | rejectattr('stat.exists') | map(attribute='item.1.src') | list }}"
-  when: not ansible_check_mode
+- name: Include dotfiles source checks
+  ansible.builtin.include_tasks: verify_sources.yml
 
 - name: Ensure parent directory exists for {{ file.dest }} of {{ user.user }}
   ansible.builtin.file:

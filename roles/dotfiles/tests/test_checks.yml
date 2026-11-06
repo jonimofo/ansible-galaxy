@@ -1,0 +1,101 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Regression tests for the dotfiles pre-clone checks (#6). Runs on localhost,
+# needs no network and no SSH agent: run with `make test`.
+
+- name: Reject an ssh option smuggled into the repo URL
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Run the SSH checks on a repo URL carrying an ssh option
+      block:
+        - name: Include the SSH checks
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: verify_ssh.yml
+            apply:
+              environment:
+                SSH_AUTH_SOCK: /nonexistent/agent.sock
+          vars:
+            dotfiles_user_configs:
+              repo: "-oProxyCommand=touch@example.com:me/dotfiles.git"
+
+        - name: Fail when the SSH checks accepted the URL
+          ansible.builtin.fail:
+            msg: "verify_ssh.yml accepted an ssh option as host"
+      rescue:
+        - name: Assert the host check rejected the URL
+          ansible.builtin.assert:
+            that: ansible_failed_task.name == 'Verify the dotfiles remote host is a plain user@host'
+            fail_msg: "Failed on '{{ ansible_failed_task.name }}' instead of the host check"
+
+- name: Accept a plain user@host repo URL
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    # No agent socket, so the run stops at the agent check, after the host check
+    - name: Run the SSH checks on a plain repo URL without an agent
+      block:
+        - name: Include the SSH checks
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: verify_ssh.yml
+            apply:
+              environment:
+                SSH_AUTH_SOCK: /nonexistent/agent.sock
+          vars:
+            dotfiles_user_configs:
+              repo: "git@github.com:example/dotfiles.git"
+
+        - name: Fail when the agent check passed without an agent
+          ansible.builtin.fail:
+            msg: "ssh-add -l succeeded without an agent socket"
+      rescue:
+        - name: Assert the run passed the host check
+          ansible.builtin.assert:
+            that:
+              - _dotfiles_remote_host == 'git@github.com'
+              - ansible_failed_task.name == 'Verify SSH agent forwarding is working'
+            fail_msg: "Failed on '{{ ansible_failed_task.name }}' instead of the agent check"
+
+- name: Strip credentials from the missing-sources message
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    test_home: /nonexistent/dotfiles-test
+    test_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
+  tasks:
+    - name: Run the source checks on an https repo URL with a token
+      block:
+        - name: Include the source checks
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: verify_sources.yml
+          vars:
+            _dotfiles_connecting_user: "{{ test_user }}"
+            dotfiles_user_configs:
+              repo: "https://deploy:s3cr3t-token@git.example.com/me/dotfiles.git"
+              version: main
+              clone_dir: dotfiles
+              users:
+                - user: "{{ test_user }}"
+                  home: "{{ test_home }}"
+                  files:
+                    - src: bashrc
+                      dest: .bashrc
+
+        - name: Fail when the source checks passed with a missing source
+          ansible.builtin.fail:
+            msg: "verify_sources.yml accepted a missing source"
+      rescue:
+        - name: Assert the message names the repo without the credentials
+          ansible.builtin.assert:
+            that:
+              - ansible_failed_task.name == 'Fail on dotfiles missing from the repo'
+              - "'s3cr3t-token' not in ansible_failed_result.msg"
+              - "'deploy' not in ansible_failed_result.msg"
+              - "'https://git.example.com/me/dotfiles.git: bashrc' in ansible_failed_result.msg"
+            fail_msg: "Unexpected failure: {{ ansible_failed_result.msg | default(ansible_failed_task.name) }}"

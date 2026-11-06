@@ -1,0 +1,39 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# The clone runs as the connecting user (no become) so the forwarded SSH agent
+# is used. Fail early and clearly when the agent or the remote is not reachable.
+
+- name: Set the dotfiles remote host
+  ansible.builtin.set_fact:
+    _dotfiles_remote_host: "{{ dotfiles_user_configs.repo | regex_replace('^([^@]+@[^:]+):.*$', '\\1') }}"
+
+# The host comes from the repo URL and is passed to ssh: refuse anything that
+# is not a plain user@host, such as an ssh option smuggled into the URL.
+- name: Verify the dotfiles remote host is a plain user@host
+  ansible.builtin.assert:
+    that: _dotfiles_remote_host is match('^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$')
+    fail_msg: "dotfiles_user_configs.repo has an invalid user@host part: {{ _dotfiles_remote_host }}"
+    quiet: true
+
+- name: Verify SSH agent forwarding is working
+  ansible.builtin.command:
+    cmd: ssh-add -l
+  become: false
+  changed_when: false
+  register: dotfiles_ssh_agent_check
+  failed_when: dotfiles_ssh_agent_check.rc != 0
+
+- name: Verify SSH access to the dotfiles remote via forwarded agent
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -o
+      - StrictHostKeyChecking=accept-new
+      - -T
+      - --
+      - "{{ _dotfiles_remote_host }}"
+  become: false
+  changed_when: false
+  register: dotfiles_remote_ssh_check
+  # GitHub and GitLab answer a greeting with rc 1 when there is no shell
+  failed_when: dotfiles_remote_ssh_check.rc not in [0, 1]
