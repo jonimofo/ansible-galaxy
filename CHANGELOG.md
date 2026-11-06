@@ -4,6 +4,10 @@ All notable changes to this collection are documented here. The format follows [
 
 ## [Unreleased]
 
+### Added
+
+- **fail2ban** (docs, #4): example `traefik-auth` jail (Traefik basic auth failures, filter shipped with fail2ban) in the defaults comments and a README section. The nginx and Apache examples now set `backend: auto`: with the role's global `systemd` backend, a jail reading a log file ignores `logpath`.
+
 ### Fixed
 
 - **make check** (#7): a syntax error in a role's `tests/test.yml` now fails the target and names the role. It was printed as "No test playbook" with exit 0. The README and CLAUDE.md state that the check is syntax-only; role logic is tested by `make test`, which also runs the new `scripts/test-make-check.sh` regression test for this target.

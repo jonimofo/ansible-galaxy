@@ -71,19 +71,34 @@ fail2ban_jails:
     maxretry: 3        # 3 bans = recidive
 
 # --- Example Additional Jails ---
-# Add these to your playbook's fail2ban_jails if needed:
+# Add these to your playbook's fail2ban_jails if needed.
+# A jail that reads a log file needs backend: auto: with the global systemd
+# backend, logpath is ignored and the jail reads the journal instead.
 #
 # nginx-http-auth:
 #   enabled: true
 #   port: http,https
 #   filter: nginx-http-auth
+#   backend: auto
 #
 # nginx-botsearch:
 #   enabled: true
 #   port: http,https
 #   filter: nginx-botsearch
+#   backend: auto
 #
 # apache-auth:
 #   enabled: true
 #   port: http,https
 #   filter: apache-auth
+#   backend: auto
+#
+# Traefik basic auth failures (HTTP 401), filter shipped with fail2ban.
+# Traefik must write its access log in the default common format to a file
+# on the host (accessLog.filePath, bind-mounted from a container).
+# traefik-auth:
+#   enabled: true
+#   port: http,https
+#   filter: traefik-auth
+#   logpath: /var/log/traefik/access.log
+#   backend: auto

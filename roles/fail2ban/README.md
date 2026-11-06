@@ -70,7 +70,7 @@ All variables are defined in `defaults/main.yml`:
 | `bantime` | No | Override global bantime |
 | `findtime` | No | Override global findtime |
 | `action` | No | Custom action for this jail |
-| `backend` | No | Override global backend |
+| `backend` | No | Override global backend; set `auto` for a jail that reads a log file (`logpath` is ignored with `systemd`) |
 
 ## Dependencies
 
@@ -157,17 +157,53 @@ None.
         enabled: true
         port: http,https
         filter: nginx-http-auth
+        backend: auto
       nginx-botsearch:
         enabled: true
         port: http,https
         filter: nginx-botsearch
+        backend: auto
   roles:
     - role: jonimofo.infrastructure.fail2ban
 ```
 
+### Traefik Basic Auth Protection
+
+Bans clients that fail Traefik basic authentication (HTTP 401). The `traefik-auth` filter ships with fail2ban. Traefik must write its access log in the default common format to a file on the host, for example `--accesslog.filepath=/var/log/traefik/access.log` with `/var/log/traefik` bind-mounted from the container.
+
+```yaml
+- name: Protect a Traefik reverse proxy
+  hosts: proxies
+  become: true
+  vars:
+    fail2ban_jails:
+      sshd:
+        enabled: true
+        port: ssh
+      recidive:
+        enabled: true
+        filter: recidive
+        logpath: /var/log/fail2ban.log
+        bantime: 604800
+        findtime: 86400
+        maxretry: 3
+      traefik-auth:
+        enabled: true
+        port: http,https
+        filter: traefik-auth
+        logpath: /var/log/traefik/access.log
+        backend: auto
+  roles:
+    - role: jonimofo.infrastructure.fail2ban
+```
+
+`backend: auto` is required: with the global `systemd` backend the jail ignores `logpath` and never sees the Traefik log.
+
+Only 401 responses that carry a user name count as failures: the anonymous 401 a browser gets before it sends credentials is ignored.
+
 ## Platform Notes
 
-Debian and Ubuntu are supported. The role uses the systemd journal backend by default.
+Debian and Ubuntu are supported. The role uses the systemd journal backend by default: a jail that reads its own log file (nginx, Apache, Traefik) needs `backend: auto`.
 
 ## Security Considerations
 
