@@ -1,4 +1,4 @@
-.PHONY: lint lint-yaml lint-ansible check setup help audit
+.PHONY: lint lint-yaml lint-ansible check test setup help audit
 
 # Virtualenv paths
 VENV := .venv
@@ -38,4 +38,10 @@ check: ## Run ansible-playbook --check (syntax check) on all roles
 			-e "{}" \
 			$$role/tests/test.yml 2>/dev/null || \
 			echo "  No test playbook for $$role_name"; \
+	done
+
+test: ## Run the regression test playbooks (roles/*/tests/test_*.yml) on localhost
+	@set -e; for playbook in roles/*/tests/test_*.yml; do \
+		echo "Running $$playbook"; \
+		$(ANSIBLE_PLAYBOOK) -i localhost, $$playbook; \
 	done

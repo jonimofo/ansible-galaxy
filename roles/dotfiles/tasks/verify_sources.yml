@@ -1,0 +1,27 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+- name: Check dotfiles sources exist in the clone
+  ansible.builtin.stat:
+    path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
+  become: "{{ item.0.user != _dotfiles_connecting_user }}"
+  become_user: "{{ item.0.user if item.0.user != _dotfiles_connecting_user else omit }}"
+  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
+  loop_control:
+    label: "{{ user.user }}:{{ file.src }}"
+  vars:
+    user: "{{ item.0 }}"
+    file: "{{ item.1 }}"
+    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
+  register: dotfiles_src_stat
+
+# An https repo URL can carry user:token@, which must not reach the output.
+- name: Fail on dotfiles missing from the repo
+  ansible.builtin.assert:
+    that: missing | length == 0
+    fail_msg: >-
+      Missing from version '{{ dotfiles_user_configs.version }}' of
+      {{ dotfiles_user_configs.repo | regex_replace('//[^@/]+@', '//') }}: {{ missing | join(', ') }}
+    quiet: true
+  vars:
+    missing: "{{ dotfiles_src_stat.results | rejectattr('stat.exists') | map(attribute='item.1.src') | list }}"
+  when: not ansible_check_mode
