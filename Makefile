@@ -9,6 +9,9 @@ YAMLLINT := $(BIN)/yamllint
 ANSIBLE_LINT := $(BIN)/ansible-lint
 ANSIBLE_PLAYBOOK := $(BIN)/ansible-playbook
 
+# Role directories scanned by `make check`; scripts/test-make-check.sh points it at fixtures
+CHECK_ROLES ?= roles/*/
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -30,18 +33,29 @@ lint-ansible: ## Run ansible-lint on all roles
 audit: ## Run automated audit checks on all roles
 	$(PYTHON) audit/audit.py
 
-check: ## Run ansible-playbook --check (syntax check) on all roles
-	@for role in roles/*/; do \
+check: ## Syntax-check roles/*/tests/test.yml (variables are not evaluated)
+	@failed=""; \
+	for role in $(CHECK_ROLES); do \
 		role_name=$$(basename $$role); \
-		echo "Checking role: $$role_name"; \
-		$(ANSIBLE_PLAYBOOK) --syntax-check \
-			-e "{}" \
-			$$role/tests/test.yml 2>/dev/null || \
+		playbook=$${role}tests/test.yml; \
+		if [ ! -f "$$playbook" ]; then \
 			echo "  No test playbook for $$role_name"; \
-	done
+			continue; \
+		fi; \
+		echo "Checking role: $$role_name"; \
+		if ! $(ANSIBLE_PLAYBOOK) --syntax-check -i localhost, "$$playbook" > /dev/null; then \
+			failed="$$failed $$role_name"; \
+		fi; \
+	done; \
+	if [ -n "$$failed" ]; then \
+		echo "Syntax check failed for:$$failed"; \
+		exit 1; \
+	fi
 
-test: ## Run the regression test playbooks (roles/*/tests/test_*.yml) on localhost
+test: ## Run the regression playbooks (roles/*/tests/test_*.yml) on localhost and the make check test
 	@set -e; for playbook in roles/*/tests/test_*.yml; do \
 		echo "Running $$playbook"; \
 		$(ANSIBLE_PLAYBOOK) -i localhost, $$playbook; \
 	done
+	@echo "Running scripts/test-make-check.sh"
+	@scripts/test-make-check.sh
