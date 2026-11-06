@@ -20,12 +20,14 @@ users_home_mode: "0750"
 # WARNING: Security risk - consider setting to false for production
 users_passwordless_sudo: true
 
-# users_disable_su: Disable su command for sudo group members
-# Recommended: true - forces use of sudo for audit trail
+# users_disable_su: Deny su to sudo group members in sudoers
+# Discourages su, does not prevent it: sudo -i or sudo sh -c still give a root
+# shell. Not a security boundary; keep the sudo group small instead.
 users_disable_su: true
 
 # users_lock_root: Lock the root account (no password login)
-# Recommended: true - prevents direct root login and password changes
+# Recommended: true - prevents direct root login with a password
+# Also denies sudo passwd root, which sudo -i bypasses: discourages only.
 # Root shell still accessible via: sudo -i
 users_lock_root: true
 
