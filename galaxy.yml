@@ -77,7 +77,6 @@ build_ignore:
   - .ansible
   - audit
   - Makefile
-  - TODO.md
   - CLAUDE.md
   - .claude
 
