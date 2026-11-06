@@ -167,8 +167,8 @@ By default, `users_lock_root: true` locks the root account. This:
 
 - Locks the root password in `/etc/shadow`
 - Adds `!/usr/bin/passwd root` to the sudo group rule. Like the `su` deny, this is bypassed by `sudo -i` then `passwd`: it stops a casual unlock, not a sudo member who wants to unlock root
-- Blocks direct root login via console or SSH
-- Root shell still accessible via `sudo -i` (maintains audit trail)
+- Blocks direct root login with a password (console, `su`). SSH root login is blocked by the ssh role (`ssh_permit_root_login`, default `no`), not by this lock: with `UsePAM yes` a locked root still logs in with an authorized key
+- Root shell still accessible via `sudo -i`: sudo logs who opened it, not the commands run inside
 
 **Safety check:** The role will **skip locking root** and print a warning if Ansible is connected as root (`ansible_user: root`), preventing you from locking yourself out. To use this feature:
 
@@ -186,6 +186,22 @@ astrohub-server:
   ansible_user: bgi
   ansible_become: true
 ```
+
+### Becoming Root
+
+With the defaults, a sudo group member gets root with `sudo -i` (login shell, root's environment) or `sudo -s` (keeps your environment). The other usual commands are refused:
+
+| Command | Result | Setting |
+|---------|--------|---------|
+| `sudo -i`, `sudo -s` | Root shell | |
+| `sudo su` | `Sorry, user <name> is not allowed to execute '/usr/bin/su' as root` | `users_disable_su: true` |
+| `su root`, `su -` | `Authentication failure` (root has no valid password) | `users_lock_root: true` |
+| `ssh root@host` | `Permission denied` | ssh role: `ssh_permit_root_login: "no"` |
+| Rescue or emergency boot mode | `sulogin` refuses: the root account is locked | `users_lock_root: true` |
+
+Set `users_disable_su: false` to allow `sudo su`; it grants nothing `sudo -i` does not.
+
+**Lockout:** when no sudo group member can log in (lost key, wrong `AllowUsers`), root is not reachable on the console or in rescue mode either. Recovery then needs the provider's rescue system, or booting with `init=/bin/bash`.
 
 ### Sudoers Result
 
