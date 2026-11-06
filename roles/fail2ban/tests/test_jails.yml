@@ -1,59 +1,97 @@
 #SPDX-License-Identifier: GPL-2.0-or-later
 ---
-# Regression test for the default jails: with the global systemd backend a
-# jail that sets logpath must set its own file backend, or fail2ban ignores the
-# file and the jail never bans (recidive did). Renders jail.local from the role
-# defaults into a temp dir; needs no fail2ban and no network: run with `make test`.
+# Regression test for the fail2ban jails: with the systemd backend a jail that
+# sets logpath must set its own file backend, or fail2ban ignores the file and
+# the jail never bans (recidive did). Checks the role defaults and every yaml
+# example of the README, then renders jail.local from the defaults into a temp
+# dir. Needs no fail2ban and no network: run with `make test`.
 
-- name: Test the fail2ban default jails
+- name: Test the fail2ban jails
   hosts: localhost
   connection: local
   gather_facts: false
   vars:
     test_role_dir: "{{ playbook_dir | dirname }}"
+    test_readme_plays: >-
+      {{ lookup('ansible.builtin.file', test_role_dir + '/README.md')
+         | regex_findall('(?s)```yaml\n(.*?)```')
+         | map('from_yaml') | flatten(levels=1)
+         | selectattr('vars', 'defined') | map(attribute='vars')
+         | selectattr('fail2ban_jails', 'defined') | list }}
   tasks:
     - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ test_role_dir }}/defaults/main.yml"
 
+    - name: Assert the README has fail2ban_jails examples to check
+      ansible.builtin.assert:
+        that: test_readme_plays | length > 0
+        fail_msg: "No yaml example with fail2ban_jails found in the README"
+        quiet: true
+
     - name: Assert every default jail with a logpath sets a file backend
       ansible.builtin.assert:
-        that: >-
-          item.value.logpath is not defined
-          or (item.value.backend | default(fail2ban_backend)) != 'systemd'
+        that: offenders | length == 0
         fail_msg: >-
-          Jail {{ item.key }} reads {{ item.value.logpath | default('') }} but runs on the
-          systemd backend, which ignores logpath: set backend: auto
-        quiet: true
-      loop: "{{ fail2ban_jails | dict2items }}"
-      loop_control:
-        label: "{{ item.key }}"
-
-    - name: Create a temp dir for the rendered jail.local
-      ansible.builtin.tempfile:
-        state: directory
-        suffix: fail2ban-test
-      register: test_tmp
-
-    - name: Render jail.local from the role defaults
-      ansible.builtin.template:
-        src: "{{ test_role_dir }}/templates/jail.local.j2"
-        dest: "{{ test_tmp.path }}/jail.local"
-        mode: "0644"
-
-    - name: Assert the rendered recidive jail reads its log file
-      ansible.builtin.assert:
-        that:
-          - recidive_section is search('logpath\s+= /var/log/fail2ban.log')
-          - recidive_section is search('backend\s+= auto')
-        fail_msg: "Rendered [recidive] section: {{ recidive_section }}"
+          defaults/main.yml: {{ offenders | join(', ') }} set logpath on the systemd
+          backend, which ignores logpath: set backend: auto
         quiet: true
       vars:
-        recidive_section: >-
-          {{ (lookup('ansible.builtin.file', test_tmp.path + '/jail.local')
-              | regex_search('\[recidive\][^\[]*')) | default('', true) }}
+        offenders: >-
+          {{ fail2ban_jails | dict2items
+             | selectattr('value.logpath', 'defined')
+             | selectattr('value.backend', 'undefined')
+             | map(attribute='key') | list
+             if fail2ban_backend == 'systemd' else [] }}
 
-    - name: Remove the temp dir
-      ansible.builtin.file:
-        path: "{{ test_tmp.path }}"
-        state: absent
+    - name: Assert every README example jail with a logpath sets a file backend
+      ansible.builtin.assert:
+        that: offenders | length == 0
+        fail_msg: >-
+          README example {{ example_index + 1 }}: {{ offenders | join(', ') }} set logpath
+          on the systemd backend, which ignores logpath: set backend: auto
+        quiet: true
+      loop: "{{ test_readme_plays }}"
+      loop_control:
+        loop_var: example
+        index_var: example_index
+        label: "README example {{ example_index + 1 }}"
+      vars:
+        offenders: >-
+          {{ example.fail2ban_jails | dict2items
+             | selectattr('value.logpath', 'defined')
+             | selectattr('value.backend', 'undefined')
+             | map(attribute='key') | list
+             if (example.fail2ban_backend | default(fail2ban_backend)) == 'systemd' else [] }}
+
+    - name: Render jail.local from the role defaults
+      block:
+        - name: Create a temp dir for the rendered jail.local
+          ansible.builtin.tempfile:
+            state: directory
+            suffix: fail2ban-test
+          register: test_tmp
+
+        - name: Render jail.local
+          ansible.builtin.template:
+            src: "{{ test_role_dir }}/templates/jail.local.j2"
+            dest: "{{ test_tmp.path }}/jail.local"
+            mode: "0644"
+
+        - name: Assert the rendered recidive jail reads its log file
+          ansible.builtin.assert:
+            that:
+              - recidive_section is search('logpath\s+= /var/log/fail2ban.log')
+              - recidive_section is search('backend\s+= auto')
+            fail_msg: "Rendered [recidive] section: {{ recidive_section }}"
+            quiet: true
+          vars:
+            recidive_section: >-
+              {{ (lookup('ansible.builtin.file', test_tmp.path + '/jail.local')
+                  | regex_search('\[recidive\][^\[]*')) | default('', true) }}
+      always:
+        - name: Remove the temp dir
+          ansible.builtin.file:
+            path: "{{ test_tmp.path }}"
+            state: absent
+          when: test_tmp.path is defined
