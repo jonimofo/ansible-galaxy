@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+### Removed
+
+- `roles/brave_students_profile`: an unsupported browser profile snippet with no tasks, never part of the published API.
+
 ## [2.1.0] - 2026-10-29
 
 ### Added

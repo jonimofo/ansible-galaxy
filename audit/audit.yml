@@ -15,8 +15,7 @@ platforms:
   - Ubuntu
 
 # --- Roles to exclude from audit ---
-exclude_roles:
-  - brave_students_profile
+exclude_roles: []
 
 # --- Variable prefix overrides ---
 # When a role uses prefixes that differ from the role name.
