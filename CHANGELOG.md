@@ -6,7 +6,7 @@ All notable changes to this collection are documented here. The format follows [
 
 ### Fixed
 
-- **fail2ban** (#33): the `recidive` jail banned through `nftables`, outside ufw, whatever `fail2ban_banaction` said: upstream `jail.conf` sets `[recidive] banaction = %(banaction_allports)s` and Debian maps it to `nftables`. New `fail2ban_banaction_allports` (default `ufw`) is rendered in `[DEFAULT]`, so recidive and the other all-ports jails follow it. On the next apply fail2ban restarts and recidive bans appear in `ufw status`.
+- **fail2ban** (#33): the `recidive` jail banned through `nftables`, outside ufw, whatever `fail2ban_banaction` said: upstream `jail.conf` sets `[recidive] banaction = %(banaction_allports)s` and Debian maps it to `nftables`. New `fail2ban_banaction_allports`, rendered in `[DEFAULT]`, defaults to `fail2ban_banaction`, so recidive and the other all-ports jails use the role's ban action (`ufw` by default; a multiport action covers `0:65535`). On the next apply fail2ban restarts and, on ufw hosts, recidive bans appear in `ufw status`.
 
 ## [2.1.2] - 2026-11-06
 

@@ -5,7 +5,7 @@
 # the jail never bans (recidive did). Checks the role defaults and every yaml
 # example of the README, then renders jail.local from the defaults into a temp
 # dir. When fail2ban is installed, also resolves the jails with fail2ban-client
-# -d. Needs no network: run with `make test`.
+# -d for each value of test_banactions. Needs no network: run with `make test`.
 
 - name: Test the fail2ban jails
   hosts: localhost
@@ -21,11 +21,16 @@
          | map('from_yaml') | flatten(levels=1)
          | selectattr('vars', 'defined') | map(attribute='vars')
          | selectattr('fail2ban_jails', 'defined') | list }}
+    # fail2ban_banaction values resolved with fail2ban-client (#33): the default
+    # and the documented iptables one, whose hosts may have no ufw
+    test_banactions:
+      - ufw
+      - iptables-multiport
+  # Play-level vars_files, not include_vars: task vars must be able to override
+  # fail2ban_banaction for the resolution cases
+  vars_files:
+    - ../defaults/main.yml
   tasks:
-    - name: Load the role defaults
-      ansible.builtin.include_vars:
-        file: "{{ test_role_dir }}/defaults/main.yml"
-
     - name: Assert the README has fail2ban_jails examples to check
       ansible.builtin.assert:
         that: test_readme_plays | length > 0
@@ -113,44 +118,69 @@
         - name: Resolve the jails with fail2ban-client, when installed
           when: test_fail2ban_conf.stat.exists
           block:
-            - name: Copy the installed fail2ban config
+            - name: Copy the installed fail2ban config for each ban action
               ansible.builtin.copy:
                 src: "{{ test_fail2ban_conf_dir }}/"
-                dest: "{{ test_tmp.path }}/conf/"
+                dest: "{{ test_tmp.path }}/conf-{{ item }}/"
                 remote_src: true
                 mode: preserve
+              loop: "{{ test_banactions }}"
 
-            - name: Render jail.local into the copied config
+            # Local overrides of the developer's machine would change the result
+            - name: Find the local overrides in the copied configs
+              ansible.builtin.find:
+                paths: "{{ test_banactions | map('regex_replace', '^', test_tmp.path + '/conf-') | list }}"
+                patterns: "*.local"
+                recurse: true
+              register: test_local_overrides
+
+            - name: Remove the local overrides from the copied configs
+              ansible.builtin.file:
+                path: "{{ item.path }}"
+                state: absent
+              loop: "{{ test_local_overrides.files }}"
+              loop_control:
+                label: "{{ item.path | basename }}"
+
+            - name: Render jail.local into each copied config
               ansible.builtin.template:
                 src: "{{ test_role_dir }}/templates/jail.local.j2"
-                dest: "{{ test_tmp.path }}/conf/jail.local"
+                dest: "{{ test_tmp.path }}/conf-{{ item }}/jail.local"
                 mode: "0644"
+              loop: "{{ test_banactions }}"
+              vars:
+                fail2ban_banaction: "{{ item }}"
 
             - name: Dump the configuration fail2ban would load
               ansible.builtin.command:
                 argv:
                   - fail2ban-client
                   - -c
-                  - "{{ test_tmp.path }}/conf"
+                  - "{{ test_tmp.path }}/conf-{{ item }}"
                   - -p
-                  - "{{ test_tmp.path }}/fail2ban.pid"
+                  - "{{ test_tmp.path }}/fail2ban-{{ item }}.pid"
                   - -s
-                  - "{{ test_tmp.path }}/fail2ban.sock"
+                  - "{{ test_tmp.path }}/fail2ban-{{ item }}.sock"
                   - -d
               changed_when: false
-              register: test_fail2ban_dump
+              loop: "{{ test_banactions }}"
+              register: test_fail2ban_dumps
 
-            - name: Assert recidive and sshd ban through the role's actions
+            - name: Assert recidive and sshd ban through fail2ban_banaction
               ansible.builtin.assert:
                 that:
-                  - expected_recidive in test_fail2ban_dump.stdout
-                  - expected_sshd in test_fail2ban_dump.stdout
+                  - expected_recidive in item.stdout
+                  - expected_sshd in item.stdout
                 fail_msg: >-
-                  Resolved actions: {{ test_fail2ban_dump.stdout_lines | select('search', 'addaction') | list }}
+                  fail2ban_banaction={{ item.item }}, resolved actions:
+                  {{ item.stdout_lines | select('search', 'addaction') | list }}
                 quiet: true
+              loop: "{{ test_fail2ban_dumps.results }}"
+              loop_control:
+                label: "fail2ban_banaction={{ item.item }}"
               vars:
-                expected_recidive: "['set', 'recidive', 'addaction', '{{ fail2ban_banaction_allports }}']"
-                expected_sshd: "['set', 'sshd', 'addaction', '{{ fail2ban_banaction }}']"
+                expected_recidive: "['set', 'recidive', 'addaction', '{{ item.item }}']"
+                expected_sshd: "['set', 'sshd', 'addaction', '{{ item.item }}']"
       always:
         - name: Remove the temp dir
           ansible.builtin.file:
