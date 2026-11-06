@@ -184,6 +184,7 @@ Bans clients that fail Traefik basic authentication (HTTP 401). The `traefik-aut
         enabled: true
         filter: recidive
         logpath: /var/log/fail2ban.log
+        backend: auto
         bantime: 604800
         findtime: 86400
         maxretry: 3
