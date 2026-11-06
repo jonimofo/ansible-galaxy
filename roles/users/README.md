@@ -6,7 +6,7 @@ Creates system users and configures sudo privileges on Debian-based systems.
 
 - Create users with configurable shell, groups, and home directory
 - Configurable passwordless sudo (optional)
-- Disable `su` command for sudo group (audit trail)
+- Deny `su` to the sudo group in sudoers (discourages, does not prevent)
 - Support for service accounts (nologin shell, no home)
 - Sudoers validation before applying
 
@@ -36,7 +36,7 @@ All variables are defined in `defaults/main.yml`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `users_passwordless_sudo` | `true` | Enable passwordless sudo for sudo group |
-| `users_disable_su` | `true` | Disable `su` for sudo group members |
+| `users_disable_su` | `true` | Deny `su` to sudo group members in sudoers (bypassable, see Security Considerations) |
 | `users_lock_root` | `true` | Lock root account (no password login) |
 
 ### User List
@@ -157,18 +157,16 @@ By default, `users_passwordless_sudo: true` enables passwordless sudo. This is c
 
 ### Disable `su`
 
-By default, `users_disable_su: true` prevents sudo group members from using `su`. This:
+By default, `users_disable_su: true` adds `!/bin/su, !/usr/bin/su` to the sudo group rule, so `sudo su` is refused.
 
-- Forces use of `sudo` for privilege escalation
-- Maintains audit trail in logs
-- Prevents direct root shell access
+This discourages `su`, it does not prevent it. A sudo group member can still get a root shell with `sudo -i`, `sudo -s` or `sudo sh -c su`: a deny-list in a rule that grants `ALL` is not a security boundary. Every sudo group member is a full root. Protect root by keeping the sudo group small, not with these negations.
 
 ### Lock Root Account
 
 By default, `users_lock_root: true` locks the root account. This:
 
-- Blocks `sudo passwd root` via sudoers (prevents unlocking)
 - Locks the root password in `/etc/shadow`
+- Adds `!/usr/bin/passwd root` to the sudo group rule. Like the `su` deny, this is bypassed by `sudo -i` then `passwd`: it stops a casual unlock, not a sudo member who wants to unlock root
 - Blocks direct root login via console or SSH
 - Root shell still accessible via `sudo -i` (maintains audit trail)
 
@@ -204,8 +202,8 @@ With `users_passwordless_sudo: false`:
 ### Recommendations
 
 1. **Production servers:** Set `users_passwordless_sudo: false`
-2. **Keep `users_disable_su: true`** - Maintains audit trail
-3. **Keep `users_lock_root: true`** - Prevents root password attacks
+2. **Keep `users_lock_root: true`** - Prevents root password attacks
+3. **`users_disable_su: true`** steers admins to `sudo`; it is not a protection
 4. **Use service accounts** for applications (nologin shell)
 5. **Limit sudo group** - Only add users who need it
 
@@ -216,7 +214,7 @@ With `users_passwordless_sudo: false`:
 3. Creates users from `users_list` and enforces `users_home_mode` on their homes
 4. Configures sudo group in `/etc/sudoers`:
    - Passwordless sudo (optional)
-   - Disable `su` command (optional)
+   - Deny `su` and `passwd root` (optional, discourages only)
 5. Validates sudoers before applying
 6. Removes sudoers.d override files (Pi OS images, cloud-init)
 7. Removes users listed in `users_absent`

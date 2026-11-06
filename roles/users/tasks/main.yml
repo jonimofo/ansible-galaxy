@@ -86,9 +86,10 @@
     validate: "visudo -cf %s"
   vars:
     _sudo_nopasswd: "{{ users_passwordless_sudo | ternary('NOPASSWD: ', '') }}"
-    # Block both /bin/su and /usr/bin/su (location varies by distro)
+    # Deny both /bin/su and /usr/bin/su (location varies by distro). A sudoers
+    # deny-list is bypassed by sudo -i or sudo sh -c: it discourages, not prevents.
     _sudo_deny_su: "{{ users_disable_su | ternary(', !/bin/su, !/usr/bin/su', '') }}"
-    # Block sudo passwd root to prevent unlocking root account
+    # Deny sudo passwd root, bypassed the same way: it stops a casual unlock only
     _sudo_deny_passwd_root: "{{ users_lock_root | ternary(', !/usr/bin/passwd root', '') }}"
     _sudo_line: "%sudo ALL=(ALL) {{ _sudo_nopasswd }}ALL{{ _sudo_deny_su }}{{ _sudo_deny_passwd_root }}"
 

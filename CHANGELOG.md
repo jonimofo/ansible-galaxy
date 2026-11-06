@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+### Fixed
+
+- **users** (docs, #5): the task comments, defaults and README no longer claim that the `!/bin/su` and `!/usr/bin/passwd root` sudoers negations prevent a root shell or a root unlock. `sudo -i` and `sudo sh -c` bypass them; they only discourage. The sudoers line is unchanged.
+
 ## [2.1.1] - 2026-11-06
 
 ### Removed
