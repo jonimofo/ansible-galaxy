@@ -23,6 +23,8 @@ backend = {{ fail2ban_backend }}
 
 # Ban action
 banaction = {{ fail2ban_banaction }}
+# Jails banning on every port (recidive)
+banaction_allports = {{ fail2ban_banaction_allports }}
 
 # Jails
 {% for name, cfg in fail2ban_jails.items() %}

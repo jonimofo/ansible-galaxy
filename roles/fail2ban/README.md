@@ -43,6 +43,7 @@ All variables are defined in `defaults/main.yml`:
 | `fail2ban_allowipv6` | `false` | Enable IPv6 support |
 | `fail2ban_ignoreip` | `['127.0.0.1/8', '::1']` | IPs/networks to never ban |
 | `fail2ban_banaction` | `ufw` | Ban action (`ufw`, `iptables-multiport`); `ufw` expects the ufw role or an enabled ufw |
+| `fail2ban_banaction_allports` | `fail2ban_banaction` | Ban action of the jails that ban on every port, such as recidive. Follows `fail2ban_banaction`: `ufw` rejects every port and a multiport action covers `0:65535`. Without it these jails use the distro default, `nftables` on Debian |
 
 ### Package Settings
 
