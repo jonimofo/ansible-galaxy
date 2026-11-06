@@ -52,6 +52,13 @@ fail2ban_ignoreip:
 # Using 'ufw' since this collection uses UFW for firewall management
 fail2ban_banaction: ufw
 
+# fail2ban_banaction_allports: Action for jails that ban on every port: recidive
+# and the upstream jails set to %(banaction_allports)s. Without it they use the
+# distro default (nftables on Debian), outside the role's firewall. Follows
+# fail2ban_banaction: ufw rejects every port, and a multiport action covers
+# 0:65535, the upstream default port of recidive
+fail2ban_banaction_allports: "{{ fail2ban_banaction }}"
+
 # --- Jails Configuration ---
 
 # fail2ban_jails: Dictionary of jails to configure
