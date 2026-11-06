@@ -6,6 +6,7 @@ All notable changes to this collection are documented here. The format follows [
 
 ### Fixed
 
+- **make check** (#7): a syntax error in a role's `tests/test.yml` now fails the target and names the role. It was printed as "No test playbook" with exit 0. The README and CLAUDE.md state that the check is syntax-only; role logic is tested by `make test`.
 - **users** (docs, #5): the task comments, defaults and README no longer claim that the `!/bin/su` and `!/usr/bin/passwd root` sudoers negations prevent a root shell or a root unlock. `sudo -i` and `sudo sh -c` bypass them; they only discourage. The sudoers line is unchanged. The README also no longer claims that the root lock blocks SSH login (that is `ssh_permit_root_login` in the ssh role) or that `sudo -i` keeps a command audit trail. New README section "Becoming Root": which commands give a root shell (`sudo -i`, `sudo -s`) and which are refused, with the setting responsible.
 
 ## [2.1.1] - 2026-11-06

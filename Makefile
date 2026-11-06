@@ -30,15 +30,24 @@ lint-ansible: ## Run ansible-lint on all roles
 audit: ## Run automated audit checks on all roles
 	$(PYTHON) audit/audit.py
 
-check: ## Run ansible-playbook --check (syntax check) on all roles
-	@for role in roles/*/; do \
+check: ## Syntax-check roles/*/tests/test.yml (variables are not evaluated)
+	@failed=""; \
+	for role in roles/*/; do \
 		role_name=$$(basename $$role); \
-		echo "Checking role: $$role_name"; \
-		$(ANSIBLE_PLAYBOOK) --syntax-check \
-			-e "{}" \
-			$$role/tests/test.yml 2>/dev/null || \
+		playbook=$${role}tests/test.yml; \
+		if [ ! -f "$$playbook" ]; then \
 			echo "  No test playbook for $$role_name"; \
-	done
+			continue; \
+		fi; \
+		echo "Checking role: $$role_name"; \
+		if ! $(ANSIBLE_PLAYBOOK) --syntax-check -i localhost, "$$playbook" > /dev/null; then \
+			failed="$$failed $$role_name"; \
+		fi; \
+	done; \
+	if [ -n "$$failed" ]; then \
+		echo "Syntax check failed for:$$failed"; \
+		exit 1; \
+	fi
 
 test: ## Run the regression test playbooks (roles/*/tests/test_*.yml) on localhost
 	@set -e; for playbook in roles/*/tests/test_*.yml; do \
