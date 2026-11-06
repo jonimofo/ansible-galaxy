@@ -6,6 +6,7 @@ All notable changes to this collection are documented here. The format follows [
 
 ### Fixed
 
+- **fail2ban** (security): the default `recidive` jail never banned. It ran on the role's global `systemd` backend, which ignores `logpath` and read the journal, while fail2ban writes its bans to `/var/log/fail2ban.log`. It now sets `backend: auto` and reads that file; the README examples do too. After the upgrade fail2ban restarts and recidive reads the existing log, so an IP banned 3 times within the last day is banned for a week. New regression test `roles/fail2ban/tests/test_jails.yml`.
 - **make check** (#7): a syntax error in a role's `tests/test.yml` now fails the target and names the role. It was printed as "No test playbook" with exit 0. The README and CLAUDE.md state that the check is syntax-only; role logic is tested by `make test`, which also runs the new `scripts/test-make-check.sh` regression test for this target.
 - **users** (docs, #5): the task comments, defaults and README no longer claim that the `!/bin/su` and `!/usr/bin/passwd root` sudoers negations prevent a root shell or a root unlock. `sudo -i` and `sudo sh -c` bypass them; they only discourage. The sudoers line is unchanged. The README also no longer claims that the root lock blocks SSH login (that is `ssh_permit_root_login` in the ssh role) or that `sudo -i` keeps a command audit trail. New README section "Becoming Root": which commands give a root shell (`sudo -i`, `sudo -s`) and which are refused, with the setting responsible.
 

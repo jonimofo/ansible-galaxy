@@ -125,6 +125,7 @@ None.
         enabled: true
         filter: recidive
         logpath: /var/log/fail2ban.log
+        backend: auto
         bantime: 604800
         findtime: 86400
         maxretry: 3
@@ -150,6 +151,7 @@ None.
         enabled: true
         filter: recidive
         logpath: /var/log/fail2ban.log
+        backend: auto
         bantime: 604800
         findtime: 86400
         maxretry: 3

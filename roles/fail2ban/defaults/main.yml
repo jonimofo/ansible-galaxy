@@ -62,10 +62,13 @@ fail2ban_jails:
     port: "{{ ssh_port | default('ssh') }}"  # follows the ssh role when set
     filter: sshd
   # Recidive jail - bans repeat offenders for longer
+  # fail2ban logs its bans to /var/log/fail2ban.log, not to the journal, so this
+  # jail reads the file: backend auto, since the global systemd backend ignores logpath
   recidive:
     enabled: true
     filter: recidive
     logpath: /var/log/fail2ban.log
+    backend: auto
     bantime: 604800    # 1 week
     findtime: 86400    # 1 day
     maxretry: 3        # 3 bans = recidive

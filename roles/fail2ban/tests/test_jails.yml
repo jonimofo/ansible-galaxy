@@ -1,0 +1,59 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Regression test for the default jails: with the global systemd backend a
+# jail that sets logpath must set its own file backend, or fail2ban ignores the
+# file and the jail never bans (recidive did). Renders jail.local from the role
+# defaults into a temp dir; needs no fail2ban and no network: run with `make test`.
+
+- name: Test the fail2ban default jails
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    test_role_dir: "{{ playbook_dir | dirname }}"
+  tasks:
+    - name: Load the role defaults
+      ansible.builtin.include_vars:
+        file: "{{ test_role_dir }}/defaults/main.yml"
+
+    - name: Assert every default jail with a logpath sets a file backend
+      ansible.builtin.assert:
+        that: >-
+          item.value.logpath is not defined
+          or (item.value.backend | default(fail2ban_backend)) != 'systemd'
+        fail_msg: >-
+          Jail {{ item.key }} reads {{ item.value.logpath | default('') }} but runs on the
+          systemd backend, which ignores logpath: set backend: auto
+        quiet: true
+      loop: "{{ fail2ban_jails | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Create a temp dir for the rendered jail.local
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: fail2ban-test
+      register: test_tmp
+
+    - name: Render jail.local from the role defaults
+      ansible.builtin.template:
+        src: "{{ test_role_dir }}/templates/jail.local.j2"
+        dest: "{{ test_tmp.path }}/jail.local"
+        mode: "0644"
+
+    - name: Assert the rendered recidive jail reads its log file
+      ansible.builtin.assert:
+        that:
+          - recidive_section is search('logpath\s+= /var/log/fail2ban.log')
+          - recidive_section is search('backend\s+= auto')
+        fail_msg: "Rendered [recidive] section: {{ recidive_section }}"
+        quiet: true
+      vars:
+        recidive_section: >-
+          {{ (lookup('ansible.builtin.file', test_tmp.path + '/jail.local')
+              | regex_search('\[recidive\][^\[]*')) | default('', true) }}
+
+    - name: Remove the temp dir
+      ansible.builtin.file:
+        path: "{{ test_tmp.path }}"
+        state: absent
