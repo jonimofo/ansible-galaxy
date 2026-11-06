@@ -9,6 +9,9 @@ YAMLLINT := $(BIN)/yamllint
 ANSIBLE_LINT := $(BIN)/ansible-lint
 ANSIBLE_PLAYBOOK := $(BIN)/ansible-playbook
 
+# Role directories scanned by `make check`; scripts/test-make-check.sh points it at fixtures
+CHECK_ROLES ?= roles/*/
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -32,7 +35,7 @@ audit: ## Run automated audit checks on all roles
 
 check: ## Syntax-check roles/*/tests/test.yml (variables are not evaluated)
 	@failed=""; \
-	for role in roles/*/; do \
+	for role in $(CHECK_ROLES); do \
 		role_name=$$(basename $$role); \
 		playbook=$${role}tests/test.yml; \
 		if [ ! -f "$$playbook" ]; then \
@@ -49,8 +52,10 @@ check: ## Syntax-check roles/*/tests/test.yml (variables are not evaluated)
 		exit 1; \
 	fi
 
-test: ## Run the regression test playbooks (roles/*/tests/test_*.yml) on localhost
+test: ## Run the regression playbooks (roles/*/tests/test_*.yml) on localhost and the make check test
 	@set -e; for playbook in roles/*/tests/test_*.yml; do \
 		echo "Running $$playbook"; \
 		$(ANSIBLE_PLAYBOOK) -i localhost, $$playbook; \
 	done
+	@echo "Running scripts/test-make-check.sh"
+	@scripts/test-make-check.sh
