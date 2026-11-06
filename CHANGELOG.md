@@ -10,7 +10,7 @@ All notable changes to this collection are documented here. The format follows [
 
 ### Fixed
 
-- **dotfiles** (security, #6): the SSH access check passes the repo host to `ssh` as an argument list after `--`, and fails unless the host part of the repo URL is a plain `user@host`, so an ssh option in `dotfiles_user_configs.repo` is never run. The missing-sources error no longer prints `user:token@` from an https repo URL.
+- **dotfiles** (security, #6): the SSH access check passes the repo host to `ssh` as an argument list after `--`, and fails unless the host part of an scp-like repo URL (`user@host:path`) is a plain `user@host`, so an ssh option in `dotfiles_user_configs.repo` is never run. An `ssh://` URL with a port is no longer checked against port 22. The missing-sources error no longer prints `user:token@` from an https repo URL.
 
 ## [2.1.0] - 2026-10-29
 

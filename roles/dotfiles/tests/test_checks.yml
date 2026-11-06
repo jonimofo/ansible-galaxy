@@ -3,12 +3,17 @@
 # Regression tests for the dotfiles pre-clone checks (#6). Runs on localhost,
 # needs no network and no SSH agent: run with `make test`.
 
-- name: Reject an ssh option smuggled into the repo URL
+- name: Test the dotfiles pre-clone checks
   hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    # No agent socket, so a URL that passes the host check stops at the agent check
+    test_agent_sock: /nonexistent/agent.sock
+    test_home: /nonexistent/dotfiles-test
+    test_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
   tasks:
-    - name: Run the SSH checks on a repo URL carrying an ssh option
+    - name: Reject an ssh option smuggled into the repo URL
       block:
         - name: Include the SSH checks
           ansible.builtin.include_role:
@@ -16,7 +21,7 @@
             tasks_from: verify_ssh.yml
             apply:
               environment:
-                SSH_AUTH_SOCK: /nonexistent/agent.sock
+                SSH_AUTH_SOCK: "{{ test_agent_sock }}"
           vars:
             dotfiles_user_configs:
               repo: "-oProxyCommand=touch@example.com:me/dotfiles.git"
@@ -30,13 +35,7 @@
             that: ansible_failed_task.name == 'Verify the dotfiles remote host is a plain user@host'
             fail_msg: "Failed on '{{ ansible_failed_task.name }}' instead of the host check"
 
-- name: Accept a plain user@host repo URL
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  tasks:
-    # No agent socket, so the run stops at the agent check, after the host check
-    - name: Run the SSH checks on a plain repo URL without an agent
+    - name: Accept a plain user@host repo URL
       block:
         - name: Include the SSH checks
           ansible.builtin.include_role:
@@ -44,7 +43,7 @@
             tasks_from: verify_ssh.yml
             apply:
               environment:
-                SSH_AUTH_SOCK: /nonexistent/agent.sock
+                SSH_AUTH_SOCK: "{{ test_agent_sock }}"
           vars:
             dotfiles_user_configs:
               repo: "git@github.com:example/dotfiles.git"
@@ -60,15 +59,47 @@
               - ansible_failed_task.name == 'Verify SSH agent forwarding is working'
             fail_msg: "Failed on '{{ ansible_failed_task.name }}' instead of the agent check"
 
-- name: Strip credentials from the missing-sources message
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  vars:
-    test_home: /nonexistent/dotfiles-test
-    test_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
-  tasks:
-    - name: Run the source checks on an https repo URL with a token
+    - name: Accept an ssh config alias with an underscore
+      block:
+        - name: Include the SSH checks
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: verify_ssh.yml
+            apply:
+              environment:
+                SSH_AUTH_SOCK: "{{ test_agent_sock }}"
+          vars:
+            dotfiles_user_configs:
+              repo: "git@github_work:example/dotfiles.git"
+
+        - name: Fail when the agent check passed without an agent
+          ansible.builtin.fail:
+            msg: "ssh-add -l succeeded without an agent socket"
+      rescue:
+        - name: Assert the run passed the host check
+          ansible.builtin.assert:
+            that:
+              - _dotfiles_remote_host == 'git@github_work'
+              - ansible_failed_task.name == 'Verify SSH agent forwarding is working'
+            fail_msg: "Failed on '{{ ansible_failed_task.name }}' instead of the agent check"
+
+    - name: Include the SSH checks for an ssh:// repo URL with a port
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir | dirname }}"
+        tasks_from: verify_ssh.yml
+        apply:
+          environment:
+            SSH_AUTH_SOCK: "{{ test_agent_sock }}"
+      vars:
+        dotfiles_user_configs:
+          repo: "ssh://git@git.example.com:2222/example/dotfiles.git"
+
+    - name: Assert the SSH checks were skipped for the ssh:// URL
+      ansible.builtin.assert:
+        that: dotfiles_ssh_agent_check is skipped
+        fail_msg: "The SSH checks ran on an ssh:// URL"
+
+    - name: Strip credentials from the missing-sources message
       block:
         - name: Include the source checks
           ansible.builtin.include_role:

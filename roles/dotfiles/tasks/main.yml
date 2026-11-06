@@ -23,7 +23,6 @@
   when:
     - dotfiles_verify_ssh_access | bool
     - dotfiles_user_configs.users | length > 0
-    - dotfiles_user_configs.repo is match('^[^@]+@[^:]+:')
 
 - name: Look for an existing dotfiles clone for {{ item.user }}
   ansible.builtin.stat:
