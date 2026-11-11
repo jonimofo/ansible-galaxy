@@ -159,11 +159,10 @@
 
 # Lockout guard 2: an open port is not a working login. Drop the persistent
 # connection and open a fresh session with the new sshd configuration.
+# meta: reset_connection ignores when (Ansible warns), so it always runs; it is
+# a no-op on a local connection and only costs one reconnect otherwise.
 - name: Reset the SSH connection to test the new configuration
   ansible.builtin.meta: reset_connection
-  when:
-    - ssh_verify_port | bool
-    - ansible_connection | default('ssh') != 'local'
 
 - name: Verify a new SSH session can be opened
   ansible.builtin.ping:

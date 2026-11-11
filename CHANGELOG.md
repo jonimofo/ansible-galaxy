@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+### Fixed
+
+- **ssh**: removed the `when` from `meta: reset_connection`. Ansible ignores it and printed `reset_connection task does not support when conditional` on every run; the connection was already reset every time, so behavior is unchanged.
+
 ## [2.1.3] - 2026-11-06
 
 ### Fixed
