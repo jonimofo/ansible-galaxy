@@ -4,6 +4,10 @@ All notable changes to this collection are documented here. The format follows [
 
 ## [Unreleased]
 
+### Changed
+
+- **audit** (docs, #3): the three `audit/*.md` reports carry a header marking them as dated 1.x snapshots (2026-03-26) and pointing to `make audit`, `docs/MIGRATION-2.0.md` and the changelog.
+
 ### Fixed
 
 - **ssh**: removed the `when` from `meta: reset_connection`. Ansible ignores it and printed `reset_connection task does not support when conditional` on every run; the connection was already reset every time, so behavior is unchanged.
