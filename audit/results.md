@@ -1,7 +1,7 @@
 # Audit Results
 
 > **Dated snapshot (collection 1.x, 2026-03-26), kept as a record.** It predates 2.0 and still mentions
-> `min_ansible_version` 2.12, bullseye/focal, the `apt_update_` prefix and the `fasd` role. Current checks run
+> the removed `fasd` role. Current checks run
 > with `make audit` (`audit/audit.py`); breaking changes since are in `docs/MIGRATION-2.0.md` and `CHANGELOG.md`.
 
 Audit date: 2026-03-26
