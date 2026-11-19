@@ -2,6 +2,19 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+To be released as 3.0.0: the dotfiles change below is breaking. See `docs/MIGRATION-3.0.md`.
+
+### Changed
+
+- **dotfiles** (BREAKING): the role no longer keeps a clone in the home and no longer creates symlinks. Each run the host fetches only the listed sources from `dotfiles_user_configs.repo` at `version` (temporary sparse checkout, one commit deep, blob filter, through the forwarded agent as before), copies them to their `dest` as regular files owned by the user with the executable bit of the source, and deletes the checkout, also when a step fails. A symlink at `dest` is removed first and its target is not written. A file edited by hand on the host is overwritten on the next run. `clone_dir` now only names a pre-3.0 clone to clean up: deleted when it is a clean clone of `repo`, kept with a warning when it has uncommitted changes, ignored files, stashes or unpushed commits (on a local branch or a detached HEAD, held by no remote-tracking ref), or a git error while checking, any other folder left alone; the home itself is never deleted. Links into the removed clone are reported, not deleted. `clone_dir`, `src`, `dest` and `home` are validated before any fetch (relative, no `..`; `home` absolute). A user without `files` is skipped. In check mode the fetch runs for real in the temporary directory, so `--check --diff` shows the per-file diffs and fails on a missing source. Needs git 2.24+ on the host. New regression test `roles/dotfiles/tests/test_files_only.yml`.
+
+### Fixed
+
+- **lazydocker**, **astronvim**: `--check` on a host that needs an install or an upgrade no longer aborts on `Source ... does not exist` at the extract step: the download is only simulated in check mode, so the extract is skipped there and the download still reports the change. lazydocker also skips its permissions task in check mode when the binary is not installed yet. fzf has no download and extract step and is unchanged. New regression tests `roles/{lazydocker,astronvim}/tests/test_check_mode.yml`.
+- **host**: `/etc/hosts` ends with exactly one `127.0.1.1` line, the role's own. `lineinfile` only rewrote the last match, so duplicated hostname lines and a provider line (`127.0.1.1 srv1461727.hstgr.cloud srv1461727`) stayed. The other `127.0.1.1` lines are now removed first; the match is `127.0.1.1` followed by a space or a tab. New regression test `roles/host/tests/test_etc_hosts.yml`.
+
 ## [2.1.4] - 2026-11-11
 
 ### Changed

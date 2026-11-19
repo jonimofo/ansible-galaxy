@@ -1,0 +1,90 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Before 3.0 the role kept a clone at <home>/<clone_dir> and symlinked into it.
+# Once the files are copied, that clone is deleted only when it is a clone of
+# the configured repo and git reports nothing that would be lost: no
+# uncommitted change, no ignored file, no stash, no unpushed commit. Anything
+# else (or a git error while checking) keeps it with a warning. Any other
+# folder at that path is left alone.
+
+- name: Set the pre-3.0 dotfiles clone path of {{ _dotfiles_user.user }}
+  ansible.builtin.set_fact:
+    _dotfiles_old_clone: "{{ (_dotfiles_home + '/' + dotfiles_user_configs.clone_dir) | normpath }}"
+
+- name: Look for a pre-3.0 dotfiles clone of {{ _dotfiles_user.user }}
+  ansible.builtin.stat:
+    path: "{{ _dotfiles_old_clone }}/.git"
+    get_checksum: false
+  become: "{{ _dotfiles_become }}"
+  become_user: "{{ _dotfiles_user.user if _dotfiles_become else omit }}"
+  register: _dotfiles_old_clone_git
+
+- name: Inspect the pre-3.0 dotfiles clone of {{ _dotfiles_user.user }}
+  when: _dotfiles_old_clone_git.stat.exists
+  become: "{{ _dotfiles_become }}"
+  become_user: "{{ _dotfiles_user.user if _dotfiles_become else omit }}"
+  block:
+    - name: Read the origin of the pre-3.0 dotfiles clone
+      ansible.builtin.command:
+        argv: [git, -C, "{{ _dotfiles_old_clone }}", config, --get, remote.origin.url]
+      register: _dotfiles_old_clone_origin
+      check_mode: false
+      changed_when: false
+      failed_when: false
+
+    # The checks never fail the play: a non-zero rc keeps the clone.
+    # status --ignored lists ignored files too; rev-list lists commits on a
+    # local branch or a detached HEAD that no remote-tracking ref contains
+    # (shallow or full clone, with or without an upstream); rev-parse finds a
+    # stash.
+    - name: Check what the pre-3.0 dotfiles clone holds
+      ansible.builtin.command:
+        argv: "{{ item }}"
+      loop:
+        - [git, -C, "{{ _dotfiles_old_clone }}", status, --porcelain, --ignored]
+        - [git, -C, "{{ _dotfiles_old_clone }}", rev-list, --max-count=1, HEAD, --branches, --not, --remotes]
+        - [git, -C, "{{ _dotfiles_old_clone }}", rev-parse, -q, --verify, refs/stash]
+      loop_control:
+        label: "{{ item[3] }}"
+      register: _dotfiles_old_clone_checks
+      check_mode: false
+      changed_when: false
+      failed_when: false
+      when: _dotfiles_old_clone_origin.stdout == dotfiles_user_configs.repo
+
+    - name: Decide whether the pre-3.0 dotfiles clone can be removed
+      ansible.builtin.set_fact:
+        _dotfiles_old_clone_safe: >-
+          {{ _r[0].rc == 0 and _r[0].stdout == ''
+             and _r[1].rc == 0 and _r[1].stdout == ''
+             and _r[2].rc == 1 }}
+      vars:
+        _r: "{{ _dotfiles_old_clone_checks.results }}"
+      when: _dotfiles_old_clone_checks is not skipped
+
+    - name: Remove the clean pre-3.0 dotfiles clone
+      ansible.builtin.file:
+        path: "{{ _dotfiles_old_clone }}"
+        state: absent
+      register: _dotfiles_old_clone_removed
+      when:
+        - _dotfiles_old_clone_checks is not skipped
+        - _dotfiles_old_clone_safe | bool
+        # Never the home itself, whatever clone_dir says
+        - _dotfiles_old_clone != (_dotfiles_home | normpath)
+
+    - name: Warn about the kept pre-3.0 dotfiles clone
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ _dotfiles_old_clone }} was kept because it has uncommitted
+          changes, ignored files, stashes or unpushed commits, or git could not
+          inspect it; save what you need, then delete it or let the next run do it.
+      when:
+        - _dotfiles_old_clone_checks is not skipped
+        - not (_dotfiles_old_clone_safe | bool)
+
+    - name: Include the dangling link report
+      ansible.builtin.include_tasks: old_clone_links.yml
+      when:
+        - _dotfiles_old_clone_removed is changed
+        - not ansible_check_mode

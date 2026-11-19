@@ -4,7 +4,7 @@ Sets the hostname, keeps `/etc/hosts` and `/tmp` sane, and optionally manages DN
 
 ## Features
 
-- Sets the system hostname and the `127.0.1.1` line of `/etc/hosts`
+- Sets the system hostname and the `127.0.1.1` line of `/etc/hosts`; other `127.0.1.1` lines (duplicates, a provider line) are removed
 - Enforces `1777` on `/tmp` (SSH agent forwarding sockets live there)
 - Primary DNS servers per interface via a netplan override, when netplan is installed
 - Backup and fallback DNS servers via a systemd-resolved drop-in, when systemd-resolved is installed
@@ -77,7 +77,7 @@ None.
 
 1. Verifies Debian-based system and that `host_hostname` is set
 2. Enforces `1777` on `/tmp`
-3. Sets the hostname and the `127.0.1.1` line in `/etc/hosts`
+3. Sets the hostname and the `127.0.1.1` line in `/etc/hosts`, which keeps exactly one `127.0.1.1` line
 4. Detects netplan and systemd-resolved
 5. (netplan present, `host_dns_servers` set) strips legacy `nameservers`, writes the override, validates and applies netplan
 6. (systemd-resolved present) writes the backup/fallback drop-in and restarts systemd-resolved

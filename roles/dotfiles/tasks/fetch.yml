@@ -1,0 +1,63 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# One commit deep, only the listed sources: a sparse checkout limits the work
+# tree to them and the blob filter downloads only their contents (a server
+# without filter support sends every blob of that commit, same end state).
+# Plain git through argv, no shell: ansible.builtin.git has no sparse option.
+# Needs git 2.24+ (--end-of-options).
+
+- name: Set the dotfiles checkout facts
+  ansible.builtin.set_fact:
+    _dotfiles_checkout: "{{ _dotfiles_tmp.path }}"
+    # Non-cone sparse patterns, anchored, glob characters escaped
+    _dotfiles_sparse_patterns: >-
+      {{ _dotfiles_user.files | map(attribute='src')
+         | map('regex_replace', '([\\\\*?\[\]!#])', '\\\\\1')
+         | map('regex_replace', '^/*', '/') | unique | list }}
+
+- name: Prepare the temporary checkout
+  ansible.builtin.command:
+    argv: "{{ item }}"
+  loop:
+    - [git, init, -q, "{{ _dotfiles_checkout }}"]
+    - [git, -C, "{{ _dotfiles_checkout }}", remote, add, --, origin, "{{ dotfiles_user_configs.repo }}"]
+    - [git, -C, "{{ _dotfiles_checkout }}", config, core.sparseCheckout, "true"]
+    - [git, -C, "{{ _dotfiles_checkout }}", config, remote.origin.promisor, "true"]
+    - [git, -C, "{{ _dotfiles_checkout }}", config, remote.origin.partialclonefilter, "blob:none"]
+  loop_control:
+    label: "{{ item[3:5] | join(' ') }}"
+  check_mode: false
+  changed_when: false
+
+- name: Create the sparse checkout info directory
+  ansible.builtin.file:
+    path: "{{ _dotfiles_checkout }}/.git/info"
+    state: directory
+    mode: "0700"
+  check_mode: false
+  changed_when: false
+
+- name: Limit the checkout to the listed sources
+  ansible.builtin.copy:
+    content: "{{ _dotfiles_sparse_patterns | join('\n') }}\n"
+    dest: "{{ _dotfiles_checkout }}/.git/info/sparse-checkout"
+    mode: "0600"
+  check_mode: false
+  changed_when: false
+
+# Same host key policy as ansible.builtin.git accept_newhostkey; no prompt
+# hangs the run when an https remote asks for credentials.
+- name: Fetch and check out the dotfiles version
+  ansible.builtin.command:
+    argv: "{{ item }}"
+  loop:
+    - [git, -C, "{{ _dotfiles_checkout }}", fetch, -q, --depth, "1", --filter=blob:none,
+       --end-of-options, origin, "{{ dotfiles_user_configs.version }}"]
+    - [git, -C, "{{ _dotfiles_checkout }}", -c, advice.detachedHead=false, checkout, -q, FETCH_HEAD]
+  loop_control:
+    label: "{{ item | select('in', ['fetch', 'checkout']) | first }}"
+  environment:
+    GIT_SSH_COMMAND: ssh -o StrictHostKeyChecking=accept-new
+    GIT_TERMINAL_PROMPT: "0"
+  check_mode: false
+  changed_when: false

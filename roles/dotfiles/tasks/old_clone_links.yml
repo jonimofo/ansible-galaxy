@@ -1,0 +1,38 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# 2.x links of files that are no longer listed still point into the removed
+# clone. Report them, never delete them. Bounded search: the home top level and
+# the parent directories of the listed dest values, depth 1.
+
+- name: Find symlinks next to the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.find:
+    paths: >-
+      {{ ([_dotfiles_home] + _dotfiles_user.files | map(attribute='dest')
+          | map('regex_replace', '^', _dotfiles_home + '/') | map('dirname') | list)
+         | map('normpath') | unique | list }}
+    file_type: link
+    hidden: true
+    recurse: false
+  register: _dotfiles_old_links
+
+- name: Read the targets of the symlinks next to the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+    get_checksum: false
+  loop: "{{ _dotfiles_old_links.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: _dotfiles_old_link_stats
+
+- name: Warn about symlinks into the removed pre-3.0 dotfiles clone
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: these links point into the removed {{ _dotfiles_old_clone }} and
+      no longer resolve, remove them by hand: {{ dangling | join(', ') }}
+  vars:
+    dangling: >-
+      {{ _dotfiles_old_link_stats.results | map(attribute='stat')
+         | selectattr('lnk_source', 'match', (_dotfiles_old_clone + '/') | regex_escape)
+         | map(attribute='path') | list }}
+  when: dangling | length > 0

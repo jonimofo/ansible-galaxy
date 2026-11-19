@@ -103,3 +103,6 @@ ignore:
   - check: G2
     role: users
     reason: "README documents users_list sub-keys intentionally"
+  - check: D4
+    role: dotfiles
+    reason: "The kept pre-3.0 clone warning must print at default verbosity"
