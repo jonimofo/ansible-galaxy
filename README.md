@@ -16,7 +16,7 @@ Supported: Debian bookworm/trixie, Ubuntu jammy/noble/resolute, x86_64 and aarch
 | `timezone` | System timezone |
 | `locale` | Locales and `/etc/default/locale` |
 | `packages` | APT packages, nightly security updates, `needrestart` |
-| `dotfiles` | Dotfiles repo clone and symlinks per user, optional tmux + TPM |
+| `dotfiles` | Listed files from a dotfiles repo, copied per user (no clone left), optional tmux + TPM |
 | `fzf` | fzf from source with shell integration |
 | `lazydocker` | lazydocker binary |
 | `astronvim` | Neovim and AstroNvim per user |

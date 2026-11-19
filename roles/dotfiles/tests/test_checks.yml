@@ -1,9 +1,9 @@
 #SPDX-License-Identifier: GPL-2.0-or-later
 ---
-# Regression tests for the dotfiles pre-clone checks (#6). Runs on localhost,
+# Regression tests for the dotfiles pre-fetch checks (#6). Runs on localhost,
 # needs no network and no SSH agent: run with `make test`.
 
-- name: Test the dotfiles pre-clone checks
+- name: Test the dotfiles pre-fetch checks
   hosts: localhost
   connection: local
   gather_facts: false
@@ -106,17 +106,16 @@
             name: "{{ playbook_dir | dirname }}"
             tasks_from: verify_sources.yml
           vars:
-            _dotfiles_connecting_user: "{{ test_user }}"
+            _dotfiles_tmp:
+              path: "{{ test_home }}"
+            _dotfiles_user:
+              user: "{{ test_user }}"
+              files:
+                - src: bashrc
+                  dest: .bashrc
             dotfiles_user_configs:
               repo: "https://deploy:s3cr3t-token@git.example.com/me/dotfiles.git"
               version: main
-              clone_dir: dotfiles
-              users:
-                - user: "{{ test_user }}"
-                  home: "{{ test_home }}"
-                  files:
-                    - src: bashrc
-                      dest: .bashrc
 
         - name: Fail when the source checks passed with a missing source
           ansible.builtin.fail:

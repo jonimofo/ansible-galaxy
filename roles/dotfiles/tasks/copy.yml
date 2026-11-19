@@ -1,0 +1,78 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Each listed file becomes a regular file owned by the user. A symlink at dest
+# (left by a pre-3.0 run) is removed first so the copy never writes through it.
+
+- name: Ensure parent directory exists for the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.file:
+    path: "{{ (_dotfiles_home + '/' + item.dest) | dirname }}"
+    state: directory
+    owner: "{{ _dotfiles_user.user }}"
+    group: "{{ _dotfiles_user.user }}"
+    mode: "0755"
+  loop: "{{ _dotfiles_user.files }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.dest }}"
+  # A file at the root of the home has the home itself as parent: leave its
+  # mode alone (Ubuntu creates it 0750).
+  when: item.dest | dirname | length > 0
+
+- name: Look for a symlink at the dotfiles destinations of {{ _dotfiles_user.user }}
+  ansible.builtin.stat:
+    path: "{{ _dotfiles_home }}/{{ item.dest }}"
+    follow: false
+    get_checksum: false
+  loop: "{{ _dotfiles_user.files }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.dest }}"
+  register: _dotfiles_dest_stat
+
+- name: Remove the symlink at the dotfiles destinations of {{ _dotfiles_user.user }}
+  ansible.builtin.file:
+    path: "{{ item.stat.path }}"
+    state: absent
+  loop: "{{ _dotfiles_dest_stat.results }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.item.dest }}"
+  when: item.stat.islnk | default(false)
+
+# mode preserve keeps the executable bit of the source. remote_src copies
+# binary-safe on the host but has no diff and fails in check mode on a parent
+# directory that does not exist yet, so check mode runs the preview below.
+- name: Copy the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.copy:
+    src: "{{ _dotfiles_tmp.path }}/{{ item.src }}"
+    dest: "{{ _dotfiles_home }}/{{ item.dest }}"
+    remote_src: true
+    owner: "{{ _dotfiles_user.user }}"
+    group: "{{ _dotfiles_user.user }}"
+    mode: preserve
+    follow: false
+  loop: "{{ _dotfiles_user.files }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.src }} -> {{ item.dest }}"
+  when: not ansible_check_mode
+
+- name: Read the fetched dotfiles of {{ _dotfiles_user.user }} for the preview
+  ansible.builtin.slurp:
+    src: "{{ _dotfiles_tmp.path }}/{{ item.src }}"
+  loop: "{{ _dotfiles_user.files }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.src }}"
+  register: _dotfiles_preview_src
+  when: ansible_check_mode
+
+# Check mode only: the same copy from content, which reports the change and
+# the per-file diff without writing.
+- name: Preview the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.copy:
+    content: "{{ item.content | b64decode }}"
+    dest: "{{ _dotfiles_home }}/{{ item.item.dest }}"
+    owner: "{{ _dotfiles_user.user }}"
+    group: "{{ _dotfiles_user.user }}"
+    mode: "{{ (dotfiles_src_stat.results | selectattr('item.src', '==', item.item.src) | first).stat.mode }}"
+    follow: false
+  loop: "{{ _dotfiles_preview_src.results }}"
+  loop_control:
+    label: "{{ _dotfiles_user.user }}:{{ item.item.src }} -> {{ item.item.dest }}"
+  when: ansible_check_mode

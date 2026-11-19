@@ -1,0 +1,23 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Per Debian convention, 127.0.1.1 maps to the machine's hostname
+# while 127.0.0.1 is reserved for 'localhost'. The file ends with exactly one
+# 127.0.1.1 line, the role's own: lineinfile alone only rewrites the last
+# match and left duplicates (tab-separated copies, a provider line) in place.
+# _host_hosts_file is only set by the regression test, which runs without
+# root: ownership is then left alone.
+
+- name: Remove all but the last 127.0.1.1 line from /etc/hosts
+  ansible.builtin.replace:
+    path: "{{ _host_hosts_file | default('/etc/hosts') }}"
+    regexp: '^127\.0\.1\.1[ \t].*\n(?=(?:.*\n)*127\.0\.1\.1[ \t])'
+    replace: ""
+
+- name: Update /etc/hosts with hostname
+  ansible.builtin.lineinfile:
+    path: "{{ _host_hosts_file | default('/etc/hosts') }}"
+    regexp: '^127\.0\.1\.1[ \t]'
+    line: "127.0.1.1 {{ host_hostname }} {{ _host_short }}"
+    owner: "{{ omit if _host_hosts_file is defined else 'root' }}"
+    group: "{{ omit if _host_hosts_file is defined else 'root' }}"
+    mode: "0644"

@@ -65,6 +65,8 @@
         mode: "0644"
         force: false
 
+    # In check mode the download is only simulated: nothing to extract. The
+    # download task already reports the pending change.
     - name: Extract lazydocker binary
       ansible.builtin.unarchive:
         src: "{{ _lazydocker_tmp.path }}/{{ _lazydocker_archive }}"
@@ -73,6 +75,7 @@
         include: [lazydocker]
         owner: root
         group: root
+      when: not ansible_check_mode
   always:
     - name: Remove the private download directory
       ansible.builtin.file:
@@ -80,12 +83,15 @@
         state: absent
       when: _lazydocker_tmp.path is defined
 
+# Skipped in check mode when the binary is not there yet: it would only be
+# extracted by a real run.
 - name: Ensure lazydocker binary is executable and owned by root
   ansible.builtin.file:
     path: "{{ lazydocker_install_path }}/lazydocker"
     owner: root
     group: root
     mode: "0755"
+  when: lazydocker_binary.stat.exists or not ansible_check_mode
 
 # Older runs extracted the whole archive into the install path
 - name: Remove archive extras from the install path

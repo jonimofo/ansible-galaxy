@@ -1,0 +1,84 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Regression test for the /etc/hosts hostname line: a server held three
+# 127.0.1.1 lines (two tab-separated copies of the hostname line and a provider
+# line) and lineinfile only rewrote the last one. Runs the task file on a temp
+# copy of that file, twice. Needs no root and no network: run with `make test`.
+
+- name: Test the /etc/hosts hostname line
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    host_hostname: web1.example.com
+    _host_short: web1
+    test_before: |
+      127.0.0.1	localhost
+      127.0.1.1	web1.example.com	web1
+      127.0.1.1	web1.example.com	web1
+      127.0.1.1 srv1461727.hstgr.cloud srv1461727
+
+      # The following lines are desirable for IPv6 capable hosts
+      ::1     localhost ip6-localhost ip6-loopback
+      ff02::1 ip6-allnodes
+    test_after: |
+      127.0.0.1	localhost
+      127.0.1.1 web1.example.com web1
+
+      # The following lines are desirable for IPv6 capable hosts
+      ::1     localhost ip6-localhost ip6-loopback
+      ff02::1 ip6-allnodes
+  tasks:
+    - name: Create the fixture file
+      ansible.builtin.tempfile:
+        suffix: hosts
+      register: test_hosts
+
+    - name: Run the /etc/hosts tasks on the fixture
+      block:
+        - name: Write the three-line fixture
+          ansible.builtin.copy:
+            content: "{{ test_before }}"
+            dest: "{{ test_hosts.path }}"
+            mode: "0644"
+
+        - name: Apply the /etc/hosts tasks
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: etc_hosts.yml
+          vars:
+            _host_hosts_file: "{{ test_hosts.path }}"
+
+        - name: Assert one 127.0.1.1 line, the role's, and the rest untouched
+          ansible.builtin.assert:
+            that: lookup('ansible.builtin.file', test_hosts.path) + '\n' == test_after
+            fail_msg: "{{ lookup('ansible.builtin.file', test_hosts.path) }}"
+
+        - name: Read the fixture after the first run
+          ansible.builtin.stat:
+            path: "{{ test_hosts.path }}"
+          register: test_first
+
+        - name: Apply the /etc/hosts tasks a second time
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: etc_hosts.yml
+          vars:
+            _host_hosts_file: "{{ test_hosts.path }}"
+
+        - name: Read the fixture after the second run
+          ansible.builtin.stat:
+            path: "{{ test_hosts.path }}"
+          register: test_second
+
+        - name: Assert the second run left the file unchanged
+          ansible.builtin.assert:
+            that:
+              - test_second.stat.checksum == test_first.stat.checksum
+              - test_second.stat.mtime == test_first.stat.mtime
+            fail_msg: "The second run rewrote the file"
+      always:
+        - name: Remove the fixture file
+          ansible.builtin.file:
+            path: "{{ test_hosts.path }}"
+            state: absent
