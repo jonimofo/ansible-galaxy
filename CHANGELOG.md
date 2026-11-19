@@ -2,9 +2,9 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
-## [Unreleased]
+## [3.0.0] - 2026-11-19
 
-To be released as 3.0.0: the dotfiles change below is breaking. See `docs/MIGRATION-3.0.md`.
+Breaking release: the dotfiles change below changes what the role leaves on a host. See `docs/MIGRATION-3.0.md`.
 
 ### Changed
 
