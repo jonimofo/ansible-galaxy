@@ -25,6 +25,7 @@
           users:
             - {user: nohome, files: "{{ test_files }}"}
             - {user: nofiles}
+            - {user: abs, home: /home/abs, files: "{{ test_files }}"}
 
     - name: Reject a relative home with a readable message
       block:
@@ -75,4 +76,29 @@
             that:
               - ansible_failed_task.name == "Verify each dotfiles src and dest is a relative path without '..'"
               - "'dotfiles dest of user nodest must be a relative path' in test_msgs"
+            fail_msg: "{{ ansible_failed_result | to_json }}"
+
+    - name: Reject a file without src with a readable message
+      block:
+        - name: Include the path checks with a file without src
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: validate.yml
+          vars:
+            dotfiles_user_configs:
+              repo: git@example.com:me/dotfiles.git
+              version: main
+              clone_dir: .dotfiles
+              users:
+                - {user: nosrc, files: [{dest: .bashrc}]}
+
+        - name: Fail when the file without src was accepted
+          ansible.builtin.fail:
+            msg: "validate.yml accepted a file without src"
+      rescue:
+        - name: Assert the src and dest check rejected it with its message
+          ansible.builtin.assert:
+            that:
+              - ansible_failed_task.name == "Verify each dotfiles src and dest is a relative path without '..'"
+              - "'dotfiles src of user nosrc must be a relative path' in test_msgs"
             fail_msg: "{{ ansible_failed_result | to_json }}"
