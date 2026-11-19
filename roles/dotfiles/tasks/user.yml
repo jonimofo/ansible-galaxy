@@ -1,0 +1,44 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Deploys the listed dotfiles of one user (_dotfiles_user) as regular files.
+# The git commands run as the connecting user when it is the target user, so
+# the forwarded SSH agent is used; another user is reached with become.
+# Temp dir, fetch and cleanup only touch the temporary checkout: they run in
+# check mode too (check_mode: false), so --check --diff shows the real diffs.
+
+- name: Set the dotfiles facts for {{ _dotfiles_user.user }}
+  ansible.builtin.set_fact:
+    _dotfiles_home: "{{ _dotfiles_user.home | default('/home/' + _dotfiles_user.user) }}"
+    _dotfiles_become: "{{ _dotfiles_user.user != _dotfiles_connecting_user }}"
+
+- name: Fetch and copy the dotfiles of {{ _dotfiles_user.user }}
+  become: "{{ _dotfiles_become }}"
+  become_user: "{{ _dotfiles_user.user if _dotfiles_become else omit }}"
+  block:
+    - name: Create a private temporary checkout directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: dotfiles
+      register: _dotfiles_tmp
+      check_mode: false
+      changed_when: false
+
+    - name: Include the dotfiles fetch
+      ansible.builtin.include_tasks: fetch.yml
+
+    - name: Include dotfiles source checks
+      ansible.builtin.include_tasks: verify_sources.yml
+
+    - name: Include the dotfiles copy
+      ansible.builtin.include_tasks: copy.yml
+  always:
+    - name: Remove the temporary checkout directory
+      ansible.builtin.file:
+        path: "{{ _dotfiles_tmp.path }}"
+        state: absent
+      check_mode: false
+      changed_when: false
+      when: _dotfiles_tmp.path is defined
+
+- name: Include the pre-3.0 clone cleanup
+  ansible.builtin.include_tasks: old_clone.yml

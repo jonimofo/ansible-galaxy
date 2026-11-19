@@ -1,0 +1,19 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Applies the dotfiles deploy to localhost with the vars passed by
+# test_files_only.yml (-e @file). Not a test on its own: make test only runs
+# test_*.yml.
+
+- name: Deploy dotfiles on localhost
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Deploy the dotfiles of each test user
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir | dirname }}"
+        tasks_from: user.yml
+      loop: "{{ dotfiles_user_configs.users }}"
+      loop_control:
+        loop_var: _dotfiles_user
+        label: "{{ _dotfiles_user.home }}"

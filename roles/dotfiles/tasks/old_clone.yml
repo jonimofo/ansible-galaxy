@@ -1,0 +1,56 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Before 3.0 the role kept a clone at <home>/<clone_dir> and symlinked into it.
+# Once the files are copied, that clone is deleted when it is a clean clone of
+# the configured repo. A dirty one is kept with a warning; any other folder at
+# that path is left alone.
+
+- name: Set the pre-3.0 dotfiles clone path of {{ _dotfiles_user.user }}
+  ansible.builtin.set_fact:
+    _dotfiles_old_clone: "{{ _dotfiles_home }}/{{ dotfiles_user_configs.clone_dir }}"
+
+- name: Look for a pre-3.0 dotfiles clone of {{ _dotfiles_user.user }}
+  ansible.builtin.stat:
+    path: "{{ _dotfiles_old_clone }}/.git"
+    get_checksum: false
+  become: "{{ _dotfiles_become }}"
+  become_user: "{{ _dotfiles_user.user if _dotfiles_become else omit }}"
+  register: _dotfiles_old_clone_git
+
+- name: Inspect the pre-3.0 dotfiles clone of {{ _dotfiles_user.user }}
+  when: _dotfiles_old_clone_git.stat.exists
+  become: "{{ _dotfiles_become }}"
+  become_user: "{{ _dotfiles_user.user if _dotfiles_become else omit }}"
+  block:
+    - name: Read the origin of the pre-3.0 dotfiles clone
+      ansible.builtin.command:
+        argv: [git, -C, "{{ _dotfiles_old_clone }}", config, --get, remote.origin.url]
+      register: _dotfiles_old_clone_origin
+      check_mode: false
+      changed_when: false
+      failed_when: _dotfiles_old_clone_origin.rc not in [0, 1]
+
+    - name: Read the status of the pre-3.0 dotfiles clone
+      ansible.builtin.command:
+        argv: [git, -C, "{{ _dotfiles_old_clone }}", status, --porcelain]
+      register: _dotfiles_old_clone_status
+      check_mode: false
+      changed_when: false
+      when: _dotfiles_old_clone_origin.stdout == dotfiles_user_configs.repo
+
+    - name: Remove the clean pre-3.0 dotfiles clone
+      ansible.builtin.file:
+        path: "{{ _dotfiles_old_clone }}"
+        state: absent
+      when:
+        - _dotfiles_old_clone_status is not skipped
+        - _dotfiles_old_clone_status.stdout | length == 0
+
+    - name: Warn about the pre-3.0 dotfiles clone with uncommitted changes
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ _dotfiles_old_clone }} has uncommitted changes and was kept.
+          Commit or discard them; the next run removes the clone once it is clean.
+      when:
+        - _dotfiles_old_clone_status is not skipped
+        - _dotfiles_old_clone_status.stdout | length > 0

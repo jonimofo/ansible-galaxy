@@ -24,101 +24,14 @@
     - dotfiles_verify_ssh_access | bool
     - dotfiles_user_configs.users | length > 0
 
-- name: Look for an existing dotfiles clone for {{ item.user }}
-  ansible.builtin.stat:
-    path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/.git"
-  become: "{{ item.user != _dotfiles_connecting_user }}"
-  become_user: "{{ item.user if item.user != _dotfiles_connecting_user else omit }}"
+# Each user gets the listed files only: they are fetched into a temporary
+# checkout on the host, copied into the home and the checkout is removed.
+- name: Deploy the dotfiles of {{ _dotfiles_user.user }}
+  ansible.builtin.include_tasks: user.yml
   loop: "{{ dotfiles_user_configs.users }}"
   loop_control:
-    label: "{{ item.user }}"
-  vars:
-    user_home: "{{ item.home | default('/home/' + item.user) }}"
-  register: dotfiles_clone_git
-
-# A shallow clone has a .git/shallow file; a full one carries the whole history
-- name: Look for the shallow marker of the dotfiles clone for {{ item.item.user }}
-  ansible.builtin.stat:
-    path: "{{ item.stat.path }}/shallow"
-  become: "{{ item.item.user != _dotfiles_connecting_user }}"
-  become_user: "{{ item.item.user if item.item.user != _dotfiles_connecting_user else omit }}"
-  loop: "{{ dotfiles_clone_git.results }}"
-  loop_control:
-    label: "{{ item.item.user }}"
-  when: item.stat.exists
-  register: dotfiles_clone_shallow
-
-- name: Remove full dotfiles clone for {{ item.item.item.user }}
-  ansible.builtin.file:
-    path: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}"
-    state: absent
-  become: true
-  loop: "{{ dotfiles_clone_shallow.results }}"
-  loop_control:
-    label: "{{ item.item.item.user }}"
-  vars:
-    user_home: "{{ item.item.item.home | default('/home/' + item.item.item.user) }}"
-  when:
-    - item.stat is defined
-    - not item.stat.exists
-
-- name: Clone or update dotfiles repo for {{ item.user }}
-  ansible.builtin.git:
-    repo: "{{ dotfiles_user_configs.repo }}"
-    dest: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}"
-    version: "{{ dotfiles_user_configs.version }}"
-    update: true
-    accept_newhostkey: true
-    force: true
-    depth: 1
-    single_branch: true
-  # Only use become when target user differs from _dotfiles_connecting_user
-  # This preserves SSH agent forwarding for the connecting user
-  become: "{{ item.user != _dotfiles_connecting_user }}"
-  become_user: "{{ item.user if item.user != _dotfiles_connecting_user else omit }}"
-  loop: "{{ dotfiles_user_configs.users }}"
-  loop_control:
-    label: "{{ item.user }}"
-  vars:
-    user_home: "{{ item.home | default('/home/' + item.user) }}"
-
-- name: Include dotfiles source checks
-  ansible.builtin.include_tasks: verify_sources.yml
-
-- name: Ensure parent directory exists for {{ file.dest }} of {{ user.user }}
-  ansible.builtin.file:
-    path: "{{ (user_home + '/' + file.dest) | dirname }}"
-    state: directory
-    owner: "{{ user.user }}"
-    group: "{{ user.user }}"
-    mode: "0755"
-  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
-  loop_control:
-    label: "{{ user.user }}:{{ file.dest }}"
-  vars:
-    user: "{{ item.0 }}"
-    file: "{{ item.1 }}"
-    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
-  # A file at the root of the home has the home itself as parent: leave its
-  # mode alone (Ubuntu creates it 0750).
-  when: file.dest | dirname | length > 0
-
-- name: Create symlink {{ file.src }} -> {{ file.dest }} for {{ user.user }}
-  ansible.builtin.file:
-    src: "{{ user_home }}/{{ dotfiles_user_configs.clone_dir }}/{{ file.src }}"
-    dest: "{{ user_home }}/{{ file.dest }}"
-    state: link
-    force: true
-    owner: "{{ user.user }}"
-    group: "{{ user.user }}"
-    follow: false
-  loop: "{{ dotfiles_user_configs.users | subelements('files') }}"
-  loop_control:
-    label: "{{ user.user }}:{{ file.src }}"
-  vars:
-    user: "{{ item.0 }}"
-    file: "{{ item.1 }}"
-    user_home: "{{ item.0.home | default('/home/' + item.0.user) }}"
+    loop_var: _dotfiles_user
+    label: "{{ _dotfiles_user.user }}"
 
 - name: Include tmux tasks
   ansible.builtin.include_tasks: tmux.yml
