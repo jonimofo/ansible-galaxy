@@ -2,7 +2,7 @@
 ---
 # Before 3.0 the role kept a clone at <home>/<clone_dir> and symlinked into it.
 # Once the files are copied, that clone is deleted when it is a clean clone of
-# the configured repo. A dirty one is kept with a warning; any other folder at
+# the configured repo. One with uncommitted changes or unpushed commits is kept with a warning; any other folder at
 # that path is left alone.
 
 - name: Set the pre-3.0 dotfiles clone path of {{ _dotfiles_user.user }}
@@ -38,6 +38,16 @@
       changed_when: false
       when: _dotfiles_old_clone_origin.stdout == dotfiles_user_configs.repo
 
+    # Commits on a local branch or a detached HEAD that no remote-tracking ref
+    # contains. Works in a shallow or full clone, with or without an upstream.
+    - name: Look for unpushed commits in the pre-3.0 dotfiles clone
+      ansible.builtin.command:
+        argv: [git, -C, "{{ _dotfiles_old_clone }}", rev-list, --max-count=1, HEAD, --branches, --not, --remotes]
+      register: _dotfiles_old_clone_unpushed
+      check_mode: false
+      changed_when: false
+      when: _dotfiles_old_clone_origin.stdout == dotfiles_user_configs.repo
+
     - name: Remove the clean pre-3.0 dotfiles clone
       ansible.builtin.file:
         path: "{{ _dotfiles_old_clone }}"
@@ -45,12 +55,13 @@
       when:
         - _dotfiles_old_clone_status is not skipped
         - _dotfiles_old_clone_status.stdout | length == 0
+        - _dotfiles_old_clone_unpushed.stdout | length == 0
 
     - name: Warn about the pre-3.0 dotfiles clone with uncommitted changes
       ansible.builtin.debug:
         msg: >-
-          WARNING: {{ _dotfiles_old_clone }} has uncommitted changes and was kept.
-          Commit or discard them; the next run removes the clone once it is clean.
+          WARNING: {{ _dotfiles_old_clone }} has uncommitted changes or unpushed commits and was kept.
+          Push or discard them; the next run removes the clone once it is clean.
       when:
         - _dotfiles_old_clone_status is not skipped
-        - _dotfiles_old_clone_status.stdout | length > 0
+        - (_dotfiles_old_clone_status.stdout + _dotfiles_old_clone_unpushed.stdout) | length > 0

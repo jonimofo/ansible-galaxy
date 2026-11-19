@@ -19,6 +19,7 @@
       GIT_COMMITTER_NAME: test
       GIT_COMMITTER_EMAIL: test@example.com
       GIT_CONFIG_GLOBAL: /dev/null
+    test_kept_warning: /.dotfiles has uncommitted changes or unpushed commits
     test_files:
       - src: .bashrc
         dest: .bashrc
@@ -41,9 +42,15 @@
             test_src: "{{ test_dir.path }}/src"
             test_other: "{{ test_dir.path }}/other"
             test_tmp: "{{ test_dir.path }}/tmp"
+            test_shallow_clone:
+              [git, clone, -q, --no-local, --depth, "1", --single-branch, "{{ test_dir.path }}/src"]
             test_link_target: "{{ test_dir.path }}/link-target"
-            # h1: clean old clone, h2: dirty old clone, h3: clone of another repo
-            test_homes: "{{ ['h1', 'h2', 'h3'] | map('regex_replace', '^', test_dir.path + '/') | list }}"
+            # Full clones (1.x) h1: clean, h2: uncommitted change, h3: clone of
+            # another repo, h4: unpushed local commit. Shallow clones (2.x)
+            # h5: clean, h6: uncommitted change, h7: unpushed local commit.
+            test_homes: >-
+              {{ ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7']
+                 | map('regex_replace', '^', test_dir.path + '/') | list }}
 
         - name: Create the source tree, the homes and the temp dir
           ansible.builtin.file:
@@ -74,18 +81,38 @@
             - [git, -C, "{{ test_src }}", config, uploadpack.allowFilter, "true"]
             - [git, -C, "{{ test_src }}", add, -A]
             - [git, -C, "{{ test_src }}", commit, -q, -m, v1]
+            # A second commit so a depth 1 clone is really shallow
+            - [git, -C, "{{ test_src }}", commit, -q, --allow-empty, -m, v1b]
             - [git, init, -q, -b, main, "{{ test_other }}"]
             - [git, -C, "{{ test_other }}", commit, -q, --allow-empty, -m, other]
             - [git, clone, -q, "{{ test_src }}", "{{ test_homes[0] }}/.dotfiles"]
             - [git, clone, -q, "{{ test_src }}", "{{ test_homes[1] }}/.dotfiles"]
             - [git, clone, -q, "{{ test_other }}", "{{ test_homes[2] }}/.dotfiles"]
+            - [git, clone, -q, "{{ test_src }}", "{{ test_homes[3] }}/.dotfiles"]
+            - [git, -C, "{{ test_homes[3] }}/.dotfiles", commit, -q, --allow-empty, -m, local]
+            # --no-local: a local clone ignores --depth; origin stays the plain path
+            - "{{ test_shallow_clone + [test_homes[4] + '/.dotfiles'] }}"
+            - "{{ test_shallow_clone + [test_homes[5] + '/.dotfiles'] }}"
+            - "{{ test_shallow_clone + [test_homes[6] + '/.dotfiles'] }}"
+            - [git, -C, "{{ test_homes[6] }}/.dotfiles", commit, -q, --allow-empty, -m, local]
           changed_when: true
 
-        - name: Leave an uncommitted change in the h2 clone
+        - name: Leave an uncommitted change in the h2 and h6 clones
           ansible.builtin.copy:
             content: "local edit\n"
-            dest: "{{ test_homes[1] }}/.dotfiles/.bashrc"
+            dest: "{{ item }}/.dotfiles/.bashrc"
             mode: "0644"
+          loop: ["{{ test_homes[1] }}", "{{ test_homes[5] }}"]
+
+        - name: Stat the shallow markers of the h5 to h7 clones
+          ansible.builtin.stat:
+            path: "{{ item }}/.dotfiles/.git/shallow"
+          loop: "{{ test_homes[4:] }}"
+          register: test_shallow
+
+        - name: Assert the h5 to h7 clones are shallow
+          ansible.builtin.assert:
+            that: test_shallow.results | map(attribute='stat.exists') | list == [true, true, true]
 
         - name: Write the symlink target, as a pre-3.0 run left it
           ansible.builtin.copy:
@@ -203,6 +230,10 @@
             - "{{ test_homes[0] }}/.dotfiles"
             - "{{ test_homes[1] }}/.dotfiles"
             - "{{ test_homes[2] }}/.dotfiles/.git"
+            - "{{ test_homes[3] }}/.dotfiles"
+            - "{{ test_homes[4] }}/.dotfiles"
+            - "{{ test_homes[5] }}/.dotfiles"
+            - "{{ test_homes[6] }}/.dotfiles"
           register: test_first_clones
 
         - name: Find leftovers in the temp dir after the first run
@@ -227,7 +258,15 @@
               - not test_first_clones.results[0].stat.exists
               - test_first_clones.results[1].stat.exists
               - test_first_clones.results[2].stat.exists
-              - "test_first.stdout is search('WARNING: ' + test_homes[1] + '/.dotfiles has uncommitted changes')"
+              - test_first_clones.results[3].stat.exists
+              - not test_first_clones.results[4].stat.exists
+              - test_first_clones.results[5].stat.exists
+              - test_first_clones.results[6].stat.exists
+              - "test_first.stdout is search('WARNING: ' + test_homes[1] + test_kept_warning)"
+              - "test_first.stdout is search('WARNING: ' + test_homes[3] + test_kept_warning)"
+              - "test_first.stdout is search('WARNING: ' + test_homes[5] + test_kept_warning)"
+              - "test_first.stdout is search('WARNING: ' + test_homes[6] + test_kept_warning)"
+              - "test_first.stdout is not search('WARNING: ' + test_homes[4])"
               - "test_first.stdout is not search('WARNING: ' + test_homes[2])"
               - test_first_tmp.matched == 0
             fail_msg: "{{ test_first.stdout }}"

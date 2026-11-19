@@ -6,7 +6,7 @@
 
 - `dotfiles`: the listed files are copied into the home as regular files. No clone and no symlink stay on the host. The host still fetches from the repo itself, through the forwarded SSH agent, into a temporary sparse checkout (one commit deep) that is deleted in the same run.
 - `dotfiles`: a symlink at a destination, left by a 2.x run, is replaced by the file. The symlink target, inside the old clone, is not written.
-- `dotfiles`: the old clone at `<home>/<clone_dir>` is deleted on every run once the files are copied, if it is a git clone of `dotfiles_user_configs.repo` with no uncommitted change. With uncommitted changes it is kept and the run prints a warning naming the path. Any other folder at that path is left alone.
+- `dotfiles`: the old clone at `<home>/<clone_dir>` is deleted on every run once the files are copied, if it is a git clone of `dotfiles_user_configs.repo` with no uncommitted change and no unpushed commit. With uncommitted changes or unpushed commits it is kept and the run prints a warning naming the path. Any other folder at that path is left alone.
 - `dotfiles`: a file edited by hand on the host is overwritten on the next run. Edits belong in the repo.
 - `dotfiles`: `--check --diff` fetches for real into the temporary directory and shows the diff of each file; a source missing from the repo fails in check mode too.
 - `dotfiles`: git 2.24 or later on the host (every supported platform ships a newer one).
