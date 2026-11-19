@@ -57,8 +57,12 @@ Each destination is a copy, owned by the user. A file edited by hand on the host
 
 Before 3.0.0 the role kept a clone at `<home>/<clone_dir>` and symlinked into it. After the files are copied, every run checks that path:
 
-- a git clone whose `remote.origin.url` is `repo`, with no uncommitted change and no unpushed commit: deleted
-- the same clone with uncommitted changes or unpushed commits (on a local branch or a detached HEAD, held by no remote-tracking ref): kept, the run prints a warning naming the path; it is deleted on the first run after it is clean
+- a git clone whose `remote.origin.url` is `repo`, where git reports nothing that would be lost: deleted
+- the same clone with uncommitted changes, ignored files, stashes or unpushed commits (on a local branch or a detached HEAD, held by no remote-tracking ref), or a git error while checking: kept, the run prints a warning naming the path; it is deleted on the first run after it is clean
+
+After a deletion, links into the removed clone found at the home top level or next to a listed destination are reported in one warning and left in place: remove them by hand. A user without `files` (or with `files: []`) is skipped: no fetch, no cleanup.
+
+`clone_dir` must be a non-empty relative path below the home (not `.`, no `..`); `src` and `dest` must be relative without `..`, and `home` absolute. The run fails before any fetch otherwise.
 - anything else (another repo, a plain folder, nothing): left alone, no message
 
 ### Check mode

@@ -19,7 +19,7 @@
       GIT_COMMITTER_NAME: test
       GIT_COMMITTER_EMAIL: test@example.com
       GIT_CONFIG_GLOBAL: /dev/null
-    test_kept_warning: /.dotfiles has uncommitted changes or unpushed commits
+    test_kept_warning: /.dotfiles was kept because
     test_files:
       - src: .bashrc
         dest: .bashrc
@@ -48,8 +48,11 @@
             # Full clones (1.x) h1: clean, h2: uncommitted change, h3: clone of
             # another repo, h4: unpushed local commit. Shallow clones (2.x)
             # h5: clean, h6: uncommitted change, h7: unpushed local commit.
+            # h8: stash, h9: ignored file only, h10: unborn HEAD. h11: user
+            # without files, h12: files [] (both clean clones, never touched).
+            # hb: a home that is itself a clean clone, for the bad paths.
             test_homes: >-
-              {{ ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7']
+              {{ ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10', 'h11', 'h12', 'hb']
                  | map('regex_replace', '^', test_dir.path + '/') | list }}
 
         - name: Create the source tree, the homes and the temp dir
@@ -95,6 +98,16 @@
             - "{{ test_shallow_clone + [test_homes[5] + '/.dotfiles'] }}"
             - "{{ test_shallow_clone + [test_homes[6] + '/.dotfiles'] }}"
             - [git, -C, "{{ test_homes[6] }}/.dotfiles", commit, -q, --allow-empty, -m, local]
+            - [git, clone, -q, "{{ test_src }}", "{{ test_homes[7] }}/.dotfiles"]
+            - [git, clone, -q, "{{ test_src }}", "{{ test_homes[8] }}/.dotfiles"]
+            - [git, init, -q, "{{ test_homes[9] }}/.dotfiles"]
+            - [git, -C, "{{ test_homes[9] }}/.dotfiles", remote, add, origin, "{{ test_src }}"]
+            - [git, clone, -q, "{{ test_src }}", "{{ test_homes[10] }}/.dotfiles"]
+            - [git, clone, -q, "{{ test_src }}", "{{ test_homes[11] }}/.dotfiles"]
+            - [git, -C, "{{ test_homes[12] }}", init, -q]
+            - [git, -C, "{{ test_homes[12] }}", remote, add, origin, "{{ test_src }}"]
+            - [git, -C, "{{ test_homes[12] }}", fetch, -q, origin, main]
+            - [git, -C, "{{ test_homes[12] }}", checkout, -q, -b, main, FETCH_HEAD]
           changed_when: true
 
         - name: Leave an uncommitted change in the h2 and h6 clones
@@ -102,12 +115,27 @@
             content: "local edit\n"
             dest: "{{ item }}/.dotfiles/.bashrc"
             mode: "0644"
-          loop: ["{{ test_homes[1] }}", "{{ test_homes[5] }}"]
+          loop: ["{{ test_homes[1] }}", "{{ test_homes[5] }}", "{{ test_homes[7] }}"]
+
+        - name: Stash the change in h8 and leave only an ignored file in h9
+          ansible.builtin.command:
+            argv: "{{ item }}"
+          loop:
+            - [git, -C, "{{ test_homes[7] }}/.dotfiles", stash, -q]
+            - [sh, -c, 'echo keys.local >> "$1/.git/info/exclude" && echo secret > "$1/keys.local"', sh,
+               "{{ test_homes[8] }}/.dotfiles"]
+          changed_when: true
+
+        - name: Leave a 2.x link to an unlisted file of the h1 clone
+          ansible.builtin.file:
+            src: "{{ test_homes[0] }}/.dotfiles/README.md"
+            dest: "{{ test_homes[0] }}/.oldlink"
+            state: link
 
         - name: Stat the shallow markers of the h5 to h7 clones
           ansible.builtin.stat:
             path: "{{ item }}/.dotfiles/.git/shallow"
-          loop: "{{ test_homes[4:] }}"
+          loop: "{{ test_homes[4:7] }}"
           register: test_shallow
 
         - name: Assert the h5 to h7 clones are shallow
@@ -129,7 +157,7 @@
         - name: Set the test users, one per home
           ansible.builtin.set_fact:
             test_users: "{{ test_users | default([]) + [{'user': test_user, 'home': item}] }}"
-          loop: "{{ test_homes }}"
+          loop: "{{ test_homes[:10] }}"
 
         - name: Write the vars of the nested runs
           ansible.builtin.copy:
@@ -139,7 +167,9 @@
               {{ {'_dotfiles_connecting_user': test_user,
                   'ansible_python_interpreter': ansible_playbook_python,
                   'dotfiles_user_configs': {'repo': test_src, 'version': 'main', 'clone_dir': '.dotfiles',
-                    'users': test_users | map('combine', {'files': item.files}) | list}} | to_json }}
+                    'users': test_users | map('combine', {'files': item.files}) | list
+                             + [{'user': test_user, 'home': test_homes[10]},
+                                {'user': test_user, 'home': test_homes[11], 'files': []}]}} | to_json }}
           loop:
             - {name: good, files: "{{ test_files }}"}
             - {name: missing, files: "{{ test_files + [{'src': 'nope', 'dest': '.nope'}] }}"}
@@ -234,6 +264,12 @@
             - "{{ test_homes[4] }}/.dotfiles"
             - "{{ test_homes[5] }}/.dotfiles"
             - "{{ test_homes[6] }}/.dotfiles"
+            - "{{ test_homes[7] }}/.dotfiles"
+            - "{{ test_homes[8] }}/.dotfiles"
+            - "{{ test_homes[9] }}/.dotfiles"
+            - "{{ test_homes[10] }}/.dotfiles"
+            - "{{ test_homes[11] }}/.dotfiles"
+            - "{{ test_homes[0] }}/.oldlink"
           register: test_first_clones
 
         - name: Find leftovers in the temp dir after the first run
@@ -266,6 +302,14 @@
               - "test_first.stdout is search('WARNING: ' + test_homes[3] + test_kept_warning)"
               - "test_first.stdout is search('WARNING: ' + test_homes[5] + test_kept_warning)"
               - "test_first.stdout is search('WARNING: ' + test_homes[6] + test_kept_warning)"
+              - test_first_clones.results[7:12] | map(attribute='stat.exists') | list == [true] * 5
+              - test_first_clones.results[12].stat.islnk
+              - "test_first.stdout is search('WARNING: ' + test_homes[7] + test_kept_warning)"
+              - "test_first.stdout is search('WARNING: ' + test_homes[8] + test_kept_warning)"
+              - "test_first.stdout is search('WARNING: ' + test_homes[9] + test_kept_warning)"
+              - "test_first.stdout is search('no longer resolve, remove them by hand: ' + test_homes[0] + '/.oldlink')"
+              - "test_first.stdout is not search('WARNING: ' + test_homes[10])"
+              - "test_first.stdout is not search('WARNING: ' + test_homes[11])"
               - "test_first.stdout is not search('WARNING: ' + test_homes[4])"
               - "test_first.stdout is not search('WARNING: ' + test_homes[2])"
               - test_first_tmp.matched == 0
@@ -291,6 +335,66 @@
           ansible.builtin.assert:
             that: test_second.stdout is search('ok=\d+ +changed=0 +unreachable=0 +failed=0')
             fail_msg: "{{ test_second.stdout }}"
+
+        # --- bad paths: fail before anything is written or deleted ---
+        - name: Run the deploy with each bad path
+          ansible.builtin.command:
+            argv:
+              - "{{ test_ansible_playbook }}"
+              - -i
+              - "localhost,"
+              - -e
+              - >-
+                {{ {'_dotfiles_connecting_user': test_user,
+                    'ansible_python_interpreter': ansible_playbook_python,
+                    'dotfiles_user_configs': {'repo': test_src, 'version': 'main',
+                      'clone_dir': item.clone_dir | default('.dotfiles'),
+                      'users': [{'user': test_user, 'home': item.home | default(test_homes[12]),
+                                 'files': item.files | default(test_files)}]}} | to_json }}
+              - "{{ playbook_dir }}/dotfiles_run.yml"
+            chdir: "{{ test_repo_root }}"
+          environment:
+            TMPDIR: "{{ test_tmp }}"
+          loop:
+            - {clone_dir: "", check: clone_dir}
+            - {clone_dir: ".", check: clone_dir}
+            - {clone_dir: "./", check: clone_dir}
+            - {clone_dir: "..", check: clone_dir}
+            - {clone_dir: "a/../..", check: clone_dir}
+            - {clone_dir: "/abs", check: clone_dir}
+            - {files: [{src: ../x, dest: .x}], check: src}
+            - {files: [{src: .bashrc, dest: ../x}], check: dest}
+            - {files: [{src: .bashrc, dest: /etc/x}], check: dest}
+            - {home: relative/home, check: home}
+          loop_control:
+            label: "{{ item }}"
+          register: test_bad
+          changed_when: false
+          failed_when: false
+
+        - name: Stat the clone home after the bad path runs
+          ansible.builtin.stat:
+            path: "{{ test_homes[12] }}/{{ item }}"
+          loop: [.git, .local, x]
+          register: test_bad_stat
+
+        - name: Assert each bad path failed in the path checks
+          ansible.builtin.assert:
+            that:
+              - item.rc != 0
+              - item.stdout is search('Verify (clone_dir|the home|each dotfiles src)')
+              - item.stdout is search('must be')
+              - item.stdout is not search('Create a private temporary checkout')
+            fail_msg: "{{ item.stdout }}"
+          loop: "{{ test_bad.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+
+        - name: Assert the bad path runs wrote and deleted nothing
+          ansible.builtin.assert:
+            that:
+              - test_bad_stat.results | map(attribute='stat.exists') | list == [true, false, false]
+              - not (test_dir.path + '/x') is exists
 
         # --- missing source: fails, in check mode too, temp dir removed ---
         - name: Run the deploy with a missing source

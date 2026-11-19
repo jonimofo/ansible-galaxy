@@ -24,8 +24,10 @@ dotfiles_user_configs:
 #   clone_dir: '.dotfiles'   # relative to the home: location of a pre-3.0 clone
 #                            # to clean up. Deleted when it is a clean clone of
 #                            # repo; kept with a warning when it has uncommitted
-#                            # changes or unpushed commits; any other folder
-#                            # there is left alone.
+#                            # changes, ignored files, stashes or unpushed
+#                            # commits, or git cannot inspect it; any other
+#                            # folder there is left alone. Non-empty, relative,
+#                            # not '.', no '..'.
 #   users:
 #     - user: user
 #       home: '/home/user'   # optional, defaults to /home/<user>
