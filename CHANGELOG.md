@@ -2,6 +2,12 @@
 
 All notable changes to this collection are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow SemVer.
 
+## [Unreleased]
+
+### Fixed
+
+- **dotfiles**: 3.0.0 failed in the path checks on every user without `home` (`'dict object' has no attribute 'home'`): `assert` templates its `fail_msg` even when the check passes. The optional keys in those messages now go through `default()`, and a file entry without `src` or `dest` fails with the path-check message instead of a template error. New regression test `roles/dotfiles/tests/test_validate.yml`.
+
 ## [3.0.0] - 2026-11-19
 
 Breaking release: the dotfiles change below changes what the role leaves on a host. See `docs/MIGRATION-3.0.md`.

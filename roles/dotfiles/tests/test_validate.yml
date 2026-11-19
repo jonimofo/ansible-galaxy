@@ -1,0 +1,104 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Regression test for the dotfiles path checks (3.0.1): assert templates its
+# fail_msg even when the check passes, so an optional key there broke every
+# user without home. Runs validate.yml only: nothing is fetched or written.
+# Needs no network and no root: run with `make test`.
+
+- name: Test the dotfiles path checks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    test_msgs: "{{ ansible_failed_result.results | map(attribute='msg') | select('defined') | join(' ') }}"
+    test_files: [{src: .bashrc, dest: .bashrc}]
+  tasks:
+    - name: Accept a user without home
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir | dirname }}"
+        tasks_from: validate.yml
+      vars:
+        dotfiles_user_configs:
+          repo: git@example.com:me/dotfiles.git
+          version: main
+          clone_dir: .dotfiles
+          users:
+            - {user: nohome, files: "{{ test_files }}"}
+            - {user: nofiles}
+            - {user: abs, home: /home/abs, files: "{{ test_files }}"}
+
+    - name: Reject a relative home with a readable message
+      block:
+        - name: Include the path checks with a relative home
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: validate.yml
+          vars:
+            dotfiles_user_configs:
+              repo: git@example.com:me/dotfiles.git
+              version: main
+              clone_dir: .dotfiles
+              users:
+                - {user: nohome, files: "{{ test_files }}"}
+                - {user: rel, home: relative/home, files: "{{ test_files }}"}
+
+        - name: Fail when the relative home was accepted
+          ansible.builtin.fail:
+            msg: "validate.yml accepted a relative home"
+      rescue:
+        - name: Assert the home check rejected it with its message
+          ansible.builtin.assert:
+            that:
+              - ansible_failed_task.name == 'Verify the home of each dotfiles user is absolute'
+              - "'The home of dotfiles user rel must be an absolute path' in test_msgs"
+            fail_msg: "{{ ansible_failed_result | to_json }}"
+
+    - name: Reject a file without dest with a readable message
+      block:
+        - name: Include the path checks with a file without dest
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: validate.yml
+          vars:
+            dotfiles_user_configs:
+              repo: git@example.com:me/dotfiles.git
+              version: main
+              clone_dir: .dotfiles
+              users:
+                - {user: nodest, files: [{src: .bashrc}]}
+
+        - name: Fail when the file without dest was accepted
+          ansible.builtin.fail:
+            msg: "validate.yml accepted a file without dest"
+      rescue:
+        - name: Assert the src and dest check rejected it with its message
+          ansible.builtin.assert:
+            that:
+              - ansible_failed_task.name == "Verify each dotfiles src and dest is a relative path without '..'"
+              - "'dotfiles dest of user nodest must be a relative path' in test_msgs"
+            fail_msg: "{{ ansible_failed_result | to_json }}"
+
+    - name: Reject a file without src with a readable message
+      block:
+        - name: Include the path checks with a file without src
+          ansible.builtin.include_role:
+            name: "{{ playbook_dir | dirname }}"
+            tasks_from: validate.yml
+          vars:
+            dotfiles_user_configs:
+              repo: git@example.com:me/dotfiles.git
+              version: main
+              clone_dir: .dotfiles
+              users:
+                - {user: nosrc, files: [{dest: .bashrc}]}
+
+        - name: Fail when the file without src was accepted
+          ansible.builtin.fail:
+            msg: "validate.yml accepted a file without src"
+      rescue:
+        - name: Assert the src and dest check rejected it with its message
+          ansible.builtin.assert:
+            that:
+              - ansible_failed_task.name == "Verify each dotfiles src and dest is a relative path without '..'"
+              - "'dotfiles src of user nosrc must be a relative path' in test_msgs"
+            fail_msg: "{{ ansible_failed_result | to_json }}"
