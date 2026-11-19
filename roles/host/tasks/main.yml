@@ -33,16 +33,8 @@
   ansible.builtin.hostname:
     name: "{{ host_hostname }}"
 
-# Per Debian convention, 127.0.1.1 maps to the machine's hostname
-# while 127.0.0.1 is reserved for 'localhost'
-- name: Update /etc/hosts with hostname
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: '^127\.0\.1\.1.*'
-    line: "127.0.1.1 {{ host_hostname }} {{ _host_short }}"
-    owner: root
-    group: root
-    mode: "0644"
+- name: Include the /etc/hosts hostname line
+  ansible.builtin.include_tasks: etc_hosts.yml
 
 # --- DNS: primary servers per interface (netplan override), backup and
 # fallback servers at the systemd-resolved level. Each part is skipped when
