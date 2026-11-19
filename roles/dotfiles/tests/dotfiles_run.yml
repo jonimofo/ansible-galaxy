@@ -9,6 +9,11 @@
   connection: local
   gather_facts: false
   tasks:
+    - name: Run the dotfiles path checks
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir | dirname }}"
+        tasks_from: validate.yml
+
     - name: Deploy the dotfiles of each test user
       ansible.builtin.include_role:
         name: "{{ playbook_dir | dirname }}"

@@ -18,6 +18,9 @@
     name: git
     state: present
 
+- name: Include the dotfiles path checks
+  ansible.builtin.include_tasks: validate.yml
+
 - name: Include SSH access checks
   ansible.builtin.include_tasks: verify_ssh.yml
   when:
