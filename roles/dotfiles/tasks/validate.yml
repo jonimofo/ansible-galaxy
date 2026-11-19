@@ -2,6 +2,8 @@
 ---
 # Paths from the inventory end up in copies and in a delete: refuse anything
 # that could leave the home or name the home itself, before any fetch.
+# assert templates fail_msg even when the check passes: optional keys there
+# go through default().
 
 - name: Verify clone_dir is a relative path below the home
   ansible.builtin.assert:
@@ -21,7 +23,7 @@
 - name: Verify the home of each dotfiles user is absolute
   ansible.builtin.assert:
     that: item.home is not defined or (item.home is string and item.home is match('/'))
-    fail_msg: "The home of dotfiles user {{ item.user }} must be an absolute path: '{{ item.home }}'"
+    fail_msg: "The home of dotfiles user {{ item.user }} must be an absolute path: '{{ item.home | default('') }}'"
     quiet: true
   loop: "{{ dotfiles_user_configs.users }}"
   loop_control:
@@ -30,6 +32,7 @@
 - name: Verify each dotfiles src and dest is a relative path without '..'
   ansible.builtin.assert:
     that:
+      - item.1[item.2] is defined
       - item.1[item.2] is string
       - item.1[item.2] | length > 0
       - item.1[item.2] is not match('/')
@@ -37,10 +40,10 @@
       - "'..' not in item.1[item.2].split('/')"
     fail_msg: >-
       dotfiles {{ item.2 }} of user {{ item.0.user }} must be a relative path
-      without '..' and not absolute: '{{ item.1[item.2] }}'
+      without '..' and not absolute: '{{ item.1[item.2] | default('') }}'
     quiet: true
   loop: >-
     {{ dotfiles_user_configs.users | subelements('files', skip_missing=true)
        | product(['src', 'dest']) | map('flatten', levels=1) | list }}
   loop_control:
-    label: "{{ item.0.user }}:{{ item.2 }}={{ item.1[item.2] }}"
+    label: "{{ item.0.user }}:{{ item.2 }}={{ item.1[item.2] | default('') }}"
