@@ -1,0 +1,94 @@
+#SPDX-License-Identifier: GPL-2.0-or-later
+---
+# Regression test: in check mode on a host that needs an install, the
+# download is only simulated, so the extract must not run and abort the play.
+# Runs the role with --check in a nested ansible-playbook against a temp
+# install path; the download URL is a local file:// release, no network.
+# Run with `make test`.
+
+- name: Test the astronvim check mode on a host that needs an install
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    test_repo_root: "{{ playbook_dir | dirname | dirname | dirname }}"
+    test_ansible_playbook: "{{ ansible_playbook_python | dirname }}/ansible-playbook"
+    test_role_vars:
+      astronvim_neovim_binary_path: "{{ test_dir.path ~ '/bin/nvim' }}"
+      astronvim_download_dir: "{{ test_dir.path }}"
+      astronvim_neovim_download_url: "{{ 'file://' ~ test_dir.path ~ '/releases' }}"
+      astronvim_build_packages: []
+  tasks:
+    - name: Create the test directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: astronvim-test
+      register: test_dir
+
+    - name: Run the role in check mode
+      block:
+        # get_url requests the URL even in check mode: serve a placeholder
+        - name: Create the local release directory
+          ansible.builtin.file:
+            path: "{{ test_dir.path }}/releases/v0.12.6"
+            state: directory
+            mode: "0755"
+
+        - name: Write the placeholder release archives
+          ansible.builtin.copy:
+            content: "placeholder\n"
+            dest: "{{ test_dir.path }}/releases/{{ item }}"
+            mode: "0644"
+          loop:
+            - v0.12.6/nvim-linux-x86_64.tar.gz
+            - v0.12.6/nvim-linux-arm64.tar.gz
+
+        - name: Write the nested playbook
+          ansible.builtin.copy:
+            dest: "{{ test_dir.path }}/play.yml"
+            mode: "0644"
+            content: |
+              - name: Apply astronvim in check mode
+                hosts: localhost
+                connection: local
+                gather_facts: true
+                tasks:
+                  - name: Include the role
+                    ansible.builtin.include_role:
+                      name: {{ playbook_dir | dirname }}
+                    vars: {{ test_role_vars | to_json }}
+
+        - name: Run the nested playbook with --check
+          ansible.builtin.command:
+            argv:
+              - "{{ test_ansible_playbook }}"
+              - -i
+              - localhost,
+              - --check
+              - -e
+              - "ansible_python_interpreter={{ ansible_playbook_python }}"
+              - "{{ test_dir.path }}/play.yml"
+            chdir: "{{ test_repo_root }}"
+          register: test_run
+          changed_when: false
+          failed_when: false
+
+        - name: Stat the binary after the check run
+          ansible.builtin.stat:
+            path: "{{ test_dir.path }}/bin/nvim"
+          register: test_bin
+
+        - name: Assert the check run passed and reported the pending install
+          ansible.builtin.assert:
+            that:
+              - test_run.rc == 0
+              - test_run.stdout is search('failed=0')
+              - test_run.stdout is search('Download Neovim tarball for version[^*]*\\*+\\s+changed')
+              - test_run.stdout is search('Extract Neovim archive into /usr/local/[^*]*\\*+\\s+skipping')
+              - not test_bin.stat.exists
+            fail_msg: "{{ test_run.stdout }}"
+      always:
+        - name: Remove the test directory
+          ansible.builtin.file:
+            path: "{{ test_dir.path }}"
+            state: absent

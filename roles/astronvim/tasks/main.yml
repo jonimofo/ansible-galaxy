@@ -86,6 +86,8 @@
         - /usr/local/share/nvim
       when: astronvim_nvim_binary_stat.stat.exists
 
+    # In check mode the download is only simulated: nothing to extract. The
+    # download task already reports the pending change.
     - name: Extract Neovim archive into /usr/local/
       ansible.builtin.unarchive:
         src: "{{ _astronvim_tmp.path }}/{{ astronvim_neovim_archive_name }}"
@@ -94,6 +96,7 @@
         # archive, which also applies to /usr/local/{bin,lib,share} themselves
         extra_opts: [--strip-components=1, --no-same-owner]
         remote_src: true
+      when: not ansible_check_mode
   always:
     - name: Remove the private download directory
       ansible.builtin.file:
